@@ -1,0 +1,17 @@
+{
+  "name": "caderneta-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "db:init": "node db/init.js",
+    "evento": "node scripts/evento.js",
+    "pontos": "node scripts/pontos.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mysql2": "^3.11.3"
+  }
+}

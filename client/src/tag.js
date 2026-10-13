@@ -1,0 +1,65 @@
+import { api, entrar, token } from './api.js';
+import { findPointByCode } from './data.js';
+import { installInk, stampHtml } from './stamp-kit.js';
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+// Se o app já tem conta neste aparelho, o apelido vem preenchido (um toque para carimbar).
+const nomeLocal = () => {
+  try { return String(JSON.parse(localStorage.getItem('mais1km-eunapolis:v4'))?.account?.nome || '').slice(0, 30); } catch { return ''; }
+};
+const findPoint = (code, result) => findPointByCode(code) || {
+  id: code.toUpperCase(), name: result?.carimbo?.tag_nome || 'Ponto da rota', categoryIds: ['cultura'], hidden: false,
+};
+
+function shell(content) {
+  document.documentElement.dataset.theme = 'light';
+  document.body.innerHTML = `<main class="tag-page"><div class="tag-brand"><img src="/icons/stamp.svg" alt="" width="58" height="58"><strong>+1 KM</strong><span>carimbo de rota</span></div><div id="tag-content">${content}</div></main>`;
+}
+
+function form(error = '') {
+  return `<form class="card tag-card" id="tag-entry" novalidate><p class="eyebrow">Abrir caderneta</p><h1 class="page-title">Seu próximo carimbo começa aqui.</h1><p class="page-subtitle">Digite um apelido para registrar esta passagem. Se você recebeu um código de turma, pode informá-lo também.</p><label class="field"><span>Apelido</span><input name="apelido" minlength="2" maxlength="30" autocomplete="nickname" value="${escapeHtml(nomeLocal())}" required autofocus></label><label class="field"><span>Código da turma <small>(opcional)</small></span><input name="turma" maxlength="40" autocapitalize="characters" autocomplete="off"></label>${error ? `<p class="auth-error" role="alert">${escapeHtml(error)}</p>` : ''}<button class="primary-button button-full" type="submit">Abrir e carimbar</button><a class="text-link tag-back" href="/">Ir para minha caderneta →</a></form>`;
+}
+
+// Segundo carimbo do mesmo toque: o card ativo (evento ou patrocínio), mostrado separado do carimbo da rota.
+function cartaoEvento(result, code) {
+  const ev = result.evento;
+  if (!ev) return '';
+  const point = findPoint(code, { carimbo: ev.carimbo });
+  const marca = stampHtml(point, ev.carimbo?.ordem || 1, { entry: { at: ev.carimbo?.criado_em || new Date().toISOString() }, size: 170, plus: true });
+  const origem = ev.patrocinado_por ? `Patrocinado por ${escapeHtml(ev.patrocinado_por)}` : 'Evento';
+  return `<article class="card tag-card tag-evento"><p class="eyebrow">${origem}</p><h2 class="page-title">${escapeHtml(ev.nome)}</h2><div class="tag-stamp">${marca}</div><p class="page-subtitle">${ev.repetido ? 'Este ponto já está no seu card.' : 'Carimbo extra do card. Ele fica guardado na sua caderneta, separado da rota.'}</p></article>`;
+}
+
+async function stamp(code) {
+  const content = document.getElementById('tag-content');
+  content.innerHTML = `<div class="card tag-card"><p class="eyebrow">${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Carimbando…</h1><p class="page-subtitle">Guardando esta passagem na sua caderneta.</p></div>`;
+  try {
+    const result = await api(`/tags/${encodeURIComponent(code)}/carimbar`, { method: 'POST' });
+    const point = findPoint(code, result);
+    const stamp = stampHtml(point, result.carimbo?.ordem || 1, { entry: { at: result.carimbo?.criado_em || new Date().toISOString() }, size: 230, plus: true });
+    const turma = result.turma ? `<article class="card tag-note"><strong>${result.turma.formou ? 'Carimbo de turma formado!' : 'Carimbo coletivo em andamento'}</strong><p>${result.turma.formou ? 'A turma deixou uma marca conjunta neste ponto.' : `${result.turma.presentes} presentes. Faltam ${Math.max(0, result.turma.necessarios - result.turma.presentes)} em até 4 minutos.`}</p></article>` : '';
+    const guardiao = result.guardiao ? `<article class="card tag-note"><strong>Guardião do ponto</strong><p>${escapeHtml(result.guardiao.apelido)} · ${result.guardiao.passagens} passagens</p></article>` : '';
+    content.innerHTML = `<article class="card tag-card tag-success"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p><div class="tag-stamp">${stamp}</div><h1 class="page-title">${result.repetido ? 'Já está na página' : 'Carimbado!'}</h1><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Hoje: ${result.hoje} passagem(ns) neste ponto.</p>${findPointByCode(code) ? '<p class="small muted">Este carimbo entra na página do ponto quando você abrir a caderneta.</p>' : ''}<a class="primary-button button-full" href="/">Ver minha caderneta</a></article>${cartaoEvento(result, code)}${turma}${guardiao}`;
+  } catch (error) {
+    content.innerHTML = `<div class="card tag-card"><h1 class="page-title">${error.status === 404 ? 'Tag não encontrada' : 'Não foi possível carimbar'}</h1><p class="page-subtitle">${error.status === 404 ? 'Confira o código deste ponto.' : 'Tente novamente quando houver conexão.'}</p><button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button><a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
+    document.getElementById('tag-retry')?.addEventListener('click', () => stamp(code));
+  }
+}
+
+export function bootTagPage(code) {
+  shell(token() ? '<div class="card tag-card"><p class="page-title">Preparando seu carimbo…</p></div>' : form());
+  installInk();
+  const entry = document.getElementById('tag-entry');
+  entry?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    try {
+      await entrar({ apelido: String(data.get('apelido') || ''), turma: String(data.get('turma') || '') });
+      await stamp(code);
+    } catch {
+      document.getElementById('tag-content').innerHTML = form('Não foi possível abrir a caderneta. Confira o apelido e tente novamente.');
+    }
+  });
+  if (token()) stamp(code);
+  else if (location.protocol === 'https:') api('/sessao').then(() => stamp(code)).catch(() => {});
+}
