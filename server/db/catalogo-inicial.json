@@ -1,0 +1,329 @@
+{
+  "pontos": [
+    {
+      "codigo": "eu-001",
+      "nome": "Praça da Bandeira",
+      "categorias": [
+        "historia",
+        "cultura"
+      ],
+      "icone": "✳",
+      "lat": -16.3751286,
+      "lng": -39.5881012,
+      "endereco": null,
+      "nota": "Uso cívico confirmado pela Prefeitura; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "fonte_mapa": "OpenStreetMap",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-002",
+      "nome": "Praça da Liberdade",
+      "categorias": [
+        "cultura",
+        "natureza"
+      ],
+      "icone": "✳",
+      "lat": -16.373437,
+      "lng": -39.5905262,
+      "endereco": null,
+      "nota": "Espaço central requalificado; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "fonte_mapa": "OpenStreetMap",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-003",
+      "nome": "Parque Ecológico do Gravatá",
+      "categorias": [
+        "natureza",
+        "caminhos"
+      ],
+      "icone": "❋",
+      "lat": -16.3697345,
+      "lng": -39.5945707,
+      "endereco": "Av. Ayrton Senna, 147-179 · Santa Lúcia",
+      "nota": "Parque urbano com dois lagos naturais e pista de caminhada; não é cachoeira nem área de banho.",
+      "fonte_mapa": "Google Maps · a validar em campo",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-004",
+      "nome": "Praça do Pequi",
+      "categorias": [
+        "cultura",
+        "sabores"
+      ],
+      "icone": "✦",
+      "lat": -16.3714765,
+      "lng": -39.5779847,
+      "endereco": null,
+      "nota": "Praça pública com intervenções recentes; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "fonte_mapa": "OpenStreetMap",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-005",
+      "nome": "Praça do Parque da Renovação",
+      "categorias": [
+        "cultura",
+        "natureza"
+      ],
+      "icone": "✳",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Espaço de bairro em intervenção municipal; endereço e operação ainda pendentes.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-006",
+      "nome": "Praça da Colônia",
+      "categorias": [
+        "cultura",
+        "caminhos"
+      ],
+      "icone": "⌂",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Praça requalificada no distrito de Colônia.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-007",
+      "nome": "Praça Dona Dinah Borges Moura",
+      "categorias": [
+        "natureza",
+        "caminhos"
+      ],
+      "icone": "≈",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Praça inaugurada com pista de caminhada de 160 m; validar condição atual.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-008",
+      "nome": "Lagoa e Academia da Saúde do Dinah Borges",
+      "categorias": [
+        "natureza",
+        "caminhos"
+      ],
+      "icone": "❋",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Pista de caminhada documentada em restauração, sem quilometragem oficial publicada.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-009",
+      "nome": "Mercado Municipal Dona Alzira",
+      "categorias": [
+        "sabores",
+        "cultura"
+      ],
+      "icone": "✦",
+      "lat": -16.3710206,
+      "lng": -39.5869019,
+      "endereco": "Av. Dom Pedro II, 933-981 · Centro",
+      "nota": "Feira do Bueiro tradicional; reforma e horário atual precisam de confirmação.",
+      "fonte_mapa": "Google Maps · a validar em campo",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-010",
+      "nome": "Feira Livre Juca Rosa",
+      "categorias": [
+        "sabores",
+        "cultura"
+      ],
+      "icone": "✦",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Localização secundária por diretório; validar calendário e funcionamento.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-011",
+      "nome": "Viola de Bolso Arte e Memória",
+      "categorias": [
+        "cultura",
+        "historia"
+      ],
+      "icone": "▤",
+      "lat": -16.3689627,
+      "lng": -39.5854129,
+      "endereco": "Praça Vereador Alcides Ferreira Pinto, 38 · Dr. Gusmão",
+      "nota": "Ponto de cultura com oficinas e vivências; contato prévio recomendado.",
+      "fonte_mapa": "Google Maps · a validar em campo",
+      "oculto": false
+    },
+    {
+      "codigo": "eu-012",
+      "nome": "Prado da Rua Paulo de Tarso",
+      "categorias": [
+        "cultura",
+        "historia"
+      ],
+      "icone": "⌂",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "A corrida de cavalo é patrimônio cultural imaterial municipal.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-013",
+      "nome": "Estrada da Colônia · ciclofaixa",
+      "categorias": [
+        "caminhos",
+        "natureza"
+      ],
+      "icone": "⌁",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Cerca de 6 km demarcados em via de tráfego misto; endpoints e segurança pendentes.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-014",
+      "nome": "Circuito Sesc de Corridas",
+      "categorias": [
+        "caminhos",
+        "cultura"
+      ],
+      "icone": "➜",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Percurso eventual de 2026; não é circuito cotidiano.",
+      "fonte_mapa": null,
+      "oculto": false
+    },
+    {
+      "codigo": "eu-017",
+      "nome": "Cruz da primeira missa",
+      "categorias": [
+        "historia"
+      ],
+      "icone": "?",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Marco proposto; a sanção final do projeto de lei ainda precisa ser confirmada.",
+      "fonte_mapa": null,
+      "oculto": true
+    },
+    {
+      "codigo": "eu-018",
+      "nome": "Circuito cultural central",
+      "categorias": [
+        "cultura",
+        "sabores"
+      ],
+      "icone": "✦",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Proposta editorial entre praças, mercado e cultura; não é rota oficial.",
+      "fonte_mapa": null,
+      "oculto": true
+    },
+    {
+      "codigo": "eu-019",
+      "nome": "Track comunitário de pedal",
+      "categorias": [
+        "caminhos"
+      ],
+      "icone": "⌁",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Candidato do Wikiloc sem validação de acesso, superfície ou segurança.",
+      "fonte_mapa": null,
+      "oculto": true
+    },
+    {
+      "codigo": "eu-020",
+      "nome": "Ponto de validação de campo",
+      "categorias": [
+        "caminhos"
+      ],
+      "icone": "?",
+      "lat": null,
+      "lng": null,
+      "endereco": null,
+      "nota": "Página reservada para confirmar novos caminhos e pontos com atores locais.",
+      "fonte_mapa": null,
+      "oculto": true
+    }
+  ],
+  "circuitos": [
+    {
+      "slug": "eu-gravata",
+      "nome": "Circuito Gravatá",
+      "subtitulo": "Natureza urbana e caminhada",
+      "icone": "❋",
+      "cor": "green",
+      "ordem": 1,
+      "pontos": [
+        "eu-003",
+        "eu-007",
+        "eu-008"
+      ]
+    },
+    {
+      "slug": "eu-cultura",
+      "nome": "Circuito Cultural Central",
+      "subtitulo": "Praças, memória, mercado e cultura",
+      "icone": "✳",
+      "cor": "ochre",
+      "ordem": 2,
+      "pontos": [
+        "eu-001",
+        "eu-002",
+        "eu-004",
+        "eu-009",
+        "eu-011",
+        "eu-018"
+      ]
+    },
+    {
+      "slug": "eu-pedal",
+      "nome": "Caminho da Colônia",
+      "subtitulo": "Ciclofaixa e caminhos rurais",
+      "icone": "⌁",
+      "cor": "blue",
+      "ordem": 3,
+      "pontos": [
+        "eu-006",
+        "eu-013",
+        "eu-003",
+        "eu-019"
+      ]
+    },
+    {
+      "slug": "eu-corrida",
+      "nome": "Corrida e tradição",
+      "subtitulo": "Percursos de prova e patrimônio vivo",
+      "icone": "➜",
+      "cor": "red",
+      "ordem": 4,
+      "pontos": [
+        "eu-014",
+        "eu-012",
+        "eu-001"
+      ]
+    }
+  ]
+}

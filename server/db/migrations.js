@@ -62,6 +62,88 @@ async function ensureSomenteEunapolis() {
   await q("UPDATE tags SET ordem = FIELD(codigo, 'eu-001', 'eu-002', 'eu-003', 'eu-004', 'eu-007', 'eu-008', 'eu-009', 'eu-011') WHERE codigo IN ('eu-001', 'eu-002', 'eu-003', 'eu-004', 'eu-007', 'eu-008', 'eu-009', 'eu-011')");
   await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
 }
+
+// Administração (V8.4): papel da conta, dados de catálogo nos pontos, circuitos editoriais e registro de ações.
+async function ensureAdminSchema() {
+  await ensureColumn('contas', 'papel', "VARCHAR(16) NOT NULL DEFAULT 'usuario'");
+  await ensureColumn('tags', 'lat', 'DECIMAL(9,6) NULL');
+  await ensureColumn('tags', 'lng', 'DECIMAL(9,6) NULL');
+  await ensureColumn('tags', 'endereco', 'VARCHAR(200) NULL');
+  await ensureColumn('tags', 'nota', 'VARCHAR(400) NULL');
+  await ensureColumn('tags', 'categorias', 'VARCHAR(120) NULL');
+  await ensureColumn('tags', 'icone', 'VARCHAR(8) NULL');
+  await ensureColumn('tags', 'fonte_mapa', 'VARCHAR(80) NULL');
+  await ensureColumn('tags', 'oculto', 'BOOLEAN NOT NULL DEFAULT FALSE');
+  await ensureColumn('rotas', 'subtitulo', 'VARCHAR(200) NULL');
+  await q(`CREATE TABLE IF NOT EXISTS circuitos (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(64) NOT NULL UNIQUE,
+    nome VARCHAR(160) NOT NULL,
+    subtitulo VARCHAR(200) NULL,
+    icone VARCHAR(8) NULL,
+    cor VARCHAR(20) NOT NULL DEFAULT 'ochre',
+    ordem INT NOT NULL DEFAULT 0,
+    status VARCHAR(16) NOT NULL DEFAULT 'publicado'
+  )`);
+  await q(`CREATE TABLE IF NOT EXISTS circuito_pontos (
+    circuito_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    ordem INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (circuito_id, tag_id),
+    CONSTRAINT circuito_pontos_circuito_fk FOREIGN KEY (circuito_id) REFERENCES circuitos(id) ON DELETE CASCADE,
+    CONSTRAINT circuito_pontos_tag_fk FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+  )`);
+  await q(`CREATE TABLE IF NOT EXISTS auditoria_admin (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    conta_id INT NULL,
+    quem VARCHAR(160) NOT NULL,
+    acao VARCHAR(60) NOT NULL,
+    alvo VARCHAR(160) NULL,
+    detalhe VARCHAR(400) NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`);
+}
+export async function migracaoAplicada(versao) {
+  const [linha] = await q('SELECT version FROM schema_migrations WHERE version = ?', [versao]);
+  return Boolean(linha);
+}
+// Importa uma única vez o catálogo que antes vivia só no front-end (18 pontos e 4 circuitos), para o admin poder
+// editar, reordenar e remover tudo. Não sobrescreve nada que já tenha sido preenchido; depois disso o banco manda.
+export async function importarCatalogoInicial() {
+  const versao = '004_admin_catalogo';
+  if (await migracaoAplicada(versao)) return;
+  const catalogo = JSON.parse(readFileSync(fileURLToPath(new URL('./catalogo-inicial.json', import.meta.url)), 'utf8'));
+  await q("INSERT IGNORE INTO rotas (nome, tipo, cor, km, cidade_id, status, subtitulo) VALUES ('Eunápolis · Catálogo editorial', 'cidade', 'ocre', NULL, 'eunapolis', 'editorial', 'Pontos ainda sem tag física publicada')");
+  const [editorial] = await q("SELECT id FROM rotas WHERE nome = 'Eunápolis · Catálogo editorial'");
+  const [{ prox }] = await q('SELECT COALESCE(MAX(ordem), 0) AS prox FROM tags WHERE rota_id = ?', [editorial.id]);
+  let ordem = Number(prox);
+  for (const p of catalogo.pontos) {
+    const categorias = p.categorias.join(',');
+    const [existente] = await q('SELECT id FROM tags WHERE codigo = ?', [p.codigo]);
+    if (existente) {
+      await q(`UPDATE tags SET lat = COALESCE(lat, ?), lng = COALESCE(lng, ?), endereco = COALESCE(endereco, ?), nota = COALESCE(nota, ?),
+        categorias = COALESCE(categorias, ?), icone = COALESCE(icone, ?), fonte_mapa = COALESCE(fonte_mapa, ?), oculto = ? WHERE id = ?`,
+      [p.lat, p.lng, p.endereco, p.nota, categorias, p.icone, p.fonte_mapa, p.oculto ? 1 : 0, existente.id]);
+    } else {
+      ordem += 1;
+      await q(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto)
+        VALUES (?, ?, ?, ?, 'c', FALSE, 'pendente', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [p.codigo, editorial.id, ordem, p.nome, p.lat, p.lng, p.endereco, p.nota, categorias, p.icone, p.fonte_mapa, p.oculto ? 1 : 0]);
+    }
+  }
+  for (const c of catalogo.circuitos) {
+    await q('INSERT IGNORE INTO circuitos (slug, nome, subtitulo, icone, cor, ordem, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [c.slug, c.nome, c.subtitulo, c.icone, c.cor, c.ordem, 'publicado']);
+    const [circ] = await q('SELECT id FROM circuitos WHERE slug = ?', [c.slug]);
+    let n = 0;
+    for (const codigo of c.pontos) {
+      const [tag] = await q('SELECT id FROM tags WHERE codigo = ?', [codigo]);
+      if (!tag) continue;
+      n += 1;
+      await q('INSERT IGNORE INTO circuito_pontos (circuito_id, tag_id, ordem) VALUES (?, ?, ?)', [circ.id, tag.id, n]);
+    }
+  }
+  await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
@@ -75,4 +157,5 @@ export async function runMigrations() {
   await ensureOperationalSchema();
   await ensureEventosSchema();
   await ensureSomenteEunapolis();
+  await ensureAdminSchema();
 }

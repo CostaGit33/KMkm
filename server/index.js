@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { pool, q } from './db/database.js';
 import { initializeDatabase } from './db/init.js';
 import { inicioDoDiaLocal } from './time.js';
+import { adminRouter, catalogoPublico } from './admin.js';
 import { cartaoAtivoNoPonto, cartoesDaCaderneta, estadoDoCard } from './eventos.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
 
@@ -81,12 +82,12 @@ const auth = wrap(async (req, res, next) => {
   const cookieToken = readCookie(req, SESSION_COOKIE);
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const sessionToken = cookieToken || bearer;
-  const [sessao] = sessionToken ? await q(`SELECT s.id AS sessao_id, c.id AS conta_id, c.email, c.nome, u.*
+  const [sessao] = sessionToken ? await q(`SELECT s.id AS sessao_id, c.id AS conta_id, c.email, c.nome, c.papel, u.*
     FROM sessoes s JOIN contas c ON c.id = s.conta_id JOIN usuarios u ON u.id = c.usuario_id
     WHERE s.token_hash = ? AND s.expira_em > UTC_TIMESTAMP()`, [hashSessionToken(sessionToken)]) : [];
   if (sessao) {
     req.u = sessao;
-    req.conta = { id: sessao.conta_id, email: sessao.email, nome: sessao.nome, sessaoId: sessao.sessao_id };
+    req.conta = { id: sessao.conta_id, email: sessao.email, nome: sessao.nome, papel: sessao.papel, sessaoId: sessao.sessao_id };
     return next();
   }
   const [usuario] = sessionToken ? await q('SELECT * FROM usuarios WHERE token = ?', [sessionToken]) : [];
@@ -130,7 +131,7 @@ app.post('/api/conta/entrar', limit({ windowMs: 10 * 60 * 1000, max: 12, name: '
 }));
 app.get('/api/conta/sessao', auth, (req, res) => {
   if (!req.conta) return res.status(401).json({ erro: 'sessao_conta_necessaria' });
-  res.json({ usuario: { id: req.u.id, conta_id: req.conta.id, nome: req.conta.nome, email: req.conta.email } });
+  res.json({ usuario: { id: req.u.id, conta_id: req.conta.id, nome: req.conta.nome, email: req.conta.email, admin: req.conta.papel === 'admin' } });
 });
 app.put('/api/conta', auth, wrap(async (req, res) => {
   if (!req.conta) return res.status(401).json({ erro: 'sessao_conta_necessaria' });
@@ -451,6 +452,15 @@ app.delete('/api/eu', limit({ windowMs: 10 * 60 * 1000, max: 8, name: 'excluir' 
   } finally { connection.release(); }
 }));
 
+// Catálogo público (pontos e circuitos): o app o lê ao abrir e, sem rede, usa a cópia guardada no aparelho.
+app.get('/api/catalogo', wrap(async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.json(await catalogoPublico());
+}));
+
+// Administração: exige conta com papel 'admin' (ver server/admin.js).
+app.use('/api/admin', auth, adminRouter({ limit, wrap }));
+
 app.get('/api/saude', wrap(async (_req, res) => {
   // A saúde só é positiva se o banco também responder, não apenas se o processo Node estiver vivo.
   await q('SELECT 1 AS ok');
@@ -460,6 +470,12 @@ app.get('/api/saude', wrap(async (_req, res) => {
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));
+  // Página de administração (entrada separada do app; o acesso real é controlado pela API).
+  app.get(['/admin', '/admin/'], (_req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.sendFile(path.join(dist, 'admin.html'), next);
+  });
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'rota_api_inexistente' });
     return res.sendFile(path.join(dist, 'index.html'), next);

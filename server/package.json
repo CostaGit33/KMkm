@@ -7,7 +7,8 @@
     "dev": "node --watch index.js",
     "db:init": "node db/init.js",
     "evento": "node scripts/evento.js",
-    "pontos": "node scripts/pontos.js"
+    "pontos": "node scripts/pontos.js",
+    "admin": "node scripts/admin.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

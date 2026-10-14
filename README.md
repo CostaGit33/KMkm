@@ -69,3 +69,8 @@ npm --prefix server run evento -- criar --slug rota-do-cafe --nome "Rota do Caf�
 npm --prefix server run evento -- listar
 npm --prefix server run evento -- relatorio rota-do-cafe
 ```
+
+## Administração (V8.4)
+
+Página `/admin` para adicionar, remover e organizar pontos, rotas, circuitos, eventos e pessoas (arrastar e soltar).
+Promova sua conta com `node server/scripts/admin.js promover SEU@EMAIL`. Guia completo: `docs/admin.md`; testes: `docs/verificacao-v8.4.md`.
