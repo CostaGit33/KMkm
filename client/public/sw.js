@@ -1,10 +1,9 @@
-// Atualizado na V6 integrada para renovar os aparelhos sem apagar o estado local.
-const CACHE_NAME = "mais1km-v14-home";
+// Troque o nome do cache a cada versão publicada para renovar os aparelhos sem apagar o estado local.
+const CACHE_NAME = "mais1km-v15-release";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
-  "/manus-routes.json",
   "/icons/stamp.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

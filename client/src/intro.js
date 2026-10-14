@@ -248,7 +248,7 @@ function passportHtml() {
     <div class="pp-body"><div class="pp-avatar" data-pp="ini">?</div>
       <div class="pp-lines"><label>EXPLORADOR</label><strong data-pp="nome" class="pp-empty">— — — — —</strong>
       <label>CANAL</label><span data-pp="email" class="pp-empty">— — — — — — —</span></div></div>
-    <div class="pp-foot"><div><label>CADERNETA</label><b>Nº <span data-pp="num">0042</span></b></div><div><label>CHAVE</label><b data-pp="key">· · · · · ·</b></div><div class="pp-bars" data-pp="bars"></div></div>
+    <div class="pp-foot"><div><label>CIDADE</label><b>Eunápolis</b></div><div><label>CHAVE</label><b data-pp="key">· · · · · ·</b></div><div class="pp-bars" data-pp="bars"></div></div>
     <div class="pp-approved">APROVADO</div></div>`;
 }
 

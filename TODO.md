@@ -5,7 +5,6 @@
 - Manter o backend Express/MySQL-compatible e os fluxos persistentes existentes de entrada, tags, carimbagem, guardião, carimbo de turma, progresso e certificado.
 - Entregar a rota pública `/t/:codigo` com tela V5 para abrir a caderneta, carimbar, mostrar progresso da rota, carimbo coletivo, guardião e retorno à caderneta.
 - Preservar o manifesto, os ícones, o service worker e o cache offline; atualizar o identificador para V5 sem remover dados locais existentes.
-- Atualizar o manifesto de rotas `/manus-routes.json` com `/` e `/t/:codigo`, mantendo APIs fora do manifesto.
 - Configurar identidade +1KM V5, build Vite e servidor de produção sem quebrar o health check `/api/saude`.
 - Validar sintaxe dos módulos, build do cliente, health check, carregamento da home, manifesto de rotas e fluxo público de tag com o seed existente.
 - Preparar a próxima etapa de segurança: sessão em cookie HttpOnly/Secure/SameSite=None no Preview HTTPS, rate-limiting, validação de payloads e autorização administrativa.

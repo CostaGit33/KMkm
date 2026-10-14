@@ -32,12 +32,15 @@ export function normalizeJourneyState(value) {
     ? value.history.filter((entry) => entry && Number.isInteger(entry.cycleNumber) && typeof entry.status === "string").slice(-12)
     : [];
   const startedAt = typeof value.startedAt === "string" && Number.isFinite(Date.parse(value.startedAt)) ? value.startedAt : null;
+  const stageIndex = Math.max(0, Math.min(JOURNEY_STAGES.length, Number.isInteger(value.currentStageIndex) ? value.currentStageIndex : 0));
+  // Ciclo ativo cuja etapa já não existe mais (catálogo de etapas encurtado): conta como concluído.
+  const finalStatus = status === "active" && !startedAt ? "not-started" : status === "active" && stageIndex >= JOURNEY_STAGES.length ? "completed" : status;
   return {
     cycleNumber: Number.isInteger(value.cycleNumber) && value.cycleNumber > 0 ? value.cycleNumber : 1,
-    status: status === "active" && !startedAt ? "not-started" : status,
+    status: finalStatus,
     startedAt,
     closedAt: typeof value.closedAt === "string" ? value.closedAt : null,
-    currentStageIndex: Math.max(0, Math.min(JOURNEY_STAGES.length, Number.isInteger(value.currentStageIndex) ? value.currentStageIndex : 0)),
+    currentStageIndex: stageIndex,
     progress,
     history,
   };
@@ -92,7 +95,7 @@ function addStageAchievement(journey, achievementId, now) {
 
   const nextProgress = [...previous, achievementId];
   const nextJourney = { ...journey, progress: { ...journey.progress, [stage.id]: nextProgress } };
-  const target = stage.kind === "new-points" ? stage.target : stage.milestones.length;
+  const target = stage.target;
   if (nextProgress.length < target) return { journey: nextJourney, alreadyRecorded: false, stageCompleted: false, journeyCompleted: false };
 
   const nextIndex = journey.currentStageIndex + 1;
@@ -108,14 +111,6 @@ export function recordJourneyPoint(journey, pointId, pointCityId, now = Date.now
     return { journey, alreadyRecorded: false, stageCompleted: false, journeyCompleted: false };
   }
   return addStageAchievement(journey, `point:${pointId}`, now);
-}
-
-export function recordJourneyMilestone(journey, milestoneId, now = Date.now()) {
-  const stage = JOURNEY_STAGES[journey.currentStageIndex];
-  if (stage?.kind !== "milestones" || !stage.milestones.some((milestone) => milestone.id === milestoneId)) {
-    return { journey, alreadyRecorded: false, stageCompleted: false, journeyCompleted: false };
-  }
-  return addStageAchievement(journey, milestoneId, now);
 }
 
 export function journeyClock(journey, now = Date.now()) {

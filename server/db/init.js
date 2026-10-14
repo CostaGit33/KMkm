@@ -17,9 +17,7 @@ export async function initializeDatabase(connection = pool) {
   // Depois da importação do catálogo (004) o banco é a fonte da verdade: os seeds não rodam mais, para não
   // recriar pontos ou rotas que a administração renomeou, arquivou ou excluiu.
   if (!(await migracaoAplicada('004_admin_catalogo'))) {
-    for (const file of ['seed.sql', 'seed-eunapolis.sql']) {
-      for (const sql of statements(file)) await connection.query(sql);
-    }
+    for (const sql of statements('seed-eunapolis.sql')) await connection.query(sql);
     await importarCatalogoInicial();
   }
 }
@@ -27,7 +25,7 @@ export async function initializeDatabase(connection = pool) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     await initializeDatabase();
-    console.log('Banco pronto: tabelas criadas e rota de exemplo carregada.');
+    console.log('Banco pronto.');
   } finally {
     await pool.end();
   }

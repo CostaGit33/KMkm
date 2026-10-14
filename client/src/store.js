@@ -2,7 +2,6 @@ import {
   createJourneyState,
   journeyClock,
   normalizeJourneyState,
-  recordJourneyMilestone as recordJourneyMilestoneState,
   recordJourneyPoint as recordJourneyPointState,
   refreshJourneyCycle,
   startJourneyCycle,
@@ -13,18 +12,19 @@ const STORAGE_KEY = "mais1km-eunapolis:v4";
 // Chaves antigas (versões com outras cidades): lidas uma vez para não perder conta e carimbos.
 const LEGACY_STORAGE_KEYS = ["caderneta-porto-seguro:v3", "caderneta-porto-seguro:v1"];
 const CITY_ID = "eunapolis";
-const DEMO_DISCOVERED = ["EU-001", "EU-002", "EU-003", "EU-004", "EU-006", "EU-007", "EU-009", "EU-011", "EU-013"];
 
 function makeInitialState() {
   const now = Date.now();
   return {
     version: 4,
-    user: { number: "0042", name: "Viajante" },
+    user: { name: "Viajante" },
     cityId: CITY_ID,
-    theme: "light",
-    // Conta nova começa sem carimbos fictícios: só o servidor confirma conquistas reais.
+    // Tema escuro é o padrão; o claro só vale se a pessoa escolheu (themeChosen).
+    theme: "dark",
+    themeChosen: false,
+    // Conta nova começa sem carimbos: só o servidor confirma conquistas reais.
     conquered: [],
-    discovered: [...DEMO_DISCOVERED],
+    discovered: [],
     history: [],
     account: null,
     session: false,
@@ -48,9 +48,10 @@ function normalizeState(value) {
   const legacyJourney = value.cityId === CITY_ID ? value.journey : value.journeys?.[CITY_ID];
   return {
     version: 4,
-    user: { number: String(value.user?.number || "0042"), name: String(value.user?.name || "Viajante").slice(0, 36) },
+    user: { name: String(value.user?.name || "Viajante").slice(0, 36) },
     cityId: CITY_ID,
-    theme: value.theme === "dark" ? "dark" : "light",
+    theme: value.themeChosen === true && value.theme === "light" ? "light" : "dark",
+    themeChosen: value.themeChosen === true,
     conquered,
     discovered,
     history,
@@ -99,29 +100,10 @@ export function loadState() {
   }
 }
 
-export function claimPoint(state, pointId) {
-  if (state.conquered.includes(pointId)) return { state, alreadyClaimed: true };
-  const next = save({
-    ...state,
-    conquered: [...state.conquered, pointId],
-    discovered: [...new Set([...state.discovered, pointId])],
-    history: [...state.history, { pointId, at: new Date().toISOString(), kind: "point" }].slice(-100),
-  });
-  return { state: next, alreadyClaimed: false };
-}
-
 export function recordJourneyPoint(state, pointId, now = Date.now(), pointCityId = CITY_ID) {
   const currentJourney = refreshJourneyCycle(state.journey, now);
   const currentState = currentJourney === state.journey ? state : save({ ...state, journey: currentJourney });
   const result = recordJourneyPointState(currentState.journey, pointId, pointCityId, now);
-  if (result.journey === currentState.journey) return { ...result, state: currentState };
-  return { ...result, state: save({ ...currentState, journey: result.journey }) };
-}
-
-export function recordJourneyMilestone(state, milestoneId, now = Date.now()) {
-  const currentJourney = refreshJourneyCycle(state.journey, now);
-  const currentState = currentJourney === state.journey ? state : save({ ...state, journey: currentJourney });
-  const result = recordJourneyMilestoneState(currentState.journey, milestoneId, now);
   if (result.journey === currentState.journey) return { ...result, state: currentState };
   return { ...result, state: save({ ...currentState, journey: result.journey }) };
 }
@@ -149,15 +131,15 @@ export function revealPoint(state, pointId) {
 }
 
 export function setTheme(state, theme) {
-  return save({ ...state, theme: theme === "dark" ? "dark" : "light" });
+  return save({ ...state, theme: theme === "light" ? "light" : "dark", themeChosen: true });
 }
 
-export function resetDemo(current = null) {
+export function resetLocalState(current = null) {
   try {
     localStorage.removeItem(STORAGE_KEY);
     for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
   } catch {}
-  // Reiniciar a demonstração mantém a conta (quem reinicia continua logado); excluir conta passa current = null
+  // Limpa os dados deste aparelho; excluir conta passa current = null
   const fresh = makeInitialState();
   const account = current?.account || null;
   return save({

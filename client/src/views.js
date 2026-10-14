@@ -94,24 +94,28 @@ function renderSideDrawer(state, activeView, activeRouteId, open) {
       </nav>
       <footer class="drawer-footer"><p class="drawer-group-title">Acessos rápidos</p>
         <button id="drawer-theme-button" class="drawer-link drawer-utility" type="button" data-action="toggle-theme"><span class="drawer-icon" aria-hidden="true">${state.theme === "dark" ? "☼" : "☾"}</span><span class="drawer-link-copy"><strong>${state.theme === "dark" ? "Usar tema claro" : "Usar tema escuro"}</strong><small>Aparência do aplicativo</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>
-        <button class="drawer-link drawer-utility" type="button" data-action="install-app"><span class="drawer-icon" aria-hidden="true">⇩</span><span class="drawer-link-copy"><strong>Instalar aplicativo</strong><small>Adicionar à tela inicial</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>
+        ${appInstalado() ? "" : `<button class="drawer-link drawer-utility" type="button" data-action="install-app"><span class="drawer-icon" aria-hidden="true">⇩</span><span class="drawer-link-copy"><strong>Instalar aplicativo</strong><small>Adicionar à tela inicial</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>`}
       </footer>
     </aside>`;
 }
 
+// Dentro do app instalado (tela inicial ou Google Play) não há o que instalar.
+const appInstalado = () => {
+  try { return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || document.referrer.startsWith("android-app://"); } catch { return false; }
+};
+
 export function renderChrome(state, activeView, activeRouteId = "", menuOpen = false) {
   document.documentElement.dataset.theme = state.theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#1d1812" : "#f3ead7");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#060a14" : "#e8f0fa");
   const logo = `<img class="brand-mark" src="/icons/stamp.svg" alt="" width="42" height="42" />`;
   const avatar = state.account ? `<button class="icon-button avatar-button" type="button" data-action="switch-view" data-view="profile" aria-label="Meu perfil" title="Meu perfil">${escapeHtml(iniciais(state.account.nome))}</button>` : "";
   document.getElementById("topbar").innerHTML = `
     <button class="icon-button menu-trigger" type="button" data-action="toggle-menu" aria-label="Abrir menu de navegação" aria-controls="app-side-menu" aria-expanded="${menuOpen}" title="Abrir menu"><span aria-hidden="true">☰</span></button>
     <a class="brand" href="#" data-action="switch-view" data-view="home" aria-label="+1 KM, início">
-      ${logo}<span class="brand-copy"><span class="brand-name">+1 KM</span><span class="brand-city">${CITY.name} · Nº ${escapeHtml(state.user.number)}</span></span>
+      ${logo}<span class="brand-copy"><span class="brand-name">+1 KM</span><span class="brand-city">${CITY.name}</span></span>
     </a>
     <div class="top-actions">${avatar}
       <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Alternar tema" title="Alternar tema"><span aria-hidden="true">${state.theme === "dark" ? "☼" : "☾"}</span></button>
-      <button class="icon-button" type="button" data-action="reset-demo" aria-label="Reiniciar caderneta demonstrativa" title="Reiniciar demonstração"><span aria-hidden="true">↺</span></button>
     </div>`;
   document.getElementById("drawer-root").innerHTML = renderSideDrawer(state, activeView, activeRouteId, menuOpen);
   document.getElementById("side-rail").innerHTML = navLinks(activeView);
@@ -212,7 +216,7 @@ function renderHome(state) {
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
   return `${pageHead("Caderneta", CITY.name)}
     <section class="hero-card" aria-labelledby="hero-title">
-      <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Seus carimbos.</h2><div class="hero-foot"><span class="season-tag">Caderneta nº ${escapeHtml(state.user.number)}</span><span class="season-tag">${city.count}/${city.total} pontos</span></div></div>
+      <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Seus carimbos.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} pontos</span></div></div>
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
     <div class="stats-strip" aria-label="Resumo da caderneta"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">pontos da cidade</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">carimbos guardados</span></div></div>
@@ -297,14 +301,13 @@ function renderPoint(state, pointId) {
     ? `<button class="primary-button button-full" type="button" data-action="reveal-point" data-id="${point.id}">✦ Revelar esta página</button>`
     : status === "conquered"
       ? `<button class="outline-button button-full" type="button" disabled>✓ Este ponto já está na caderneta</button>`
-      : `<button class="primary-button button-full" type="button" data-action="claim-point" data-id="${point.id}">◉ Carimbar ponto</button>`;
+      : `<p class="small muted" style="margin:14px 0 0;text-align:center">Para carimbar, aproxime o celular da tag NFC deste ponto.</p>`;
   const history = [...state.history].reverse().find((entry) => entry.pointId === point.id);
   return `${pageHead(`Ponto ${point.id}`, getVisibleName(state, point), CITY.name)}
     <article class="card point-detail-card"><div class="detail-topline"><button class="text-link" type="button" data-action="go-back">← Voltar</button><span class="status-pill ${status}">${stateLabel}</span></div><div class="detail-topline"><div><span class="eyebrow">${CITY.name} · ponto ${String(number).padStart(2, "0")}</span><h1 class="detail-title" style="margin-top:6px">${escapeHtml(getVisibleName(state, point))}</h1></div><span class="detail-seal" aria-hidden="true">${pointStatus(state, point) === "mystery" ? "?" : String(number).padStart(2, "0")}</span></div>
       <p class="detail-description">${escapeHtml(status === "mystery" ? "Uma página ainda escondida na cidade. Revele para descobrir o que ela guarda." : point.note)}</p><div class="tag-list">${categoryTags}<span class="tag">${point.id}</span></div>${action}
       ${history ? `<div class="detail-stamp">${stamp(point, number, "", { state, entry: history, plus: true })}</div>` : ""}
       ${history ? `<p class="small muted" style="margin:11px 0 0;text-align:center">Carimbado em ${formatDate(history.at)} · salvo nesta caderneta</p>` : ""}
-      <p class="point-warning">Carimbo local de demonstração; não comprova presença física.</p>
     </article>`;
 }
 
@@ -351,7 +354,7 @@ function renderJourney(state) {
 
   const stages = JOURNEY_STAGES.map((stage, index) => {
     const earned = journey.progress?.[stage.id] || [];
-    const target = stage.kind === "new-points" ? stage.target : stage.milestones.length;
+    const target = stage.target;
     const progress = { count: earned.length, total: target, percent: target ? Math.round((earned.length / target) * 100) : 0 };
     const completed = journey.status !== "not-started" && index < currentIndex;
     const isCurrent = active && index === currentIndex;
@@ -365,11 +368,6 @@ function renderJourney(state) {
       details = `<div class="progress-meta"><span>Marcos guardados neste ciclo</span><strong>${progress.count}/${progress.total}</strong></div>${progressBar(progress, "green", `Progresso concluído em ${stage.cityName}`)}<p class="journey-stage-hint">Destino registrado no ciclo ${journey.cycleNumber}; a caderneta permanente segue separada.</p>`;
     } else if (isCurrent && stage.kind === "new-points") {
       details = `<p class="journey-stage-hint">${stage.target} pontos novos nesta etapa.</p><div class="progress-meta"><span>Progresso</span><strong>${progress.count}/${progress.total}</strong></div>${progressBar(progress, "red", `Novas conquistas em ${stage.cityName}`)}<button class="outline-button journey-map-button" type="button" data-action="switch-view" data-view="map">⌖ Abrir pontos de ${escapeHtml(stage.cityName)}</button>`;
-    } else if (isCurrent && stage.kind === "milestones") {
-      details = `<p class="journey-stage-hint">Marcos simulados desta etapa.</p><div class="journey-milestones">${stage.milestones.map((milestone) => {
-        const isEarned = earned.includes(milestone.id);
-        return `<button class="journey-milestone ${isEarned ? "is-earned" : ""}" type="button" data-action="complete-journey-milestone" data-id="${milestone.id}" ${isEarned ? "disabled" : ""}><span class="journey-milestone-mark" aria-hidden="true">${isEarned ? "✓" : "·"}</span><span>${escapeHtml(milestone.title)}</span><small>${isEarned ? "Guardado no ciclo" : "Simular marco"}</small></button>`;
-      }).join("")}</div><div class="progress-meta"><span>Marcos da etapa</span><strong>${progress.count}/${progress.total}</strong></div>${progressBar(progress, "blue", `Marcos da etapa de ${stage.cityName}`)}`;
     } else if (isCurrent && journey.status === "active") {
       details = `<p class="journey-stage-hint">${escapeHtml(stage.subtitle)}</p>`;
     } else if (expiredCurrent) {
@@ -411,7 +409,7 @@ function renderCertificates(state, requestedRouteId = "") {
     <article class="certificate" aria-label="Certificado digital de conclusão da ${escapeHtml(route.name)}">
       <div class="certificate-stars">✦ · ✦ · ✦</div><p class="eyebrow" style="margin:12px 0 0">+1 KM · ${escapeHtml(CITY.name)}</p><h2 class="certificate-title">Certificado<br />de rota</h2><p class="small">Atesta que</p><p class="certificate-name">${escapeHtml(state.user.name)}</p><p>completou todos os ${progress.total} pontos da<br /><strong>${escapeHtml(route.name)}</strong></p><div class="certificate-stamp-row">${stampRow}</div><p class="small muted">Guardado em ${date} · caderneta nº ${escapeHtml(state.user.number)}</p><div class="certificate-seal">ROTA<br />CONQUISTADA</div><p class="eyebrow">Cada ponto, uma história guardada.</p>
     </article><div class="button-row no-print" style="justify-content:center;margin:20px 0"><button class="primary-button" type="button" data-action="share-certificate" data-id="${route.id}">↗ Compartilhar</button><button class="outline-button" type="button" data-action="print-certificate">▤ Imprimir</button></div>
-    ${isCityComplete ? `<article class="card" style="margin-top:20px;text-align:center"><span class="eyebrow">Conquista especial</span><h3 class="card-title" style="margin:7px 0">${escapeHtml(CITY.name)} completa · ${CITY.totalPoints}/${CITY.totalPoints}</h3><p class="small muted">Você encontrou todos os pontos desta edição demonstrativa.</p></article>` : ""}
+    ${isCityComplete ? `<article class="card" style="margin-top:20px;text-align:center"><span class="eyebrow">Conquista especial</span><h3 class="card-title" style="margin:7px 0">${escapeHtml(CITY.name)} completa · ${CITY.totalPoints}/${CITY.totalPoints}</h3><p class="small muted">Você encontrou todos os pontos desta edição.</p></article>` : ""}
     <div class="section-heading"><div><h2>Rotas carimbadas</h2><p>Certificados liberados nesta caderneta.</p></div></div><div class="certificate-list">${earned.map((completeRoute) => `<button class="point-row" type="button" data-action="open-certificate" data-id="${completeRoute.id}"><span class="route-icon ${completeRoute.color}" aria-hidden="true">🎖</span><span class="point-main"><span class="point-name">${escapeHtml(completeRoute.name)}</span><span class="point-meta">Certificado · ${routeProgress(state, completeRoute).total} pontos</span></span><span class="status-pill conquered">Concluída</span></button>`).join("")}</div>`;
 }
 
@@ -441,7 +439,7 @@ export function renderProfile(state, mensagem = null) {
       <div>
         <h2 class="card-title">${escapeHtml(conta.nome)}</h2>
         <p class="small muted">${escapeHtml(conta.email)}</p>
-        <p class="small muted">Caderneta nº ${escapeHtml(state.user.number)}${desde ? ` · desde ${escapeHtml(desde)}` : ""}</p>
+        ${desde ? `<p class="small muted">Caderneta desde ${escapeHtml(desde)}</p>` : ""}
       </div>
     </article>
     <div class="stats-strip" aria-label="Resumo da conta">

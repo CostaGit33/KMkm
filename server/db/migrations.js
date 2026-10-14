@@ -144,6 +144,14 @@ export async function importarCatalogoInicial() {
   }
   await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
 }
+// Remove a turma de demonstração (código PEDAL) das versões antigas, se ninguém a estiver usando. Roda uma única vez.
+async function ensureSemDemonstracao() {
+  const versao = '005_sem_demonstracao';
+  const [already] = await q('SELECT version FROM schema_migrations WHERE version = ?', [versao]);
+  if (already) return;
+  await q("DELETE FROM turmas WHERE codigo_convite = 'PEDAL' AND nome = 'Pedal da Madrugada' AND id NOT IN (SELECT turma_id FROM usuarios WHERE turma_id IS NOT NULL)");
+  await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
@@ -158,4 +166,5 @@ export async function runMigrations() {
   await ensureEventosSchema();
   await ensureSomenteEunapolis();
   await ensureAdminSchema();
+  await ensureSemDemonstracao();
 }

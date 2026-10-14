@@ -7,12 +7,17 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character
 const nomeLocal = () => {
   try { return String(JSON.parse(localStorage.getItem('mais1km-eunapolis:v4'))?.account?.nome || '').slice(0, 30); } catch { return ''; }
 };
+// Escuro por padrão; claro só se a pessoa escolheu no app.
+const temaLocal = () => {
+  try { const s = JSON.parse(localStorage.getItem('mais1km-eunapolis:v4')); return s?.themeChosen === true && s?.theme === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
+};
 const findPoint = (code, result) => findPointByCode(code) || {
   id: code.toUpperCase(), name: result?.carimbo?.tag_nome || 'Ponto da rota', categoryIds: ['cultura'], hidden: false,
 };
 
 function shell(content) {
-  document.documentElement.dataset.theme = 'light';
+  document.documentElement.dataset.theme = temaLocal();
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaLocal() === 'light' ? '#e8f0fa' : '#060a14');
   document.body.innerHTML = `<main class="tag-page"><div class="tag-brand"><img src="/icons/stamp.svg" alt="" width="58" height="58"><strong>+1 KM</strong><span>carimbo de rota</span></div><div id="tag-content">${content}</div></main>`;
 }
 

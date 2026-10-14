@@ -375,12 +375,6 @@ body.menu-open { overflow: hidden; }
 .journey-stage-content .progress-track { margin: 7px 0 10px; }
 .journey-stage-hint { margin: 0 0 10px; color: var(--muted); font-size: 11px; }
 .journey-map-button { min-height: 38px; margin-top: 4px; }
-.journey-milestones { display: grid; gap: 7px; margin: 10px 0; }
-.journey-milestone { min-height: 43px; padding: 8px 10px; display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px dashed var(--rule); border-radius: 4px; background: var(--card-strong); text-align: left; cursor: pointer; }
-.journey-milestone:not(:disabled):hover { border-color: var(--red); }
-.journey-milestone.is-earned { border-style: solid; border-color: var(--green); color: var(--green); }
-.journey-milestone-mark { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font: 12px var(--display); }
-.journey-milestone small { color: var(--muted); font-size: 9px; }
 .journey-history { display: grid; gap: 7px; }
 .journey-history-row { padding: 10px; display: flex; align-items: center; gap: 11px; border: 1px solid var(--rule); background: var(--card); }
 .journey-history-number { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--ochre); border-radius: 50%; color: var(--ochre); font: 12px var(--display); }
@@ -477,8 +471,6 @@ body.menu-open { overflow: hidden; }
   .journey-stage-content { margin-left: 0; }
   .journey-stage-heading { align-items: flex-start; flex-wrap: wrap; }
   .journey-stage-heading .status-pill { margin-left: 50px; }
-  .journey-milestone { grid-template-columns: 25px minmax(0, 1fr); }
-  .journey-milestone small { grid-column: 2; }
 }
 @media (max-width: 360px) {
   .nav-label { font-size: 8px; letter-spacing: 0; }
@@ -657,8 +649,6 @@ body.menu-open { overflow: hidden; }
   .journey-stage-heading { align-items: flex-start; }
   .journey-stage-heading .status-pill { margin-left: 50px; }
   .journey-stage-content { margin-left: 0; }
-  .journey-milestone { grid-template-columns: 25px minmax(0, 1fr); min-height: 47px; }
-  .journey-milestone small { grid-column: 2; }
 
   .detail-topline { flex-wrap: wrap; }
   .detail-title { font-size: 22px; overflow-wrap: anywhere; }

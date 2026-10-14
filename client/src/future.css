@@ -364,10 +364,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .journey-stage-title h3 { font-size: 14px; }
 .journey-stage-title p, .journey-stage-hint { font-size: 13px; color: var(--muted); }
 .journey-step-number { border: 1px solid currentColor; }
-.journey-milestone { border: 1px dashed var(--line); border-radius: 12px; background: color-mix(in srgb, var(--paper) 40%, transparent); font-size: 14px; }
-.journey-milestone:not(:disabled):hover { border-color: var(--blue); box-shadow: 0 0 20px -6px var(--glow); }
-.journey-milestone.is-earned { border: 1px solid var(--green); color: var(--green); box-shadow: 0 0 18px -8px var(--green); }
-.journey-milestone small, .journey-history-row small { font-size: 12px; }
+.journey-history-row small { font-size: 12px; }
 .journey-seal { box-shadow: 0 0 26px -4px var(--glow-red); }
 
 /* Coleção, certificado, histórico */

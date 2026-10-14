@@ -58,5 +58,4 @@ function aplicar(catalogo) {
     colecao.pointIds = [...new Set([...mantidos, ...criados])];
   }
   CITY.totalPoints = POINTS.length;
-  CITY.demoPoints = POINTS.length;
 }

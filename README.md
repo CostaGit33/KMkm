@@ -24,7 +24,7 @@ Em outro terminal:
 npm run dev:client
 ```
 
-Abra a URL do Vite. A rota de exemplo usa o código `k7x2m9`; a turma de demonstração usa `PEDAL`.
+Abra a URL do Vite. Os pontos nascem `pendente` (veja "Somente Eunápolis"); publique-os com o script `pontos` ou em `/admin`.
 
 ## Produção
 
@@ -39,7 +39,6 @@ O servidor serve `client/dist` e escuta `PORT` (padrão `3000`). Defina `DATABAS
 ## Observações
 
 - A conta principal é persistente no servidor (senha com scrypt, sessão com hash e validade de 30 dias). O apelido anônimo com token só existe na página pública da tag (`/t/:codigo`).
-- O script original tinha um heredoc de Python inválido para gerar os ícones. A versão publicada corrige esse trecho e mantém os PNGs gerados no projeto.
 
 ## Somente Eunápolis (V8)
 
@@ -77,3 +76,6 @@ Promova sua conta com `node server/scripts/admin.js promover SEU@EMAIL`. Guia co
 
 ## Página inicial (V8.4.1)
 Em "Progresso da cidade": carimbos conquistados em miniatura (toque abre o ponto) e um mapa rápido com os pontos que têm coordenada (conquistado / disponível / mistério), como atalhos. "Mapa completo" abre o mapa grande. Pontos sem coordenada aparecem só na lista; cadastre as coordenadas em /admin.
+
+## Versão de publicação (V8.5)
+Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o carimbo manual sem tag, os marcos simulados da jornada, os carimbos de exemplo pré-preenchidos, o número de caderneta fixo (0042), a turma de teste `PEDAL` (a migração `005_sem_demonstracao` remove a turma de bancos antigos, se não tiver membros) e arquivos de ferramenta externa. O tema escuro é o padrão; o claro só vale quando a pessoa escolhe no menu.

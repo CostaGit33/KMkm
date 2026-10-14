@@ -1,5 +1,5 @@
 import { CITY, JOURNEY_DAYS, JOURNEY_STAGES, POINTS, ROUTES, getPoint } from "./data.js";
-import { loadState, claimPoint, recordJourneyMilestone, recordJourneyPoint, refreshJourney, revealPoint, setTheme, startJourney, resetDemo, isSignedIn, createAccount, signIn, signOut, updateAccount } from "./store.js";
+import { loadState, refreshJourney, revealPoint, setTheme, startJourney, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount } from "./store.js";
 import { renderAuth, validarNome, validarEmail, validarSenha, gerarSenha, senhaConfere } from "./auth.js";
 import { importServerStamps } from "./store.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
@@ -171,48 +171,6 @@ function goBack() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-async function handleClaim(id) {
-  const point = getPoint(id);
-  if (!point) return;
-  let resposta = null;
-  try {
-    resposta = await api(`/tags/${encodeURIComponent(point.id.toLowerCase())}/carimbar`, { method: "POST" });
-  } catch (error) {
-    if (error.status === 401) {
-      state = signOut(state);
-      cartoesAtuais = []; setEventos([]);
-      authMessage = "Sua sessão expirou. Entre novamente para carimbar.";
-      render();
-      return;
-    }
-    showToast(error.code === "ponto_nao_publicado" ? "Este ponto ainda aguarda validação operacional." : "O carimbo não foi confirmado pelo servidor.");
-    return;
-  }
-  const result = claimPoint(state, id);
-  state = result.state;
-  if (resposta?.evento && !resposta.evento.repetido) {
-    const rotulo = resposta.evento.patrocinado_por ? `${resposta.evento.nome} · patrocinado por ${resposta.evento.patrocinado_por}` : resposta.evento.nome;
-    showToast(`Carimbo extra no card: ${rotulo}`);
-  }
-  if (resposta?.evento) { ultimaSincronizacao = 0; sincronizarComServidor(); }
-  if (result.alreadyClaimed) {
-    render();
-    showToast("Este carimbo já está guardado — uma visita, uma marca.");
-    return;
-  }
-  const journeyResult = recordJourneyPoint(state, id, CITY.id);
-  state = journeyResult.state;
-  const completedRoute = certificateRoutes(state).find((route) => route.pointIds.includes(id));
-  render();
-  playStampMoment(point, state);
-  const journeyMessage = journeyResult.journeyCompleted
-    ? "Jornada concluída! Seus carimbos permanentes seguem na caderneta."
-    : journeyResult.stageCompleted
-      ? `Etapa concluída. Próximo destino: ${JOURNEY_STAGES[state.journey.currentStageIndex].cityName}.`
-      : "";
-  showToast(journeyMessage || (completedRoute ? `Carimbo guardado. ${completedRoute.name} concluída — certificado liberado!` : `Carimbo ${point.id} guardado na sua caderneta.`));
-}
-
 function handleClick(event) {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target || target.hasAttribute("disabled")) return;
@@ -259,9 +217,6 @@ function handleClick(event) {
     case "go-back":
       goBack();
       break;
-    case "claim-point":
-      handleClaim(id);
-      break;
     case "logout":
       sairContaServidor().catch(() => {});
       state = signOut(state);
@@ -277,7 +232,7 @@ function handleClick(event) {
         apagarContaNoServidor().then((servidorLimpo) => {
           // Sem internet não dá para limpar o servidor: a pessoa decide se apaga só o aparelho, sabendo disso.
           if (!servidorLimpo && !window.confirm("Sem conexão com o servidor. Apagar só os dados deste aparelho? Os carimbos de tags guardados no servidor continuam lá até você apagar a conta com internet.")) return;
-          state = resetDemo();
+          state = resetLocalState();
           cartoesAtuais = []; setEventos([]);
           view = "home";
           introDone = false;
@@ -305,17 +260,6 @@ function handleClick(event) {
       if (keepMenuFocus) document.getElementById("drawer-theme-button")?.focus({ preventScroll: true });
       break;
     }
-    case "reset-demo":
-      if (window.confirm("Reiniciar a demonstração? Os carimbos desta caderneta neste dispositivo serão substituídos pelos exemplos iniciais.")) {
-        state = resetDemo(state);
-        view = "home";
-        pointId = "";
-        routeId = "";
-        filters = { categoryId: "all", pointFilter: "all", search: "" };
-        render();
-        showToast("Caderneta demonstrativa reiniciada.");
-      }
-      break;
     case "open-certificates": {
       const closedFromMenu = menuOpen;
       menuOpen = false;
@@ -341,22 +285,6 @@ function handleClick(event) {
       render();
       showToast(`Ciclo ${state.journey.cycleNumber} iniciado · ${JOURNEY_DAYS} dias para abrir a próxima cidade.`);
       break;
-    case "complete-journey-milestone": {
-      const previousIndex = state.journey.currentStageIndex;
-      const journeyResult = recordJourneyMilestone(state, id);
-      state = journeyResult.state;
-      render();
-      const priorStage = JOURNEY_STAGES[previousIndex];
-      const message = journeyResult.journeyCompleted
-        ? "Jornada concluída! A caderneta permanente continua com você."
-        : journeyResult.stageCompleted
-          ? `Etapa de ${priorStage.cityName} concluída. Próximo destino: ${JOURNEY_STAGES[state.journey.currentStageIndex].cityName}.`
-          : state.journey.status === "expired"
-            ? "Ciclo encerrado: este marco não entrou na Jornada."
-            : "Marco demonstrativo guardado nesta etapa.";
-      showToast(message);
-      break;
-    }
     case "print-certificate":
       window.print();
       break;
@@ -586,10 +514,13 @@ async function sincronizarComServidor() {
     cartoesAtuais = caderneta.eventos;
     setEventos(cartoesAtuais);
     if (JSON.stringify(cartoesAtuais) !== anteriores) render();
+    const jaConquistados = new Set(state.conquered);
     const resultado = importServerStamps(state, itens);
     if (resultado.imported > 0) {
       state = resultado.state;
+      const novos = state.conquered.filter((id) => !jaConquistados.has(id));
       render();
+      if (novos.length === 1 && getPoint(novos[0])) playStampMoment(getPoint(novos[0]), state);
       showToast(resultado.imported === 1 ? "1 carimbo de tag chegou na sua caderneta." : `${resultado.imported} carimbos de tags chegaram na sua caderneta.`);
     }
   } finally {

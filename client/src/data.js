@@ -3,7 +3,6 @@ export const CITY = {
   name: "Eunápolis",
   season: "Caderneta de caminhos",
   totalPoints: 0,
-  demoPoints: 0,
 };
 
 export const CATEGORIES = [
@@ -57,15 +56,10 @@ export const EUNAPOLIS_DESTINATION = {
 export const JOURNEY_DAYS = 90;
 export const JOURNEY_NAME = "Caminhos de Eunápolis";
 
-// Etapas e metas são demonstrativas; revisar sequência e conteúdo com atores locais antes de uso real.
 export const JOURNEY_STAGES = [
   { id: "eunapolis", cityId: "eunapolis", cityName: "Eunápolis", subtitle: "Abra os caminhos da cidade.", kind: "new-points", target: 2 },
-  { id: "centro", cityName: "Centro e praças", subtitle: "Viva o miolo da cidade.", kind: "milestones", milestones: [{ id: "eu-memoria", title: "Uma memória guardada" }, { id: "eu-paisagem", title: "Uma paisagem encontrada" }, { id: "eu-cultura", title: "Um encontro cultural" }] },
-  { id: "campo", cityName: "Caminhos de campo", subtitle: "Confirme os caminhos sem perder a fonte.", kind: "milestones", milestones: [{ id: "eu-rota", title: "Uma rota percorrida" }, { id: "eu-fonte", title: "Uma fonte verificada" }, { id: "eu-validacao", title: "Uma validação de campo" }] },
 ];
 
-// O catálogo é cenográfico: nomes e posições servem para explorar o produto,
-// não substituem validação local, coordenadas oficiais ou orientação de navegação.
 export const POINTS = [
   { id: "EU-001", name: "Praça da Bandeira", categoryIds: ["historia", "cultura"], icon: "✳", x: 42, y: 34, lat: -16.3751286, lng: -39.5881012, mapSource: "OpenStreetMap", note: "Uso cívico confirmado pela Prefeitura; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.", hidden: false },
   { id: "EU-002", name: "Praça da Liberdade", categoryIds: ["cultura", "natureza"], icon: "✳", x: 57, y: 28, lat: -16.373437, lng: -39.5905262, mapSource: "OpenStreetMap", note: "Espaço central requalificado; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.", hidden: false },
@@ -102,7 +96,6 @@ export const COLLECTIONS = [
 ];
 
 CITY.totalPoints = POINTS.length;
-CITY.demoPoints = POINTS.length;
 
 export function getPoint(id) {
   return POINTS.find((point) => point.id === id);
