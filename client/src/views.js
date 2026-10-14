@@ -174,6 +174,39 @@ function renderCartoes(state) {
   return `<section aria-labelledby="eventos-title"><div class="section-heading"><div><h2 id="eventos-title">Eventos e patrocínios</h2><p>Cards com data. Não mudam sua rota nem seus certificados.</p></div></div><div class="evento-lista">${itens}</div></section>`;
 }
 
+// Carimbos conquistados em miniatura (atalho para cada ponto) e mapa reduzido (atalho para os pontos e para o mapa completo).
+function homeStamps(state) {
+  const conquered = POINTS.filter((point) => state.conquered.includes(point.id));
+  if (!conquered.length) return `<p class="home-empty">Seus carimbos aparecem aqui. Encoste num ponto para ganhar o primeiro.</p>`;
+  return `<div class="home-stamps" role="list" aria-label="Carimbos conquistados">${conquered.map((point) => `<button class="home-stamp" role="listitem" type="button" data-action="open-point" data-id="${point.id}" aria-label="Abrir carimbo de ${escapeHtml(point.name)}" title="${escapeHtml(point.name)}">${stampHtml(point, POINTS.indexOf(point) + 1, { state })}</button>`).join("")}</div>`;
+}
+
+function miniMap(state) {
+  const placed = POINTS.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+  if (!placed.length) return "";
+  const lats = placed.map((point) => point.lat);
+  const lngs = placed.map((point) => point.lng);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const cosLat = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
+  // Quadro 16:9 com margem; a longitude é corrigida pela latitude para a cidade não ficar esticada.
+  const W = 320, H = 180, pad = 26;
+  const spanX = Math.max((maxLng - minLng) * cosLat, 0.0004);
+  const spanY = Math.max(maxLat - minLat, 0.0004);
+  const scale = Math.min((W - 2 * pad) / spanX, (H - 2 * pad) / spanY);
+  const offX = (W - spanX * scale) / 2, offY = (H - spanY * scale) / 2;
+  const dots = placed.map((point) => {
+    const left = ((offX + (point.lng - minLng) * cosLat * scale) / W) * 100;
+    const top = ((offY + (maxLat - point.lat) * scale) / H) * 100;
+    const status = pointStatus(state, point);
+    const name = getVisibleName(state, point);
+    return `<button class="mini-dot ${status}" type="button" style="left:${left.toFixed(2)}%;top:${top.toFixed(2)}%" data-action="open-point" data-id="${point.id}" aria-label="${escapeHtml(name)} · ${status === "conquered" ? "conquistado" : status === "mystery" ? "mistério" : "disponível"}" title="${escapeHtml(name)}">${status === "conquered" ? "✓" : status === "mystery" ? "?" : ""}</button>`;
+  }).join("");
+  const semCoordenada = POINTS.length - placed.length;
+  return `<div class="mini-map-wrap"><div class="mini-map" role="group" aria-label="Mapa reduzido de ${escapeHtml(CITY.name)}">${dots}</div>
+    <div class="mini-map-foot"><span class="mini-legend"><i class="mini-dot-key conquered"></i>conquistado <i class="mini-dot-key available"></i>disponível <i class="mini-dot-key mystery"></i>mistério</span><button class="route-card-button" type="button" data-action="switch-view" data-view="map">⌖ Mapa completo</button></div>
+    ${semCoordenada ? `<p class="small muted mini-map-note">${semCoordenada} ${semCoordenada === 1 ? "ponto ainda sem coordenada" : "pontos ainda sem coordenada"}; ${semCoordenada === 1 ? "aparece" : "aparecem"} só na lista.</p>` : ""}</div>`;
+}
+
 function renderHome(state) {
   const city = progressFor(state);
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
@@ -183,7 +216,9 @@ function renderHome(state) {
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
     <div class="stats-strip" aria-label="Resumo da caderneta"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">pontos da cidade</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">carimbos guardados</span></div></div>
-    <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div><div class="category-grid">${categoryTotals}</div>
+    <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
+      <article class="card home-city-card"><h3 class="home-sub">Carimbos conquistados <span>${city.count}</span></h3>${homeStamps(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
+      <div class="category-grid">${categoryTotals}</div>
       <article class="card"><div class="progress-meta"><span>${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "red", `Pontos conquistados em ${CITY.name}`)}</article>
     </section>
     ${renderCartoes(state)}`;

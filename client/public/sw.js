@@ -1,5 +1,5 @@
 // Atualizado na V6 integrada para renovar os aparelhos sem apagar o estado local.
-const CACHE_NAME = "mais1km-v13-admin";
+const CACHE_NAME = "mais1km-v14-home";
 const APP_SHELL = [
   "/",
   "/index.html",

@@ -74,3 +74,6 @@ npm --prefix server run evento -- relatorio rota-do-cafe
 
 Página `/admin` para adicionar, remover e organizar pontos, rotas, circuitos, eventos e pessoas (arrastar e soltar).
 Promova sua conta com `node server/scripts/admin.js promover SEU@EMAIL`. Guia completo: `docs/admin.md`; testes: `docs/verificacao-v8.4.md`.
+
+## Página inicial (V8.4.1)
+Em "Progresso da cidade": carimbos conquistados em miniatura (toque abre o ponto) e um mapa rápido com os pontos que têm coordenada (conquistado / disponível / mistério), como atalhos. "Mapa completo" abre o mapa grande. Pontos sem coordenada aparecem só na lista; cadastre as coordenadas em /admin.
