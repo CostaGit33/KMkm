@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { id: "journey", label: "Jornada", icon: "➜" },
   { id: "routes", label: "Rotas", icon: "⌁" },
   { id: "collection", label: "Coleção", icon: "✳" },
+  { id: "podium", label: "Pódio", icon: "✦" },
 ];
 
 export function escapeHtml(value) {
@@ -80,6 +81,7 @@ function renderSideDrawer(state, activeView, activeRouteId, open) {
   });
   const personal = [
     drawerLink("Coleção", "Carimbos e conquistas guardadas", "✳", { view: "collection", active: activeView === "collection" }),
+    drawerLink("Pódio", "Níveis, XP e medalhas", "✦", { view: "podium", active: activeView === "podium" }),
     drawerLink("Certificados", `${certificateRoutes(state).length} rotas concluídas`, "🎖", { action: "open-certificates", active: activeView === "certificates" }),
     drawerLink("Perfil", "Dados, progresso e conta", "◉", { view: "profile", active: activeView === "profile" }),
   ].join("");
@@ -415,6 +417,7 @@ function renderCertificates(state, requestedRouteId = "") {
 
 export function renderView(state, view, selectedPointId, selectedRouteId, filters) {
   switch (view) {
+    case "podium": return '<div id="gamification-podium-root"></div>';
     case "map": return renderMap(state, filters);
     case "journey": return renderJourney(state);
     case "routes": return renderRoutes(state);

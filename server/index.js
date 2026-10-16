@@ -8,6 +8,7 @@ import { pool, q } from './db/database.js';
 import { initializeDatabase } from './db/init.js';
 import { inicioDoDiaLocal } from './time.js';
 import { adminRouter, catalogoPublico } from './admin.js';
+import { gamificacaoRouter } from './gamificacao.js';
 import { cartaoAtivoNoPonto, cartoesDaCaderneta, estadoDoCard } from './eventos.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
 
@@ -457,6 +458,8 @@ app.get('/api/catalogo', wrap(async (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.json(await catalogoPublico());
 }));
+
+app.use('/api/gamificacao', gamificacaoRouter({ auth, limit, wrap }));
 
 // Administração: exige conta com papel 'admin' (ver server/admin.js).
 app.use('/api/admin', auth, adminRouter({ limit, wrap }));

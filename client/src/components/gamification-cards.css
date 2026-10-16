@@ -1,0 +1,155 @@
+.gc-level-card,
+.gc-medal-card {
+  color: var(--ink);
+  font: inherit;
+}
+
+.gc-level-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 3px 3px 0 var(--rule);
+}
+
+.gc-level-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.gc-level-card__emblem {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ochre) 25%, var(--card));
+  color: var(--ochre);
+  font-size: 25px;
+  line-height: 1;
+  text-shadow: 1px 1px 0 var(--ink);
+}
+
+.gc-level-card__title-wrap { min-width: 0; flex: 1; }
+.gc-eyebrow {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.gc-level-card__title {
+  margin: 0;
+  font: 18px/1.2 var(--display, Georgia, serif);
+  overflow-wrap: anywhere;
+}
+.gc-level-card__subtitle { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.gc-level-card__xp-total { flex: 0 0 auto; font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gc-level-card__xp-total span { color: var(--muted); font-size: 11px; }
+
+.gc-progress-track {
+  display: block;
+  width: 100%;
+  height: 11px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-deep);
+}
+.gc-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--red);
+  transition: width .35s ease;
+}
+.gc-level-card__next { margin: -4px 0 0; color: var(--muted); font-size: 12px; }
+.gc-level-card__next strong { color: var(--ink); }
+.gc-level-card__next--complete { margin-top: 0; }
+.gc-level-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 12px;
+}
+.gc-text-button {
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+.gc-text-button:hover { text-decoration: underline; }
+.gc-text-button:focus-visible,
+.gc-medal-card.is-actionable:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.gc-medal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 10px;
+}
+.gc-medal-card {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--card);
+  text-align: left;
+}
+.gc-medal-card.is-locked { color: var(--muted); background: var(--card-strong); }
+.gc-medal-card.is-actionable { width: 100%; cursor: pointer; }
+.gc-medal-card.is-actionable:hover { border-color: var(--ochre); transform: translateY(-1px); }
+.gc-medal-card__icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ochre) 15%, var(--card));
+  color: var(--ochre);
+  font-size: 21px;
+  line-height: 1;
+}
+.gc-medal-card.is-locked .gc-medal-card__icon { filter: grayscale(1); opacity: .72; }
+.gc-medal-card__content { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.gc-medal-card__name { color: var(--ink); font-weight: 700; line-height: 1.25; }
+.gc-medal-card__description { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.gc-medal-card__status, .gc-medal-card__progress-label { color: var(--muted); font-size: 10px; }
+.gc-medal-card.is-earned .gc-medal-card__status { color: var(--green); }
+.gc-status-dot { margin-right: 4px; font-weight: 800; }
+.gc-medal-card__progress-wrap { display: grid; gap: 4px; margin-top: 2px; }
+.gc-progress-track--small { height: 6px; }
+.gc-progress-track--small .gc-progress-fill { background: var(--blue); }
+.gc-medal-card__arrow { align-self: center; color: var(--muted); font-size: 21px; }
+
+@media (max-width: 380px) {
+  .gc-level-card { padding: 13px; }
+  .gc-level-card__heading { gap: 9px; }
+  .gc-level-card__emblem { width: 42px; height: 42px; font-size: 22px; }
+  .gc-level-card__title { font-size: 16px; }
+  .gc-level-card__xp-total { font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-progress-fill, .gc-medal-card { transition: none !important; }
+}

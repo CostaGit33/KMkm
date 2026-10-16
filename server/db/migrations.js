@@ -152,6 +152,25 @@ async function ensureSemDemonstracao() {
   await q("DELETE FROM turmas WHERE codigo_convite = 'PEDAL' AND nome = 'Pedal da Madrugada' AND id NOT IN (SELECT turma_id FROM usuarios WHERE turma_id IS NOT NULL)");
   await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
 }
+async function ensureGamificationSchema() {
+  await ensureColumn('contas', 'placar_opt_in', 'BOOLEAN NOT NULL DEFAULT FALSE');
+  await ensureColumn('contas', 'placar_apelido', 'VARCHAR(30) NULL');
+  await q(`CREATE TABLE IF NOT EXISTS gamificacao_recompensas (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    chave VARCHAR(120) NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    referencia VARCHAR(80) NOT NULL,
+    xp INT UNSIGNED NOT NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_gamificacao_usuario_chave (usuario_id, chave),
+    KEY idx_gamificacao_usuario_tipo (usuario_id, tipo),
+    CONSTRAINT gamificacao_recompensas_usuario_fk FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+  )`);
+  if (!(await hasIndex('carimbos', 'idx_carimbos_gamificacao_data'))) {
+    await q('CREATE INDEX idx_carimbos_gamificacao_data ON carimbos (criado_em, usuario_id, tag_id)');
+  }
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
@@ -167,4 +186,5 @@ export async function runMigrations() {
   await ensureSomenteEunapolis();
   await ensureAdminSchema();
   await ensureSemDemonstracao();
+  await ensureGamificationSchema();
 }

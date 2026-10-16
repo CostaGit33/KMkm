@@ -97,7 +97,7 @@ a { color: inherit; }
 .page-subtitle { max-width: 640px; margin: 7px 0 0; color: var(--muted); font-size: 13px; }
 
 .bottom-nav {
-  position: fixed; z-index: 20; inset: auto 0 0; display: grid; grid-template-columns: repeat(5, 1fr);
+  position: fixed; z-index: 20; inset: auto 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
   padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: color-mix(in srgb, var(--card) 96%, transparent); border-top: 2px solid var(--ink);
   box-shadow: 0 -5px 18px color-mix(in srgb, var(--ink) 8%, transparent); backdrop-filter: blur(12px);

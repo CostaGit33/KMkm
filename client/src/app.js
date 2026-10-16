@@ -9,6 +9,9 @@ import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
 import { startIntro } from "./intro.js";
 import { api, atualizarContaServidor, criarContaServidor, entrarContaServidor, sessaoContaServidor, sairContaServidor } from "./api.js";
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { PodiumPage } from "./components/Podium.jsx";
 
 let state = loadState();
 let view = "home";
@@ -24,6 +27,7 @@ let authDraft = {};
 let profileMessage = null;
 let menuOpen = false;
 let activeMap = null;
+let podiumRoot = null;
 let introHandle = null;
 let introDone = false;
 let introCreated = false;
@@ -44,6 +48,7 @@ const pageTitles = {
   certificates: "Certificados",
   point: "Ficha de descoberta",
   profile: "Meu perfil",
+  podium: "Pódio",
 };
 
 // Abertura cinematográfica V6: descoberta futurista e cadastro em etapas.
@@ -92,6 +97,8 @@ function launchIntro() {
   }
 }
 function render({ preserveFocus = false } = {}) {
+  podiumRoot?.unmount();
+  podiumRoot = null;
   state = refreshJourney(state);
   const conectado = isSignedIn(state);
   document.body.classList.toggle("is-auth", !conectado);
@@ -124,6 +131,13 @@ function render({ preserveFocus = false } = {}) {
   activeMap?.remove();
   activeMap = null;
   app.innerHTML = view === "profile" ? renderProfile(state, profileMessage) : renderView(state, view, pointId, routeId, filters);
+  if (view === "podium") {
+    const target = document.getElementById("gamification-podium-root");
+    if (target) {
+      podiumRoot = createRoot(target);
+      podiumRoot.render(createElement(PodiumPage));
+    }
+  }
   if (view === "map") {
     activeMap = mountRealMap({ element: document.getElementById("real-map"), city: CITY, points: getFilteredPoints(state, filters), state, onOpenPoint: goToPoint });
   }
@@ -143,7 +157,7 @@ function showToast(message) {
 }
 
 function isMainView(candidate) {
-  return ["home", "map", "journey", "routes", "collection", "eunapolis"].includes(candidate);
+  return ["home", "map", "journey", "routes", "collection", "podium", "eunapolis"].includes(candidate);
 }
 
 function goToPoint(id) {

@@ -8,7 +8,8 @@
     "db:init": "node db/init.js",
     "evento": "node scripts/evento.js",
     "pontos": "node scripts/pontos.js",
-    "admin": "node scripts/admin.js"
+    "admin": "node scripts/admin.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
