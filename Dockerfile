@@ -7,6 +7,7 @@ COPY client/package.json client/package-lock.json ./client/
 RUN npm --prefix server ci --omit=dev --no-audit --no-fund \
   && npm --prefix client ci --no-audit --no-fund
 
+COPY shared ./shared
 COPY server ./server
 COPY client ./client
 RUN npm --prefix client run build
