@@ -484,31 +484,13 @@ export function renderProfile(state, mensagem = null) {
 function renderEunapolis() {
   const guide = EUNAPOLIS_DESTINATION;
   const facts = guide.facts.map((fact) => `<div class="destination-fact"><span>${escapeHtml(fact.label)}</span><strong>${escapeHtml(fact.value)}</strong><small>${escapeHtml(fact.detail)}</small></div>`).join("");
-  const eventRoutes = guide.event.routes.map((route) => `<article class="destination-event-route"><span class="destination-event-kind">Referência · 2025</span><strong class="destination-event-distance">${escapeHtml(route.distance)}</strong><span class="destination-return-label">Retorno informado</span><h3>${escapeHtml(route.returnPoint)}</h3><p>${escapeHtml(route.note)}</p></article>`).join("");
-  const sourceLinks = guide.sources.map((source) => `<a class="destination-source-link" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)} <span aria-hidden="true">↗</span></a>`).join("");
-  const parkSource = guide.sources.find((source) => source.label.startsWith("Parque Gravatá"));
-  return `${pageHead("Destino · Eunápolis, Bahia", guide.name, "Memória local, referências de percurso e caminhos comunitários para caminhada e pedal.")}
+  const source = guide.sources[0];
+  return `${pageHead("Destino · Eunápolis, Bahia", guide.name, "Um pouco da história e dos números da cidade.")}
     <div class="destination-return-row no-print"><button class="text-link" type="button" data-action="switch-view" data-view="routes">← Voltar às rotas</button></div>
     <article class="card destination-hero">
       <div class="destination-hero-top"><span class="destination-stamp" aria-hidden="true">EU</span><div class="destination-hero-copy"><span class="eyebrow">${escapeHtml(guide.region)}</span><h2>Uma cidade que nasceu do caminho</h2><p>${escapeHtml(guide.summary)}</p></div></div>
       <div class="destination-facts">${facts}</div>
       <p class="destination-credit">População informada como resultado do Censo 2022; os demais dados vêm da página municipal de Eunápolis.</p>
     </article>
-
-    <section class="card destination-community" aria-labelledby="destination-community-title">
-      <div class="destination-section-heading"><span class="eyebrow">Atividade comunitária pública</span><h2 id="destination-community-title">Encontre caminhos no Strava</h2><p>Os mapas abaixo filtram atividade pública agregada perto do centro de Eunápolis. Eles mostram corredores e vias com atividade, não um arquivo de navegação individual.</p></div>
-      <div class="destination-community-links">
-        <a class="destination-community-link" href="${escapeHtml(guide.strava.walkHeatmap)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir mapa público do Strava para caminhada em Eunápolis"><span class="destination-mode-mark" aria-hidden="true">↟</span><span><strong>Caminhada</strong><small>Mapa comunitário · Walk</small></span><span class="destination-open-mark" aria-hidden="true">↗</span></a>
-        <a class="destination-community-link" href="${escapeHtml(guide.strava.rideHeatmap)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir mapa público do Strava para pedal em Eunápolis"><span class="destination-mode-mark" aria-hidden="true">⌁</span><span><strong>Pedal</strong><small>Mapa comunitário · Ride</small></span><span class="destination-open-mark" aria-hidden="true">↗</span></a>
-      </div>
-      <div class="destination-instructions"><h3>Para gerar uma rota atual no app Strava</h3><ol class="destination-steps"><li>Abra <strong>Mapas → Rotas</strong>.</li><li>Busque <strong>Eunápolis</strong> e escolha um ponto de partida.</li><li>Selecione <strong>Caminhada</strong> ou <strong>Pedal</strong> e ajuste distância, elevação e superfície.</li></ol><a class="destination-inline-link" href="${escapeHtml(guide.strava.maps)}" target="_blank" rel="noopener noreferrer">Abrir Mapas do Strava ↗</a> <a class="destination-inline-link" href="${escapeHtml(guide.strava.communityHelp)}" target="_blank" rel="noopener noreferrer">Como funcionam as rotas da comunidade ↗</a></div>
-      <p class="destination-caveat">A geração depende dos recursos disponíveis na sua conta Strava e pode exigir login/assinatura. Os mapas agregados não garantem calçada, iluminação, segurança, acessibilidade ou condições atuais das vias; confirme o percurso antes de sair. Nenhuma atividade privada sua ou rota individual de atleta foi copiada para o +1 KM.</p>
-    </section>
-
-    <div class="section-heading"><div><h2>Um percurso publicado na cidade</h2><p>${escapeHtml(guide.event.name)} · ${escapeHtml(guide.event.date)}</p></div></div>
-    <article class="card destination-event-card"><div class="destination-event-meta"><span><strong>Largada:</strong> ${escapeHtml(guide.event.start)}</span><span class="destination-historic-pill">Evento histórico · 2025</span></div><div class="destination-event-grid">${eventRoutes}</div><p class="destination-caveat">A Prefeitura publicou essas distâncias e pontos de retorno para uma prova com sinalização e fechamento de vias naquela data. A publicação não oferece GPX e não confirma condições atuais: use como registro histórico, não como rota navegável.</p></article>
-
-    <article class="card destination-park-card"><div><span class="eyebrow">Referência ao ar livre</span><h2>${escapeHtml(guide.outdoorSpot.name)}</h2><p>${escapeHtml(guide.outdoorSpot.note)}</p></div>${parkSource ? `<a class="destination-inline-link" href="${escapeHtml(parkSource.url)}" target="_blank" rel="noopener noreferrer">Ver registro municipal ↗</a>` : ""}</article>
-
-    <section class="destination-sources" aria-label="Fontes consultadas"><p class="eyebrow">Fontes consultadas</p><div class="destination-source-list">${sourceLinks}</div></section>`;
+    ${source ? `<section class="destination-sources" aria-label="Fonte dos dados"><p class="eyebrow">Fonte dos dados</p><div class="destination-source-list"><a class="destination-source-link" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)} <span aria-hidden="true">↗</span></a></div></section>` : ""}`;
 }

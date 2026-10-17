@@ -21,7 +21,7 @@ function sourceText(point) {
     return `Marcado em campo${m?.accuracy ? ` · precisão ${m.accuracy} m` : ""}${when ? ` · ${when}` : ""}`;
   }
   if (point.coordinateKind === "area_anchor") return "Âncora de área, não é o local exato";
-  if (hasCoords(point)) return `${point.mapSource || "Catálogo"} · ainda sem validação em campo`;
+  if (hasCoords(point)) return point.mapSource || "Catálogo";
   return "Sem coordenada";
 }
 

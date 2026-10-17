@@ -11,7 +11,7 @@
       "lat": -16.3751286,
       "lng": -39.5881012,
       "endereco": null,
-      "nota": "Uso cívico confirmado pela Prefeitura; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "nota": "Praça de uso cívico em Eunápolis.",
       "fonte_mapa": "OpenStreetMap",
       "oculto": false
     },
@@ -26,7 +26,7 @@
       "lat": -16.373437,
       "lng": -39.5905262,
       "endereco": null,
-      "nota": "Espaço central requalificado; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "nota": "Espaço central requalificado.",
       "fonte_mapa": "OpenStreetMap",
       "oculto": false
     },
@@ -42,7 +42,7 @@
       "lng": -39.5945707,
       "endereco": "Av. Ayrton Senna, 147-179 · Santa Lúcia",
       "nota": "Parque urbano com dois lagos naturais e pista de caminhada; não é cachoeira nem área de banho.",
-      "fonte_mapa": "Google Maps · a validar em campo",
+      "fonte_mapa": "Google Maps",
       "oculto": false
     },
     {
@@ -56,7 +56,7 @@
       "lat": -16.3714765,
       "lng": -39.5779847,
       "endereco": null,
-      "nota": "Praça pública com intervenções recentes; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.",
+      "nota": "Praça pública com intervenções recentes.",
       "fonte_mapa": "OpenStreetMap",
       "oculto": false
     },
@@ -71,7 +71,7 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Espaço de bairro em intervenção municipal; endereço e operação ainda pendentes.",
+      "nota": "Espaço de bairro em intervenção municipal.",
       "fonte_mapa": null,
       "oculto": false
     },
@@ -101,7 +101,7 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Praça inaugurada com pista de caminhada de 160 m; validar condição atual.",
+      "nota": "Praça inaugurada com pista de caminhada de 160 m.",
       "fonte_mapa": null,
       "oculto": false
     },
@@ -116,7 +116,7 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Pista de caminhada documentada em restauração, sem quilometragem oficial publicada.",
+      "nota": "Pista de caminhada junto à lagoa e à Academia da Saúde do Dinah Borges.",
       "fonte_mapa": null,
       "oculto": false
     },
@@ -131,8 +131,8 @@
       "lat": -16.3710206,
       "lng": -39.5869019,
       "endereco": "Av. Dom Pedro II, 933-981 · Centro",
-      "nota": "Feira do Bueiro tradicional; reforma e horário atual precisam de confirmação.",
-      "fonte_mapa": "Google Maps · a validar em campo",
+      "nota": "Mercado municipal que abriga a tradicional Feira do Bueiro.",
+      "fonte_mapa": "Google Maps",
       "oculto": false
     },
     {
@@ -146,7 +146,7 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Localização secundária por diretório; validar calendário e funcionamento.",
+      "nota": "Feira livre de Eunápolis.",
       "fonte_mapa": null,
       "oculto": false
     },
@@ -161,8 +161,8 @@
       "lat": -16.3689627,
       "lng": -39.5854129,
       "endereco": "Praça Vereador Alcides Ferreira Pinto, 38 · Dr. Gusmão",
-      "nota": "Ponto de cultura com oficinas e vivências; contato prévio recomendado.",
-      "fonte_mapa": "Google Maps · a validar em campo",
+      "nota": "Ponto de cultura com oficinas e vivências.",
+      "fonte_mapa": "Google Maps",
       "oculto": false
     },
     {
@@ -191,7 +191,7 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Cerca de 6 km demarcados em via de tráfego misto; endpoints e segurança pendentes.",
+      "nota": "Cerca de 6 km demarcados em via de tráfego misto.",
       "fonte_mapa": null,
       "oculto": false
     },
@@ -206,66 +206,9 @@
       "lat": null,
       "lng": null,
       "endereco": null,
-      "nota": "Percurso eventual de 2026; não é circuito cotidiano.",
+      "nota": "Percurso de prova do Circuito Sesc de Corridas.",
       "fonte_mapa": null,
       "oculto": false
-    },
-    {
-      "codigo": "eu-017",
-      "nome": "Cruz da primeira missa",
-      "categorias": [
-        "historia"
-      ],
-      "icone": "?",
-      "lat": null,
-      "lng": null,
-      "endereco": null,
-      "nota": "Marco proposto; a sanção final do projeto de lei ainda precisa ser confirmada.",
-      "fonte_mapa": null,
-      "oculto": true
-    },
-    {
-      "codigo": "eu-018",
-      "nome": "Circuito cultural central",
-      "categorias": [
-        "cultura",
-        "sabores"
-      ],
-      "icone": "✦",
-      "lat": null,
-      "lng": null,
-      "endereco": null,
-      "nota": "Proposta editorial entre praças, mercado e cultura; não é rota oficial.",
-      "fonte_mapa": null,
-      "oculto": true
-    },
-    {
-      "codigo": "eu-019",
-      "nome": "Track comunitário de pedal",
-      "categorias": [
-        "caminhos"
-      ],
-      "icone": "⌁",
-      "lat": null,
-      "lng": null,
-      "endereco": null,
-      "nota": "Candidato do Wikiloc sem validação de acesso, superfície ou segurança.",
-      "fonte_mapa": null,
-      "oculto": true
-    },
-    {
-      "codigo": "eu-020",
-      "nome": "Ponto de validação de campo",
-      "categorias": [
-        "caminhos"
-      ],
-      "icone": "?",
-      "lat": null,
-      "lng": null,
-      "endereco": null,
-      "nota": "Página reservada para confirmar novos caminhos e pontos com atores locais.",
-      "fonte_mapa": null,
-      "oculto": true
     }
   ],
   "circuitos": [
@@ -294,8 +237,7 @@
         "eu-002",
         "eu-004",
         "eu-009",
-        "eu-011",
-        "eu-018"
+        "eu-011"
       ]
     },
     {
@@ -308,8 +250,7 @@
       "pontos": [
         "eu-006",
         "eu-013",
-        "eu-003",
-        "eu-019"
+        "eu-003"
       ]
     },
     {

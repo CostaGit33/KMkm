@@ -152,6 +152,31 @@ async function ensureSemDemonstracao() {
   await q("DELETE FROM turmas WHERE codigo_convite = 'PEDAL' AND nome = 'Pedal da Madrugada' AND id NOT IN (SELECT turma_id FROM usuarios WHERE turma_id IS NOT NULL)");
   await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
 }
+// Catálogo limpo para publicação: arquiva os pontos-rascunho (EU-017 a EU-020, se não tiverem carimbo) e troca os textos
+// internos de validação pelos textos finais. Só mexe em notas que ainda estão exatamente como foram importadas,
+// então edições feitas na administração nunca são sobrescritas. Roda uma única vez.
+const NOTAS_LIMPAS = {
+  'eu-001': ['Uso cívico confirmado pela Prefeitura; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.', 'Praça de uso cívico em Eunápolis.'],
+  'eu-002': ['Espaço central requalificado; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.', 'Espaço central requalificado.'],
+  'eu-004': ['Praça pública com intervenções recentes; coordenada conferida no OpenStreetMap, operação deve ser validada localmente.', 'Praça pública com intervenções recentes.'],
+  'eu-005': ['Espaço de bairro em intervenção municipal; endereço e operação ainda pendentes.', 'Espaço de bairro em intervenção municipal.'],
+  'eu-007': ['Praça inaugurada com pista de caminhada de 160 m; validar condição atual.', 'Praça inaugurada com pista de caminhada de 160 m.'],
+  'eu-008': ['Pista de caminhada documentada em restauração, sem quilometragem oficial publicada.', 'Pista de caminhada junto à lagoa e à Academia da Saúde do Dinah Borges.'],
+  'eu-009': ['Feira do Bueiro tradicional; reforma e horário atual precisam de confirmação.', 'Mercado municipal que abriga a tradicional Feira do Bueiro.'],
+  'eu-010': ['Localização secundária por diretório; validar calendário e funcionamento.', 'Feira livre de Eunápolis.'],
+  'eu-011': ['Ponto de cultura com oficinas e vivências; contato prévio recomendado.', 'Ponto de cultura com oficinas e vivências.'],
+  'eu-013': ['Cerca de 6 km demarcados em via de tráfego misto; endpoints e segurança pendentes.', 'Cerca de 6 km demarcados em via de tráfego misto.'],
+  'eu-014': ['Percurso eventual de 2026; não é circuito cotidiano.', 'Percurso de prova do Circuito Sesc de Corridas.'],
+};
+async function ensureCatalogoLimpo() {
+  const versao = '006_catalogo_limpo';
+  const [already] = await q('SELECT version FROM schema_migrations WHERE version = ?', [versao]);
+  if (already) return;
+  await q("UPDATE tags SET status = 'arquivado' WHERE codigo IN ('eu-017','eu-018','eu-019','eu-020') AND status <> 'arquivado' AND id NOT IN (SELECT tag_id FROM carimbos)");
+  for (const [codigo, [antiga, nova]] of Object.entries(NOTAS_LIMPAS)) await q('UPDATE tags SET nota = ? WHERE codigo = ? AND nota = ?', [nova, codigo, antiga]);
+  await q("UPDATE tags SET fonte_mapa = 'Google Maps' WHERE fonte_mapa = 'Google Maps · a validar em campo'");
+  await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
+}
 async function ensureGamificationSchema() {
   await ensureColumn('contas', 'placar_opt_in', 'BOOLEAN NOT NULL DEFAULT FALSE');
   await ensureColumn('contas', 'placar_apelido', 'VARCHAR(30) NULL');
@@ -186,5 +211,6 @@ export async function runMigrations() {
   await ensureSomenteEunapolis();
   await ensureAdminSchema();
   await ensureSemDemonstracao();
+  await ensureCatalogoLimpo();
   await ensureGamificationSchema();
 }
