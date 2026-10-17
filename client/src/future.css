@@ -174,7 +174,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     linear-gradient(var(--red), var(--red)) right bottom / 20px 2px no-repeat,
     linear-gradient(var(--red), var(--red)) right bottom / 2px 20px no-repeat;
 }
-.card, .route-card, .category-card, .point-row, .journey-stage, .achievement, .journey-history-row,
+.card, .route-card, .category-card, .point-row, .achievement,
 .destination-card, .destination-hero, .destination-community, .destination-event-card, .destination-park-card,
 .destination-community-link, .destination-event-route, .stat-card, .filter-select, .search-input {
   background: var(--glass);
@@ -269,7 +269,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .stat-label { color: var(--muted); font-size: 11px; letter-spacing: .1em; font-weight: 600; }
 
 /* Categorias / rotas / ícones */
-.category-symbol, .route-icon, .point-number, .drawer-icon, .journey-step-number, .achievement-seal, .journey-history-number, .history-stamp, .destination-mode-mark {
+.category-symbol, .route-icon, .point-number, .drawer-icon, .achievement-seal, .history-stamp, .destination-mode-mark {
   background: color-mix(in srgb, currentColor 9%, transparent);
   box-shadow: 0 0 16px -6px currentColor;
 }
@@ -350,22 +350,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .real-map .leaflet-popup-content-wrapper, .real-map .leaflet-popup-tip { background: var(--card-strong); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: 0 0 24px -4px var(--glow); }
 .real-map .leaflet-popup-content { color: var(--ink); font-size: 13px; }
 
-/* Jornada */
-.journey-countdown { background: var(--hud), var(--glass); border-left: 1px solid var(--line); border-radius: 18px; }
-.journey-days { color: var(--red); }
-.journey-days strong { font-size: 46px; text-shadow: 0 0 28px var(--glow-red); }
-.journey-days span { font-size: 11px; letter-spacing: .2em; font-weight: 700; }
-.journey-route-head { border: 1px dashed var(--line-strong); border-radius: 12px; background: color-mix(in srgb, var(--blue) 5%, transparent); }
-.journey-route-head p span { color: var(--blue); text-shadow: 0 0 10px var(--glow); }
-.journey-stage { border: 1px solid var(--line); }
-.journey-stage.is-active { border-color: var(--red); box-shadow: 0 0 30px -8px var(--glow-red), var(--shadow); }
-.journey-stage.is-complete { border-color: color-mix(in srgb, var(--green) 70%, transparent); box-shadow: 0 0 26px -10px var(--green), var(--shadow); }
-.journey-stage.is-locked { background: color-mix(in srgb, var(--card) 55%, transparent); opacity: .82; }
-.journey-stage-title h3 { font-size: 14px; }
-.journey-stage-title p, .journey-stage-hint { font-size: 13px; color: var(--muted); }
-.journey-step-number { border: 1px solid currentColor; }
-.journey-history-row small { font-size: 12px; }
-.journey-seal { box-shadow: 0 0 26px -4px var(--glow-red); }
 
 /* Coleção, certificado, histórico */
 .collection-banner { background: color-mix(in srgb, var(--blue) 6%, transparent); border-bottom: 1px solid var(--line); }
@@ -462,7 +446,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .map-warning { font-size: 11px; }
   .destination-card-copy p, .destination-hero-copy p { font-size: 12px; }
   .destination-fact small, .destination-event-route p { font-size: 11px; }
-  .journey-stage-title p, .journey-stage-hint { font-size: 12px; }
   .toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 380px) {

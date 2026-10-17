@@ -1,11 +1,3 @@
-import {
-  createJourneyState,
-  journeyClock,
-  normalizeJourneyState,
-  recordJourneyPoint as recordJourneyPointState,
-  refreshJourneyCycle,
-  startJourneyCycle,
-} from "./journey.js";
 import { findPointByCode } from "./data.js";
 
 const STORAGE_KEY = "mais1km-eunapolis:v4";
@@ -28,7 +20,6 @@ function makeInitialState() {
     history: [],
     account: null,
     session: false,
-    journey: createJourneyState(),
     updatedAt: new Date(now).toISOString(),
   };
 }
@@ -44,8 +35,6 @@ function normalizeState(value) {
   const history = Array.isArray(value.history)
     ? value.history.filter((entry) => entry && typeof entry.pointId === "string" && findPointByCode(entry.pointId) && typeof entry.at === "string").slice(-100)
     : [];
-  // Jornada de Eunápolis: de estados antigos com jornadas por cidade, só a de Eunápolis é aproveitada.
-  const legacyJourney = value.cityId === CITY_ID ? value.journey : value.journeys?.[CITY_ID];
   return {
     version: 4,
     user: { name: String(value.user?.name || "Viajante").slice(0, 36) },
@@ -57,7 +46,6 @@ function normalizeState(value) {
     history,
     account: normalizeAccount(value.account),
     session: !!normalizeAccount(value.account) && value.session === true,
-    journey: normalizeJourneyState(legacyJourney),
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
   };
 }
@@ -99,31 +87,6 @@ export function loadState() {
     return save(makeInitialState());
   }
 }
-
-export function recordJourneyPoint(state, pointId, now = Date.now(), pointCityId = CITY_ID) {
-  const currentJourney = refreshJourneyCycle(state.journey, now);
-  const currentState = currentJourney === state.journey ? state : save({ ...state, journey: currentJourney });
-  const result = recordJourneyPointState(currentState.journey, pointId, pointCityId, now);
-  if (result.journey === currentState.journey) return { ...result, state: currentState };
-  return { ...result, state: save({ ...currentState, journey: result.journey }) };
-}
-
-export function startJourney(state, now = Date.now()) {
-  const priorJourney = state.journey || createJourneyState();
-  const currentJourney = refreshJourneyCycle(priorJourney, now);
-  const currentState = currentJourney === state.journey ? state : save({ ...state, journey: currentJourney });
-  const journey = startJourneyCycle(currentJourney, now);
-  if (journey === currentState.journey) return currentState;
-  return save({ ...currentState, journey });
-}
-
-export function refreshJourney(state, now = Date.now()) {
-  const journey = refreshJourneyCycle(state.journey || createJourneyState(), now);
-  if (journey === state.journey) return state;
-  return save({ ...state, journey });
-}
-
-export { journeyClock };
 
 export function revealPoint(state, pointId) {
   if (state.discovered.includes(pointId)) return state;
@@ -185,7 +148,7 @@ export function updateAccount(state, patch) {
 }
 
 // Carimbos feitos em tags físicas (guardados no servidor) entram na caderneta do aparelho.
-// Cada item: { codigo: "eu-001", at: "2026-10-08T12:00:00.000Z" }. Não duplica e não conta jornada de carimbo anterior ao início do ciclo.
+// Cada item: { codigo: "eu-001", at: "2026-10-08T12:00:00.000Z" }. Não duplica carimbos já guardados.
 export function importServerStamps(state, items) {
   let next = state;
   let imported = 0;
@@ -203,9 +166,6 @@ export function importServerStamps(state, items) {
         .slice(-100),
     };
     imported += 1;
-    if (next.journey.startedAt && ms >= Date.parse(next.journey.startedAt)) {
-      next = recordJourneyPoint(next, id, ms).state;
-    }
   }
   return imported ? { state: save(next), imported } : { state, imported: 0 };
 }

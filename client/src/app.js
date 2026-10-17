@@ -1,5 +1,5 @@
-import { CITY, JOURNEY_DAYS, JOURNEY_STAGES, POINTS, ROUTES, getPoint } from "./data.js";
-import { loadState, refreshJourney, revealPoint, setTheme, startJourney, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount } from "./store.js";
+import { CITY, POINTS, ROUTES, getPoint } from "./data.js";
+import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount } from "./store.js";
 import { renderAuth, validarNome, validarEmail, validarSenha, gerarSenha, senhaConfere } from "./auth.js";
 import { importServerStamps } from "./store.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
@@ -40,7 +40,6 @@ const toastNode = document.getElementById("toast");
 const pageTitles = {
   home: "Caderneta",
   map: "Mapa",
-  journey: "Jornada",
   routes: "Rotas",
   eunapolis: "Eunápolis",
   route: "Página da rota",
@@ -99,7 +98,6 @@ function launchIntro() {
 function render({ preserveFocus = false } = {}) {
   podiumRoot?.unmount();
   podiumRoot = null;
-  state = refreshJourney(state);
   const conectado = isSignedIn(state);
   document.body.classList.toggle("is-auth", !conectado);
   if (!conectado) {
@@ -157,7 +155,7 @@ function showToast(message) {
 }
 
 function isMainView(candidate) {
-  return ["home", "map", "journey", "routes", "collection", "podium", "eunapolis"].includes(candidate);
+  return ["home", "map", "routes", "collection", "podium", "eunapolis"].includes(candidate);
 }
 
 function goToPoint(id) {
@@ -294,11 +292,6 @@ function handleClick(event) {
       if (closedFromMenu) app.focus({ preventScroll: true });
       break;
     }
-    case "start-journey":
-      state = startJourney(state);
-      render();
-      showToast(`Ciclo ${state.journey.cycleNumber} iniciado · ${JOURNEY_DAYS} dias para abrir a próxima cidade.`);
-      break;
     case "print-certificate":
       window.print();
       break;

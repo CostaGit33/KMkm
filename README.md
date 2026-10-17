@@ -46,7 +46,7 @@ Eunápolis é a cidade piloto e a única do projeto: um catálogo de 18 pontos n
 
 - Os 8 pontos do servidor nascem `pendente`: não recebem carimbo nem entram em cards até a validação em campo. Para publicar: `npm --prefix server run pontos -- publicar eu-001 eu-002 ...` (`listar` e `despublicar` também existem).
 - Bancos antigos: a migração `003_somente_eunapolis` (roda uma vez) arquiva rotas e pontos de outras cidades e da rota de demonstração, cancela cards ligados a eles e renomeia a rota piloto para "Eunápolis · Piloto". Carimbos já gravados não são apagados; só deixam de aparecer na caderneta.
-- No aparelho, o estado salvo é migrado para a chave `mais1km-eunapolis:v4`: conta e perfil continuam, pontos de outras cidades são descartados e só a jornada de Eunápolis é aproveitada.
+- No aparelho, o estado salvo é migrado para a chave `mais1km-eunapolis:v4`: conta e perfil continuam e pontos de outras cidades são descartados.
 
 ## Mapa interativo (V8.1)
 
@@ -79,3 +79,9 @@ Em "Progresso da cidade": carimbos conquistados em miniatura (toque abre o ponto
 
 ## Versão de publicação (V8.5)
 Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o carimbo manual sem tag, os marcos simulados da jornada, os carimbos de exemplo pré-preenchidos, o número de caderneta fixo (0042), a turma de teste `PEDAL` (a migração `005_sem_demonstracao` remove a turma de bancos antigos, se não tiver membros) e arquivos de ferramenta externa. O tema escuro é o padrão; o claro só vale quando a pessoa escolhe no menu.
+
+
+## XP, ranking e testes (V8.6)
+- **Jornada removida:** o progresso agora é só XP, níveis (máximo 220 XP: 14 pontos + 4 circuitos), medalhas e ranking.
+- **Ranking:** abas "Este mês" (10 XP por ponto diferente carimbado no mês) e "Geral" (XP permanente, com nível de cada pessoa); top 3 em pódio, posições 4º ao 25º em lista (10 visíveis, "ver mais"), posição própria com quanto falta para subir e vencedores do mês anterior. Empate de XP: vence quem chegou primeiro. Só aparece quem ativa "Participar do pódio público" (apelido).
+- **Testar o pódio sem dados reais:** `node server/scripts/teste-podio.js criar seu@email.com` cria 2 participantes fictícios (Ana e Beto, domínio `@teste.invalid`) e dá 2 carimbos de teste à sua conta; `... limpar` apaga tudo (carimbos de teste ficam marcados em `carimbos.especial = 'teste-podio'`). Rode `limpar` antes de publicar.

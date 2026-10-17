@@ -1,12 +1,10 @@
-import { CITY, CATEGORIES, JOURNEY_DAYS, JOURNEY_STAGES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, getCategory, getPoint } from "./data.js";
-import { journeyClock } from "./journey.js";
+import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, getCategory, getPoint } from "./data.js";
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
 
 const NAV_ITEMS = [
   { id: "home", label: "Caderneta", icon: "▤" },
   { id: "map", label: "Mapa", icon: "⌖" },
-  { id: "journey", label: "Jornada", icon: "➜" },
   { id: "routes", label: "Rotas", icon: "⌁" },
   { id: "collection", label: "Coleção", icon: "✳" },
   { id: "podium", label: "Pódio", icon: "✦" },
@@ -73,7 +71,6 @@ function renderSideDrawer(state, activeView, activeRouteId, open) {
   const explore = [
     drawerLink("Caderneta", "Resumo da cidade", "▤", { view: "home", active: activeView === "home" }),
     drawerLink("Mapa", "Pontos da cidade", "⌖", { view: "map", active: activeView === "map" || activeView === "point" }),
-    drawerLink("Jornada", "Ciclo atual", "➜", { view: "journey", active: activeView === "journey" }),
     drawerLink("Rotas", "Rotas disponíveis", "⌁", { view: "routes", active: activeView === "routes" }),
   ].join("");
   const destinationLink = drawerLink("Guia de Eunápolis", "Dados e referências", "⌖", {
@@ -336,65 +333,6 @@ function renderCollection(state) {
     <div class="section-heading"><div><h2>Histórico</h2><p>Últimos carimbos</p></div></div><article class="card">${historyRows(state, 5)}</article>`;
 }
 
-function renderJourney(state) {
-  const journey = state.journey;
-  const active = journey.status === "active";
-  const clock = journeyClock(journey);
-  const currentIndex = journey.currentStageIndex;
-  const startButton = journey.status === "not-started"
-    ? `<button class="primary-button" type="button" data-action="start-journey">➜ Começar jornada de ${JOURNEY_DAYS} dias</button>`
-    : ["expired", "completed"].includes(journey.status)
-      ? `<button class="primary-button" type="button" data-action="start-journey">➜ Começar novo ciclo</button>`
-      : "";
-  const countdown = active
-    ? `<div class="journey-countdown-grid"><div class="journey-days"><strong>${clock.daysRemaining}</strong><span>dias restantes</span></div><div class="journey-countdown-copy"><span class="eyebrow">Ciclo ${journey.cycleNumber} · encerra em ${formatDate(clock.endsAt, { day: "2-digit", month: "short", year: "numeric" })}</span><p>Você avança cidade por cidade conforme conquista novos marcos.</p>${progressBar({ count: clock.elapsedPercent, total: 100, percent: clock.elapsedPercent }, "ochre", "Tempo do ciclo decorrido")}</div></div>`
-    : journey.status === "completed"
-      ? `<div class="journey-closed"><span class="journey-seal">✓</span><div><strong>Ciclo ${journey.cycleNumber} concluído</strong><p>Você fechou a jornada antes do prazo. As conquistas permanentes continuam na caderneta.</p></div></div>`
-      : journey.status === "expired"
-        ? `<div class="journey-closed"><span class="journey-seal">90</span><div><strong>Ciclo ${journey.cycleNumber} encerrado</strong><p>O tempo terminou; os carimbos e o histórico permanente não foram apagados.</p></div></div>`
-        : `<div class="journey-closed"><span class="journey-seal">90</span><div><strong>Um ciclo no seu tempo</strong><p>O prazo começa quando você iniciar. A caderneta permanente não expira.</p></div></div>`;
-
-  const stages = JOURNEY_STAGES.map((stage, index) => {
-    const earned = journey.progress?.[stage.id] || [];
-    const target = stage.target;
-    const progress = { count: earned.length, total: target, percent: target ? Math.round((earned.length / target) * 100) : 0 };
-    const completed = journey.status !== "not-started" && index < currentIndex;
-    const isCurrent = active && index === currentIndex;
-    const isReady = journey.status === "not-started" && index === 0;
-    const expiredCurrent = journey.status === "expired" && index === currentIndex;
-    const statusText = completed ? "Concluída" : isCurrent ? "Etapa atual" : isReady ? "Pronta para começar" : expiredCurrent ? "Ciclo encerrado" : "Bloqueada";
-    const cssStatus = completed ? "complete" : isCurrent ? "active" : "locked";
-    let details = "<p class=\"journey-stage-hint\">Conclua a etapa anterior para abrir este destino.</p>";
-
-    if (completed) {
-      details = `<div class="progress-meta"><span>Marcos guardados neste ciclo</span><strong>${progress.count}/${progress.total}</strong></div>${progressBar(progress, "green", `Progresso concluído em ${stage.cityName}`)}<p class="journey-stage-hint">Destino registrado no ciclo ${journey.cycleNumber}; a caderneta permanente segue separada.</p>`;
-    } else if (isCurrent && stage.kind === "new-points") {
-      details = `<p class="journey-stage-hint">${stage.target} pontos novos nesta etapa.</p><div class="progress-meta"><span>Progresso</span><strong>${progress.count}/${progress.total}</strong></div>${progressBar(progress, "red", `Novas conquistas em ${stage.cityName}`)}<button class="outline-button journey-map-button" type="button" data-action="switch-view" data-view="map">⌖ Abrir pontos de ${escapeHtml(stage.cityName)}</button>`;
-    } else if (isCurrent && journey.status === "active") {
-      details = `<p class="journey-stage-hint">${escapeHtml(stage.subtitle)}</p>`;
-    } else if (expiredCurrent) {
-      details = `<p class="journey-stage-hint">O ciclo fechou com ${progress.count} de ${progress.total} marcos nesta etapa.</p>${progressBar(progress, "ochre", `Progresso ao encerrar ${stage.cityName}`)}`;
-    } else if (isReady) {
-      details = `<p class="journey-stage-hint">Inicie o ciclo para abrir esta etapa.</p>`;
-    }
-
-    return `<article class="journey-stage is-${cssStatus}" aria-label="${escapeHtml(stage.cityName)}: ${statusText}"><div class="journey-stage-heading"><span class="journey-step-number">${String(index + 1).padStart(2, "0")}</span><div class="journey-stage-title"><span class="eyebrow">Destino ${index + 1}</span><h3>${escapeHtml(stage.cityName)}</h3><p>${escapeHtml(stage.subtitle)}</p></div><span class="status-pill ${completed ? "conquered" : isCurrent ? "discovered" : ""}">${statusText}</span></div><div class="journey-stage-content">${details}</div></article>`;
-  }).join("");
-
-  const history = [...(journey.history || [])].reverse();
-  const historyPanel = history.length
-    ? `<div class="section-heading"><div><h2>Ciclos fechados</h2><p>Um resumo das jornadas anteriores; nada sai da caderneta.</p></div></div><div class="journey-history">${history.map((cycle) => `<article class="journey-history-row"><span class="journey-history-number">#${cycle.cycleNumber}</span><span><strong>${cycle.status === "completed" ? "Jornada concluída" : "Ciclo encerrado"}</strong><small>${formatDate(cycle.startedAt)} — ${formatDate(cycle.closedAt)} · ${cycle.completedStages}/${JOURNEY_STAGES.length} destinos · ${cycle.earnedMilestones} marcos</small></span></article>`).join("")}</div>`
-    : "";
-  const journeyRoute = [...new Set(JOURNEY_STAGES.map((stage) => stage.cityName))].join(" → ");
-
-  return `${pageHead("Jornada", `Ciclo de ${JOURNEY_DAYS} dias`, CITY.name)}
-    <section class="card journey-countdown" aria-label="Prazo da jornada">${countdown}<div class="journey-start-row">${startButton}<span class="small muted">${active ? `${clock.hoursRemaining} h além dos dias exibidos` : "Ciclos separados da coleção permanente"}</span></div></section>
-    <div class="journey-route-head"><span class="eyebrow">Percurso da jornada</span><p>${escapeHtml(journeyRoute)}</p></div>
-    <div class="journey-stages">${stages}</div>
-    <p class="point-warning">Relógio local. A jornada não apaga os carimbos permanentes.</p>
-    ${historyPanel}`;
-}
-
 function renderCertificates(state, requestedRouteId = "") {
   const earned = certificateRoutes(state);
   const route = earned.find((item) => item.id === requestedRouteId) || earned[0];
@@ -419,7 +357,6 @@ export function renderView(state, view, selectedPointId, selectedRouteId, filter
   switch (view) {
     case "podium": return '<div id="gamification-podium-root"></div>';
     case "map": return renderMap(state, filters);
-    case "journey": return renderJourney(state);
     case "routes": return renderRoutes(state);
     case "eunapolis": return renderEunapolis();
     case "route": return renderRouteDetail(state, selectedRouteId);

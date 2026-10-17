@@ -6,6 +6,43 @@ import { calculateLifetimeXP, calculateSeasonXP, getLevelForXP, rankPodiumRows, 
 const FUSO = process.env.APP_TZ || 'America/Bahia';
 const PONTOS_MEDALHAS = [1, 5, 10];
 
+const LIMITE_PADRAO = 10;
+const LIMITE_MAXIMO = 25;
+
+// Só o nome e o ícone do nível são públicos; o ranking geral mostra o nível de cada participante.
+function nivelPublico(xp) {
+  if (xp === null) return null;
+  const { current } = getLevelForXP(xp);
+  return { level: current.level, name: current.name, icon: current.icon };
+}
+
+// Participantes do pódio público (opt-in) com XP e desempate: quem chegou primeiro à pontuação fica na frente.
+// janela = intervalo do mês; sem janela é o ranking geral (XP permanente = pontos + bônus de circuitos já concedidos).
+async function classificar(janela, geral) {
+  const filtro = janela ? 'WHERE criado_em >= ? AND criado_em < ?' : '';
+  const rows = await q(`
+    SELECT a.usuario_id, a.placar_apelido AS alias, COUNT(*) AS unique_points,
+      MAX(f.first_at) AS reached_at, COALESCE(MAX(r.xp), 0) AS bonus_xp
+    FROM contas a
+    JOIN (SELECT usuario_id, tag_id, MIN(criado_em) AS first_at FROM carimbos ${filtro} GROUP BY usuario_id, tag_id) f
+      ON f.usuario_id = a.usuario_id
+    LEFT JOIN (SELECT usuario_id, SUM(xp) AS xp FROM gamificacao_recompensas WHERE tipo = 'rota' GROUP BY usuario_id) r
+      ON r.usuario_id = a.usuario_id
+    WHERE a.placar_opt_in = TRUE AND a.placar_apelido IS NOT NULL AND a.placar_apelido <> ''
+    GROUP BY a.usuario_id, a.placar_apelido
+  `, janela ? [janela.start, janela.end] : []);
+  return rankPodiumRows(rows.map((row) => {
+    const uniquePoints = Number(row.unique_points);
+    return {
+      usuarioId: Number(row.usuario_id),
+      alias: row.alias,
+      uniquePoints,
+      reachedAt: row.reached_at,
+      seasonXP: geral ? calculateLifetimeXP({ uniquePoints }) + Number(row.bonus_xp || 0) : calculateSeasonXP(uniquePoints),
+    };
+  }), { sharedTies: false });
+}
+
 function accountOnly(req, res, next) {
   if (!req.conta || !req.u?.id) return res.status(401).json({ erro: 'sessao_conta_necessaria' });
   next();
@@ -116,39 +153,67 @@ export function gamificacaoRouter({ auth, limit, wrap }) {
   }));
 
   router.get('/podio', wrap(async (req, res) => {
-    const period = mesAtual();
-    const rows = await q(`
-      SELECT a.usuario_id, a.placar_apelido AS alias, COUNT(DISTINCT c.tag_id) AS unique_points
-      FROM contas a
-      JOIN carimbos c ON c.usuario_id = a.usuario_id
-      WHERE a.placar_opt_in = TRUE AND a.placar_apelido IS NOT NULL AND a.placar_apelido <> ''
-        AND c.criado_em >= ? AND c.criado_em < ?
-      GROUP BY a.usuario_id, a.placar_apelido
-      ORDER BY unique_points DESC, alias ASC
-    `, [period.start, period.end]);
-    const ranked = rankPodiumRows(rows.map((row) => ({
-      usuarioId: Number(row.usuario_id),
-      alias: row.alias,
-      uniquePoints: Number(row.unique_points),
-      seasonXP: calculateSeasonXP(Number(row.unique_points)),
-    })));
+    const geral = req.query.periodo === 'geral';
+    const limite = Math.min(LIMITE_MAXIMO, Math.max(3, Number.parseInt(req.query.limite, 10) || LIMITE_PADRAO));
+    const mes = mesAtual();
+    const janela = geral ? null : mes;
+    const ranked = await classificar(janela, geral);
     const [conta] = await q('SELECT placar_opt_in, placar_apelido FROM contas WHERE id = ? AND usuario_id = ?', [req.conta.id, req.u.id]);
-    const [ownScore] = await q(`SELECT COUNT(DISTINCT tag_id) AS unique_points FROM carimbos
-      WHERE usuario_id = ? AND criado_em >= ? AND criado_em < ?`, [req.u.id, period.start, period.end]);
-    const me = ranked.find((row) => row.usuarioId === Number(req.u.id));
+    const optedIn = Boolean(conta?.placar_opt_in);
+
+    // Pontuação própria, mesmo para quem não participa do pódio público.
+    if (geral) await concederCircuitosConcluidos(req.u.id);
+    const [proprio] = await q(`SELECT COUNT(DISTINCT tag_id) AS unique_points FROM carimbos
+      WHERE usuario_id = ?${janela ? ' AND criado_em >= ? AND criado_em < ?' : ''}`,
+    janela ? [req.u.id, janela.start, janela.end] : [req.u.id]);
+    const [bonus] = geral
+      ? await q("SELECT COALESCE(SUM(xp), 0) AS xp FROM gamificacao_recompensas WHERE usuario_id = ? AND tipo = 'rota'", [req.u.id])
+      : [{ xp: 0 }];
+    const uniquePoints = Number(proprio?.unique_points || 0);
+    const myXP = geral ? calculateLifetimeXP({ uniquePoints }) + Number(bonus?.xp || 0) : calculateSeasonXP(uniquePoints);
+    const mine = optedIn ? ranked.find((row) => row.usuarioId === Number(req.u.id)) : null;
+
+    let toNext = null;
+    if (mine && mine.rank > 1) {
+      const above = ranked[mine.rank - 2];
+      const diff = Math.max(0, above.seasonXP - mine.seasonXP);
+      toNext = { rank: above.rank, xp: diff, points: geral ? null : Math.floor(diff / XP_REWARDS.SEASON_POINT) + 1 };
+    }
+
+    const publico = (row) => ({
+      rank: row.rank, alias: row.alias, uniquePoints: row.uniquePoints, xp: row.seasonXP, seasonXP: row.seasonXP,
+      level: nivelPublico(geral ? row.seasonXP : null), isMe: row.usuarioId === Number(req.u.id),
+    });
+    const board = ranked.slice(0, limite).map(publico);
+
+    let previous = null;
+    if (!geral) {
+      const anterior = mesAtual(new Date(mes.start.getTime() - 24 * 60 * 60 * 1000));
+      const antes = (await classificar(anterior, false)).slice(0, 3);
+      if (antes.length) previous = { key: anterior.key, label: anterior.label, leaders: antes.map(({ rank, alias, seasonXP }) => ({ rank, alias, xp: seasonXP })) };
+    }
 
     res.json({
-      period: { key: period.key, label: period.label, start: period.start.toISOString(), end: period.end.toISOString() },
+      scope: geral ? 'geral' : 'mes',
+      period: geral
+        ? { key: 'geral', label: 'Geral', start: null, end: null }
+        : { key: mes.key, label: mes.label, start: mes.start.toISOString(), end: mes.end.toISOString() },
       participants: ranked.length,
       xpPerPoint: XP_REWARDS.SEASON_POINT,
-      leaders: ranked.slice(0, 3).map(({ alias, uniquePoints, seasonXP, rank }) => ({ alias, uniquePoints, seasonXP, rank })),
+      board,
+      leaders: board.slice(0, 3),
       me: {
-        optedIn: Boolean(conta?.placar_opt_in),
+        optedIn,
         alias: conta?.placar_apelido || '',
-        uniquePoints: Number(ownScore?.unique_points || 0),
-        seasonXP: calculateSeasonXP(Number(ownScore?.unique_points || 0)),
-        rank: me?.rank ?? null,
+        uniquePoints,
+        xp: myXP,
+        seasonXP: myXP,
+        rank: mine?.rank ?? null,
+        // Posição que a pessoa teria ao participar (empates ficam atrás de quem chegou primeiro).
+        wouldRank: !optedIn && myXP > 0 ? ranked.filter((row) => row.seasonXP >= myXP).length + 1 : null,
+        toNext,
       },
+      previous,
     });
   }));
 

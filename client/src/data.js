@@ -30,13 +30,6 @@ export const EUNAPOLIS_DESTINATION = {
   ],
 };
 
-export const JOURNEY_DAYS = 90;
-export const JOURNEY_NAME = "Caminhos de Eunápolis";
-
-export const JOURNEY_STAGES = [
-  { id: "eunapolis", cityId: "eunapolis", cityName: "Eunápolis", subtitle: "Abra os caminhos da cidade.", kind: "new-points", target: 2 },
-];
-
 export const POINTS = [
   { id: "EU-001", name: "Praça da Bandeira", categoryIds: ["historia", "cultura"], icon: "✳", x: 42, y: 34, lat: -16.3751286, lng: -39.5881012, mapSource: "OpenStreetMap", note: "Praça de uso cívico em Eunápolis.", hidden: false },
   { id: "EU-002", name: "Praça da Liberdade", categoryIds: ["cultura", "natureza"], icon: "✳", x: 57, y: 28, lat: -16.373437, lng: -39.5905262, mapSource: "OpenStreetMap", note: "Espaço central requalificado.", hidden: false },
