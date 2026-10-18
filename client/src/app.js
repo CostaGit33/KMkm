@@ -26,6 +26,8 @@ let authMessage = "";
 let authDraft = {};
 let profileMessage = null;
 let menuOpen = false;
+// Botão "Mais" do rodapé (ou da lateral no desktop): o que estiver visível recebe o foco ao fechar a folha.
+const focusMais = () => [...document.querySelectorAll('[data-action="toggle-menu"]')].find((el) => el.offsetParent !== null)?.focus({ preventScroll: true });
 let activeMap = null;
 let podiumRoot = null;
 let introHandle = null;
@@ -196,12 +198,12 @@ function handleClick(event) {
       menuOpen = !menuOpen;
       render();
       if (menuOpen) document.querySelector(".drawer-close")?.focus({ preventScroll: true });
-      else document.querySelector('[data-action="toggle-menu"]')?.focus({ preventScroll: true });
+      else focusMais();
       break;
     case "close-menu":
       menuOpen = false;
       render();
-      document.querySelector('[data-action="toggle-menu"]')?.focus({ preventScroll: true });
+      focusMais();
       break;
     case "switch-view": {
       const closedFromMenu = menuOpen;
@@ -346,7 +348,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     menuOpen = false;
     render();
-    document.querySelector('[data-action="toggle-menu"]')?.focus({ preventScroll: true });
+    focusMais();
     return;
   }
   if (event.key !== "Tab") return;

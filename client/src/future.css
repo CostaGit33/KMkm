@@ -641,3 +641,36 @@ button.carta { cursor: pointer; }
 .section-heading h2, .page-title { font-family: var(--display); letter-spacing: .06em; }
 .carta-dialogo { font-family: var(--type); } .carta-info dt { font-family: "Cinzel", serif; letter-spacing: .06em; }
 .carta-frase { font-family: "Cinzel", serif; font-style: normal; }
+
+/* ---------- Rodapé único (V8.9): todas as opções ficam na barra inferior; "Mais" abre uma folha ---------- */
+.topbar { justify-content: center; }
+.topbar .brand { margin-inline: auto; }
+.bottom-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
+.nav-link { min-height: 56px; padding: 6px 2px 7px; display: grid; place-items: center; align-content: center; gap: 3px; text-transform: none; }
+.nav-icon { font-size: 20px; line-height: 1; }
+.nav-label { font-size: 10px; letter-spacing: .02em; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-more[aria-expanded="true"] { color: var(--ink); background: color-mix(in srgb, var(--red) 14%, transparent); }
+
+/* Folha inferior "Mais opções" */
+.side-drawer {
+  inset: auto 0 0 0; width: min(100%, 560px); max-height: 84dvh; height: auto; margin-inline: auto;
+  border: 1px solid var(--line-strong); border-bottom: 0; border-radius: 22px 22px 0 0;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  box-shadow: 0 -18px 60px rgba(0, 0, 0, .55); transform: translate3d(0, 104%, 0);
+}
+.side-drawer.is-open { transform: translate3d(0, 0, 0); }
+.side-drawer::before { content: ""; display: block; width: 42px; height: 4px; margin: 0 auto 10px; border-radius: 99px; background: var(--line-strong); }
+.drawer-footer { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; }
+@media (min-width: 760px) { .side-drawer { inset: auto auto 24px 24px; margin: 0; border-radius: 22px; border-bottom: 1px solid var(--line-strong); width: 380px; } }
+
+/* Marcadores do mapa no padrão das cartas: verde profundo, aro dourado e número em serifa */
+.mk { width: 36px; height: 36px; border: 2px solid #d9a84a; background: #12291f; color: #f4ecd6; box-shadow: 0 0 0 2px #0b1a14, 0 4px 10px rgba(0, 0, 0, .5); }
+.mk b { font-family: "Cinzel", Georgia, serif; font-size: 13px; }
+.mk--available { background: #12291f; }
+.mk--conquered { background: #d9a84a; color: #12291f; border-color: #f4ecd6; }
+.mk--mystery { background: #3a2a12; color: #e5bd52; border-style: double; border-width: 3px; }
+.mk.is-selected { box-shadow: 0 0 0 4px color-mix(in srgb, #d9a84a 45%, transparent), 0 4px 12px rgba(0, 0, 0, .55); }
+.mk.is-field { outline: 2px solid #6fe0a8; border-color: #d9a84a; }
+.mk-ring { border-color: #d9a84a; }
+.map-route { stroke: #d9a84a; }
+.real-map[data-engine="google"] { min-height: 420px; }

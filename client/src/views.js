@@ -52,11 +52,16 @@ function progressBar(progress, color = "red", label = "Progresso") {
   return `<div class="progress-track" role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="0" aria-valuemax="${progress.total}" aria-valuenow="${progress.count}"><div class="progress-fill ${color}" style="width:${progress.percent}%"></div></div>`;
 }
 
-function navLinks(activeView, className = "") {
-  return NAV_ITEMS.map((item) => `
-    <button class="nav-link ${className}" type="button" data-action="switch-view" data-view="${item.id}" aria-current="${activeView === item.id ? "page" : "false"}">
+function navLinks(activeView, menuOpen = false) {
+  const itens = NAV_ITEMS.map((item) => `
+    <button class="nav-link" type="button" data-action="switch-view" data-view="${item.id}" aria-current="${activeView === item.id ? "page" : "false"}">
       <span class="nav-icon" aria-hidden="true">${item.icon}</span><span class="nav-label">${item.label}</span>
     </button>`).join("");
+  const mais = `
+    <button class="nav-link nav-more" type="button" data-action="toggle-menu" aria-controls="app-side-menu" aria-expanded="${menuOpen}" aria-haspopup="dialog" aria-label="Mais opções">
+      <span class="nav-icon" aria-hidden="true">☰</span><span class="nav-label">Mais</span>
+    </button>`;
+  return itens + mais;
 }
 
 function drawerLink(label, description, icon, { action = "switch-view", view = "", id = "", active = false, className = "" } = {}) {
@@ -69,31 +74,21 @@ function drawerLink(label, description, icon, { action = "switch-view", view = "
 }
 
 function renderSideDrawer(state, activeView, activeRouteId, open) {
-  const explore = [
-    drawerLink("Caderneta", "Resumo da cidade", "▤", { view: "home", active: activeView === "home" }),
-    drawerLink("Mapa", "Pontos da cidade", "⌖", { view: "map", active: activeView === "map" || activeView === "point" }),
-    drawerLink("Rotas", "Rotas disponíveis", "⌁", { view: "routes", active: activeView === "routes" }),
-  ].join("");
   const destinationLink = drawerLink("Guia de Eunápolis", "Dados e referências", "⌖", {
-    view: EUNAPOLIS_DESTINATION.id, active: activeView === EUNAPOLIS_DESTINATION.id, className: "drawer-route-link",
+    view: EUNAPOLIS_DESTINATION.id, active: activeView === EUNAPOLIS_DESTINATION.id,
   });
   const personal = [
-    drawerLink("Coleção", "Carimbos e conquistas guardadas", "✳", { view: "collection", active: activeView === "collection" }),
-    drawerLink("Pódio", "Níveis, XP e medalhas", "✦", { view: "podium", active: activeView === "podium" }),
     drawerLink("Certificados", `${certificateRoutes(state).length} rotas concluídas`, "🎖", { action: "open-certificates", active: activeView === "certificates" }),
     drawerLink("Perfil", "Dados, progresso e conta", "◉", { view: "profile", active: activeView === "profile" }),
   ].join("");
   const openClass = open ? "is-open" : "";
   return `<div class="drawer-backdrop ${openClass}" data-action="close-menu" aria-hidden="true"></div>
     <aside class="side-drawer ${openClass}" id="app-side-menu" role="dialog" aria-modal="${open ? "true" : "false"}" aria-labelledby="side-drawer-title" aria-hidden="${open ? "false" : "true"}" ${open ? "" : "inert"}>
-      <header class="drawer-header"><div class="drawer-brand"><img src="/icons/stamp.svg" alt="" width="38" height="38" /><span><small>+1 KM · ${escapeHtml(CITY.name)}</small><strong id="side-drawer-title">Seu caderno</strong></span></div><button class="icon-button drawer-close" type="button" data-action="close-menu" aria-label="Fechar menu"><span aria-hidden="true">×</span></button></header>
+      <header class="drawer-header"><div class="drawer-brand"><img src="/icons/stamp.svg" alt="" width="38" height="38" /><span><small>+1 KM · ${escapeHtml(CITY.name)}</small><strong id="side-drawer-title">Mais opções</strong></span></div><button class="icon-button drawer-close" type="button" data-action="close-menu" aria-label="Fechar menu"><span aria-hidden="true">×</span></button></header>
       <nav class="drawer-navigation" aria-label="Todos os acessos do aplicativo">
-        <p class="drawer-group-title">Explorar</p>${explore}
-        <p class="drawer-group-title">Guia</p>${destinationLink}
-        <p class="drawer-group-title">Sua caderneta</p>${personal}
+        ${destinationLink}${personal}
       </nav>
-      <footer class="drawer-footer"><p class="drawer-group-title">Acessos rápidos</p>
-        <button id="drawer-theme-button" class="drawer-link drawer-utility" type="button" data-action="toggle-theme"><span class="drawer-icon" aria-hidden="true">${state.theme === "dark" ? "☼" : "☾"}</span><span class="drawer-link-copy"><strong>${state.theme === "dark" ? "Usar tema claro" : "Usar tema escuro"}</strong><small>Aparência do aplicativo</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>
+      <footer class="drawer-footer"><button id="drawer-theme-button" class="drawer-link drawer-utility" type="button" data-action="toggle-theme"><span class="drawer-icon" aria-hidden="true">${state.theme === "dark" ? "☼" : "☾"}</span><span class="drawer-link-copy"><strong>${state.theme === "dark" ? "Usar tema claro" : "Usar tema escuro"}</strong><small>Aparência do aplicativo</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>
         ${appInstalado() ? "" : `<button class="drawer-link drawer-utility" type="button" data-action="install-app"><span class="drawer-icon" aria-hidden="true">⇩</span><span class="drawer-link-copy"><strong>Instalar aplicativo</strong><small>Adicionar à tela inicial</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></button>`}
       </footer>
     </aside>`;
@@ -106,20 +101,15 @@ const appInstalado = () => {
 
 export function renderChrome(state, activeView, activeRouteId = "", menuOpen = false) {
   document.documentElement.dataset.theme = state.theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#0e0e0f" : "#f4f4f5");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#0b1a14" : "#f3ead7");
   const logo = `<img class="brand-mark" src="/icons/stamp.svg" alt="" width="42" height="42" />`;
-  const avatar = state.account ? `<button class="icon-button avatar-button" type="button" data-action="switch-view" data-view="profile" aria-label="Meu perfil" title="Meu perfil">${escapeHtml(iniciais(state.account.nome))}</button>` : "";
   document.getElementById("topbar").innerHTML = `
-    <button class="icon-button menu-trigger" type="button" data-action="toggle-menu" aria-label="Abrir menu de navegação" aria-controls="app-side-menu" aria-expanded="${menuOpen}" title="Abrir menu"><span aria-hidden="true">☰</span></button>
     <a class="brand" href="#" data-action="switch-view" data-view="home" aria-label="+1 KM, início">
       ${logo}<span class="brand-copy"><span class="brand-name">+1 KM</span><span class="brand-city">${CITY.name}</span></span>
-    </a>
-    <div class="top-actions">${avatar}
-      <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Alternar tema" title="Alternar tema"><span aria-hidden="true">${state.theme === "dark" ? "☼" : "☾"}</span></button>
-    </div>`;
+    </a>`;
   document.getElementById("drawer-root").innerHTML = renderSideDrawer(state, activeView, activeRouteId, menuOpen);
-  document.getElementById("side-rail").innerHTML = navLinks(activeView);
-  document.getElementById("bottom-nav").innerHTML = navLinks(activeView);
+  document.getElementById("side-rail").innerHTML = navLinks(activeView, menuOpen);
+  document.getElementById("bottom-nav").innerHTML = navLinks(activeView, menuOpen);
 }
 
 function pageHead(kicker, title, subtitle = "") {
@@ -265,7 +255,7 @@ function mapCanvas(state, filters) {
   return `<div class="map-stage"><div class="real-map" id="real-map" role="application" aria-label="Mapa de ${escapeHtml(CITY.name)} com ${mapped.length} pontos localizados"></div><div class="map-hud" id="map-hud"></div></div>
     <div class="map-ui" id="map-ui"></div>
     <div class="map-legend"><span class="legend-item"><i class="legend-dot green"></i> Conquistado</span><span class="legend-item"><i class="legend-dot"></i> Disponível</span><span class="legend-item"><i class="legend-dot ochre"></i> Mistério</span><span class="legend-item"><i class="legend-dot field"></i> Marcado em campo</span></div>
-    <p class="map-source">OpenStreetMap · ${mapped.length - field} do catálogo (a conferir) · ${field} marcados em campo · ${points.length - mapped.length} sem coordenada</p>`;
+    <p class="map-source">Mapa · ${mapped.length - field} do catálogo (a conferir) · ${field} marcados em campo · ${points.length - mapped.length} sem coordenada</p>`;
 }
 function renderMap(state, filters) {
   const filtered = getFilteredPoints(state, filters);

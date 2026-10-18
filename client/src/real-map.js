@@ -1,7 +1,6 @@
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { carregarConfigMapa, createGoogleEngine, createLeafletEngine } from "./map-engines.js";
 import { ROUTES, POINTS } from "./data.js";
-import { ARRIVAL_M, clearMark, directionsUrl, distanceMeters, formatDistance, hasCoords, marksCsv, saveMark } from "./geo.js";
+import { ARRIVAL_M, clearMark, directionsUrl, streetViewUrl, distanceMeters, formatDistance, hasCoords, marksCsv, saveMark } from "./geo.js";
 
 const EUNAPOLIS_VIEW = { center: [-16.3766, -39.5864], zoom: 14 };
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -29,27 +28,14 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
   if (!element) return null;
   const ui = document.getElementById("map-ui");
   const mapConfig = city.mapCenter || EUNAPOLIS_VIEW;
-  const map = L.map(element, { zoomControl: false, scrollWheelZoom: false, minZoom: 10, maxZoom: 18 }).setView(mapConfig.center, mapConfig.zoom);
-  L.control.zoom({ position: "bottomright" }).addTo(map);
-  L.tileLayer("/api/map-tiles/{z}/{x}/{y}.png", {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
-    maxZoom: 19,
-  }).on("tileerror", () => {
-    if (tileWarned) return;
-    tileWarned = true;
-    message.text = "O mapa de fundo não carregou (sem internet ou sem acesso ao serviço de mapas). Os pontos continuam na posição certa.";
-    refresh();
-  }).addTo(map);
   const message = { text: "" };
   let tileWarned = false;
+  let engine = null;
+  let destroyed = false;
   const ordinal = (point) => POINTS.indexOf(point) + 1;
-  const markers = new Map();
   let routeId = "all";
   let selectedId = null;
   let markingId = null; // ponto aguardando um toque no mapa
-  let routeLine = null;
-  let userDot = null;
-  let userRing = null;
   let user = null; // { lat, lng, accuracy }
   let watchId = null;
   let tourTimer = null;
@@ -63,7 +49,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
     return points.find((p) => hasCoords(p) && !p.hidden && statusOf(state, p) !== "conquered" && (!ids || ids.has(p.id)));
   };
 
-  function iconFor(point) {
+  function htmlFor(point) {
     const status = statusOf(state, point);
     const ids = activeIds();
     const dim = ids && !ids.has(point.id) ? " is-dim" : "";
@@ -71,49 +57,44 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
     const sel = selectedId === point.id ? " is-selected" : "";
     const field = point.coordinateKind === "field" ? " is-field" : point.coordinateKind === "area_anchor" ? " is-anchor" : "";
     const label = status === "conquered" ? "✓" : status === "mystery" ? "?" : ordinal(point);
-    return L.divIcon({ className: "mk-wrap", iconSize: [38, 38], iconAnchor: [19, 19], html: `<span class="mk mk--${status}${dim}${next}${sel}${field}"><i class="mk-ring"></i><b>${label}</b></span>` });
-  }
-
-  function addMarker(point) {
-    const marker = L.marker([point.lat, point.lng], { icon: iconFor(point), keyboard: true, title: `${point.id} · ${point.name}`, riseOnHover: true, draggable: false }).addTo(map);
-    marker.on("click", () => select(point.id, { fly: true }));
-    marker.on("dragend", () => {
-      const p = marker.getLatLng();
-      saveMark(point.id, { lat: p.lat, lng: p.lng });
-      message.text = `${point.name}: posição ajustada.`;
-      refresh();
-    });
-    markers.set(point.id, marker);
+    return `<span class="mk-wrap"><span class="mk mk--${status}${dim}${next}${sel}${field}"><i class="mk-ring"></i><b>${label}</b></span></span>`;
   }
 
   function refreshMarkers() {
+    if (!engine) return;
     for (const point of points) {
-      if (!hasCoords(point)) { markers.get(point.id)?.remove(); markers.delete(point.id); continue; }
-      const marker = markers.get(point.id);
-      if (!marker) addMarker(point);
-      else { marker.setLatLng([point.lat, point.lng]); marker.setIcon(iconFor(point)); marker.dragging?.[markingId === point.id ? "enable" : "disable"](); }
+      if (!hasCoords(point)) { engine.removeMarker(point.id); continue; }
+      engine.upsertMarker(point.id, { lat: point.lat, lng: point.lng, html: htmlFor(point), title: `${point.id} · ${point.name}`, draggable: markingId === point.id }, {
+        onClick: () => select(point.id, { fly: true }),
+        onDragEnd: (lat, lng) => {
+          saveMark(point.id, { lat, lng });
+          message.text = `${point.name}: posição ajustada.`;
+          refresh();
+        },
+      });
     }
   }
 
   function drawRoute() {
-    routeLine?.remove(); routeLine = null;
-    if (routeId === "all") return;
+    if (!engine) return;
+    if (routeId === "all") { engine.setRoute(null); return; }
     const route = ROUTES.find((r) => r.id === routeId);
     const coords = (route?.pointIds || []).map((id) => POINTS.find((p) => p.id === id)).filter((p) => p && hasCoords(p)).map((p) => [p.lat, p.lng]);
-    if (coords.length > 1) routeLine = L.polyline(coords, { className: "map-route", weight: 4, opacity: .9, lineJoin: "round" }).addTo(map);
+    engine.setRoute(coords);
   }
 
   function frame() {
+    if (!engine) return;
     const ids = activeIds();
     const pts = points.filter((p) => hasCoords(p) && (!ids || ids.has(p.id)));
-    if (pts.length > 1) map.fitBounds(pts.map((p) => [p.lat, p.lng]), { padding: [40, 40], maxZoom: 16, animate: !reduceMotion() });
-    else if (pts.length === 1) map.setView([pts[0].lat, pts[0].lng], 16, { animate: !reduceMotion() });
+    if (pts.length > 1) engine.fitBounds(pts.map((p) => [p.lat, p.lng]), 16);
+    else if (pts.length === 1) engine.setView(pts[0].lat, pts[0].lng, 16);
   }
 
   function select(id, { fly = false } = {}) {
     selectedId = id;
     const point = POINTS.find((p) => p.id === id);
-    if (fly && point && hasCoords(point)) map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 16), { duration: reduceMotion() ? 0 : 0.9 });
+    if (fly && point && hasCoords(point)) engine?.flyTo(point.lat, point.lng, 16);
     refresh();
   }
 
@@ -135,16 +116,12 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
   }
 
   function locate() {
-    if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; userDot?.remove(); userRing?.remove(); userDot = userRing = null; user = null; arrivedId = null; refresh(); return; }
+    if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; engine?.setUser(null); user = null; arrivedId = null; refresh(); return; }
     if (!navigator.geolocation) { message.text = "Este aparelho não oferece localização."; refresh(); return; }
     message.text = "Procurando sua posição…"; refresh();
     watchId = navigator.geolocation.watchPosition((pos) => {
       user = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
-      if (!userDot) {
-        userRing = L.circle([user.lat, user.lng], { radius: user.accuracy, className: "map-user-ring", weight: 1 }).addTo(map);
-        userDot = L.marker([user.lat, user.lng], { icon: L.divIcon({ className: "mk-wrap", iconSize: [22, 22], iconAnchor: [11, 11], html: '<span class="mk-user"><i></i></span>' }), interactive: false, zIndexOffset: 900 }).addTo(map);
-        map.flyTo([user.lat, user.lng], Math.max(map.getZoom(), 16), { duration: reduceMotion() ? 0 : 1 });
-      } else { userDot.setLatLng([user.lat, user.lng]); userRing.setLatLng([user.lat, user.lng]).setRadius(user.accuracy); }
+      engine?.setUser(user);
       const near = points.filter(hasCoords).map((p) => ({ p, d: distanceMeters(user, p) })).sort((a, b) => a.d - b.d)[0];
       arrivedId = near && near.d <= ARRIVAL_M ? near.p.id : null;
       message.text = "";
@@ -191,6 +168,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
       <div class="map-sheet-actions">
         <button type="button" class="map-btn primary" data-map="open" data-id="${point.id}">${arrived ? "Abrir e carimbar" : "Abrir ficha"}</button>
         ${mapped ? `<a class="map-btn" href="${esc(directionsUrl(point))}" target="_blank" rel="noopener noreferrer">Como chegar</a>` : ""}
+        ${mapped ? `<a class="map-btn" href="${esc(streetViewUrl(point))}" target="_blank" rel="noopener noreferrer">Ver a rua</a>` : ""}
         <button type="button" class="map-btn ${marking ? "on" : ""}" data-map="mark" data-id="${point.id}">${marking ? "Toque no mapa…" : mapped ? "Ajustar posição" : "Marcar no mapa"}</button>
         ${user ? `<button type="button" class="map-btn" data-map="here" data-id="${point.id}">Usar minha posição</button>` : ""}
         ${point.fieldMark ? `<button type="button" class="map-btn" data-map="clear" data-id="${point.id}">Remover marcação</button>` : ""}
@@ -255,27 +233,70 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
   const hudEl = document.getElementById("map-hud");
   hudEl?.addEventListener("click", onHudClick);
 
-  map.on("click", (event) => {
-    if (!markingId) return;
-    const point = POINTS.find((p) => p.id === markingId);
-    saveMark(markingId, { lat: event.latlng.lat, lng: event.latlng.lng });
-    message.text = `${point?.name || "Ponto"} marcado. Arraste o marcador para ajustar ou toque em “Ajustar posição” para terminar.`;
+  function bindEngine() {
+    engine.onClick((lat, lng) => {
+      if (!markingId) return;
+      const point = POINTS.find((p) => p.id === markingId);
+      saveMark(markingId, { lat, lng });
+      message.text = `${point?.name || "Ponto"} marcado. Arraste o marcador para ajustar ou toque em “Ajustar posição” para terminar.`;
+      refresh();
+    });
+    engine.onDragStart(() => { if (tourTimer) stopTour(); });
     refresh();
-  });
-  map.on("dragstart", () => { if (tourTimer) stopTour(); });
+    frame();
+    window.setTimeout(() => engine?.resize(), 0);
+  }
+
+  function startLeaflet() {
+    element.innerHTML = "";
+    engine = createLeafletEngine(element, mapConfig, {
+      onTileError: () => {
+        if (tileWarned) return;
+        tileWarned = true;
+        message.text = "O mapa de fundo não carregou (sem internet ou sem acesso ao serviço de mapas). Os pontos continuam na posição certa.";
+        refresh();
+      },
+    });
+    bindEngine();
+  }
+
+  // Google Maps quando o servidor tem chave configurada; qualquer falha cai no mapa aberto (OpenStreetMap).
+  (async () => {
+    const config = await carregarConfigMapa();
+    if (destroyed) return;
+    if (!config.googleMapsKey) { startLeaflet(); return; }
+    try {
+      engine = await createGoogleEngine(element, mapConfig, {
+        apiKey: config.googleMapsKey, mapId: config.googleMapId, theme: state.theme,
+        onAuthFailure: () => {
+          if (destroyed || engine?.kind !== "google") return;
+          engine.destroy();
+          message.text = "A chave do Google Maps foi recusada. Mostrando o mapa aberto.";
+          startLeaflet();
+        },
+      });
+      if (destroyed) { engine.destroy(); return; }
+      element.dataset.engine = "google";
+      bindEngine();
+    } catch {
+      if (destroyed) return;
+      message.text = "Não consegui carregar o Google Maps. Mostrando o mapa aberto.";
+      startLeaflet();
+    }
+  })();
 
   refresh();
-  frame();
-  window.setTimeout(() => map.invalidateSize(), 0);
 
-  const originalRemove = map.remove.bind(map);
-  map.remove = () => {
-    if (tourTimer) clearTimeout(tourTimer);
-    if (watchId != null) navigator.geolocation.clearWatch(watchId);
-    ui?.removeEventListener("click", onUiClick);
-    ui?.removeEventListener("toggle", onToggle, true);
-    hudEl?.removeEventListener("click", onHudClick);
-    return originalRemove();
+  return {
+    remove() {
+      destroyed = true;
+      if (tourTimer) clearTimeout(tourTimer);
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      ui?.removeEventListener("click", onUiClick);
+      ui?.removeEventListener("toggle", onToggle, true);
+      hudEl?.removeEventListener("click", onHudClick);
+      engine?.destroy();
+      engine = null;
+    },
   };
-  return map;
 }

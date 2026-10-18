@@ -61,6 +61,10 @@ export function directionsUrl(point) {
   return `https://www.google.com/maps/dir/?api=1&destination=${point.lat},${point.lng}&travelmode=walking`;
 }
 
+export function streetViewUrl(point) {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${point.lat},${point.lng}`;
+}
+
 export function marksCsv() {
   const rows = [["codigo", "nome", "latitude", "longitude", "origem", "precisao_m", "marcado_em"]];
   for (const point of POINTS) {

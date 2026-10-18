@@ -95,3 +95,8 @@ Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o ca
 
 ## V8.8 · Coleção de cartas
 Cada ponto publicado é uma carta numerada (personagem, local, categoria, raridade). O primeiro carimbo de rota desbloqueia a carta; voltar ao ponto em 5, 30 e 45 dias evolui o estágio (Descoberta, Reconhecimento, Vínculo, Legado). Seis categorias: Natureza, História, Cultura, Trabalho, Litoral, Mistério. A ilustração final de cada carta vai em `client/public/cartas/` e o nome do arquivo é definido no painel admin (campo "Arte"); sem arquivo, usa-se um desenho gerado. Visual: verde profundo e dourado, fontes Cinzel, Montserrat e Yellowtail.
+
+## V8.9 · Rodapé único e Google Maps
+- **Rodapé:** todas as opções ficam na barra inferior: Caderneta, Mapa, Rotas, Coleção, Pódio e **Mais** (folha com Guia, Certificados, Perfil, tema e instalar). O topo mostra só a marca. No desktop a barra lateral tem os mesmos itens.
+- **Google Maps:** defina `GOOGLE_MAPS_API_KEY` (e, opcionalmente, `GOOGLE_MAP_ID`) nas variáveis de ambiente do serviço (não são argumentos de build). A chave é pública por natureza: no Google Cloud, habilite "Maps JavaScript API" e restrinja a chave aos domínios do app. Sem chave, ou se o Google falhar ou recusar a chave, o app usa o mapa aberto (OpenStreetMap) automaticamente. O servidor entrega a chave em `GET /api/config-mapa`.
+- **Mapa:** marcadores no padrão das cartas (verde e dourado), tipo de mapa (satélite), Street View e link "Ver a rua" em cada ponto, "Como chegar" no Google Maps.

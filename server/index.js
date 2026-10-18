@@ -25,7 +25,7 @@ app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self'; manifest-src 'self'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.ggpht.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://maps.googleapis.com; connect-src 'self' https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; worker-src 'self' blob:; child-src blob:; manifest-src 'self'");
   next();
 });
 app.use(express.json());
@@ -38,6 +38,11 @@ app.use('/api', (req, res, next) => {
 
 const wrap = (f) => (req, res, next) => Promise.resolve(f(req, res, next)).catch(next);
 
+// Chave pública do Google Maps (feita para ficar no navegador: restrinja por domínio no Google Cloud). Sem chave, o app usa o mapa aberto.
+app.get('/api/config-mapa', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ googleMapsKey: process.env.GOOGLE_MAPS_API_KEY || null, googleMapId: process.env.GOOGLE_MAP_ID || null });
+});
 app.get('/api/map-tiles/:z/:x/:y.png', limit({ windowMs: 60 * 1000, max: 120, name: 'map-tile' }), wrap(async (req, res) => {
   const z = Number(req.params.z);
   const x = Number(req.params.x);
