@@ -1,6 +1,7 @@
 import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, getCategory, getPoint } from "./data.js";
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
+import { criaturaSvg, estrelas, rotuloRaridade } from "./criaturas.js";
 
 const NAV_ITEMS = [
   { id: "home", label: "Caderneta", icon: "▤" },
@@ -158,6 +159,16 @@ function historyRows(state, count = 4) {
 // Cards de eventos e patrocínios (vêm do servidor; não alteram a caderneta local nem o certificado das rotas).
 let cartoes = [];
 export function setEventos(lista) { cartoes = Array.isArray(lista) ? lista : []; }
+// Pokédex da conta (vem do servidor): criaturas capturadas e silhuetas das que faltam.
+let colecaoServidor = null;
+export function setColecao(colecao) { colecaoServidor = colecao && Array.isArray(colecao.itens) ? colecao : null; }
+function renderPokedex(state) {
+  if (!colecaoServidor || !colecaoServidor.itens.length || !(state.account && state.session)) return "";
+  const { total, capturadas, itens } = colecaoServidor;
+  const percent = total ? Math.round((capturadas / total) * 100) : 0;
+  const cartas = itens.map((i) => `<li class="criatura-card ${i.capturada ? "capturada" : "bloqueada"} r-${escapeHtml(i.raridade)}" title="${i.capturada ? escapeHtml(i.criatura) : "Encoste na tag deste ponto para capturar"}"><div class="criatura-arte">${criaturaSvg(i.criatura, { raridade: i.raridade, silhueta: !i.capturada, size: 76 })}</div><strong>${i.capturada ? escapeHtml(i.criatura) : "???"}</strong><small>${i.capturada ? `${estrelas(i.raridade)} ${rotuloRaridade(i.raridade)}` : escapeHtml(i.ponto)}</small></li>`).join("");
+  return `<section aria-labelledby="pokedex-title"><div class="section-heading"><div><h2 id="pokedex-title">Pokédex de Eunápolis</h2><p>Cada ponto guarda uma criatura. Capture ao encostar na tag pela primeira vez.</p></div><strong class="route-count">${capturadas}/${total}</strong></div><div class="pokedex-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${capturadas}" aria-label="Criaturas capturadas"><span style="width:${percent}%"></span></div><ul class="pokedex-grid">${cartas}</ul></section>`;
+}
 const ESTADO_CARD = { ao_vivo: ["Ao vivo", "conquered"], em_breve: ["Em breve", "mystery"], encerrado: ["Coleção encerrada", "discovered"] };
 function janelaDoCard(card) {
   const f = (v) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", timeZone: "America/Bahia" }).format(new Date(v));
@@ -171,8 +182,9 @@ function renderCartoes(state) {
     const progress = { count: card.feitos, total: card.total, percent: card.total ? Math.round((card.feitos / card.total) * 100) : 0 };
     const origem = card.patrocinado_por ? `Patrocinado por ${escapeHtml(card.patrocinado_por)}` : (card.tipo === "evento" ? "Evento" : "Campanha");
     const pontos = card.pontos.map((p) => `<li class="evento-ponto ${p.carimbo ? "feito" : ""}"><span aria-hidden="true">${p.carimbo ? "✓" : "○"}</span>${escapeHtml(p.tag_nome)}<span class="sr-only">${p.carimbo ? " carimbado" : " pendente"}</span></li>`).join("");
+    const edicao = card.edicao ? `<p class="evento-edicao"><strong>${card.edicao.numero ? `Seu carimbo nº ${card.edicao.numero}/${card.edicao.tiragem}` : card.edicao.emitidos >= card.edicao.tiragem ? "Edição esgotada" : `Edição numerada · ${card.edicao.tiragem - card.edicao.emitidos} de ${card.edicao.tiragem} disponíveis`}</strong></p>` : "";
     const nota = card.estado === "encerrado" ? "A coleção terminou. Os carimbos que você fez ficam guardados." : card.estado === "em_breve" ? "Os pontos continuam valendo para a rota normal. O carimbo do card começa na data." : "Encoste nos pontos dentro do período: o mesmo toque vale para a rota e para este card.";
-    return `<article class="route-card evento-card ${card.estado}"><div class="route-card-top"><div class="route-info"><p class="evento-origem">${origem}</p><h3 class="route-name">${escapeHtml(card.nome)}</h3><p class="route-subtitle">${janelaDoCard(card)}</p></div><span class="status-pill ${classe}">${rotulo}</span></div>${card.descricao ? `<p class="evento-desc">${escapeHtml(card.descricao)}</p>` : ""}${progressBar(progress, "red", `Carimbos do card ${card.nome}`)}<div class="route-card-foot"><span>${card.feitos}/${card.total} pontos do card</span></div><ul class="evento-pontos">${pontos}</ul><p class="evento-nota">${nota}</p></article>`;
+    return `<article class="route-card evento-card ${card.estado}"><div class="route-card-top"><div class="route-info"><p class="evento-origem">${origem}</p><h3 class="route-name">${escapeHtml(card.nome)}</h3><p class="route-subtitle">${janelaDoCard(card)}</p></div><span class="status-pill ${classe}">${rotulo}</span></div>${card.descricao ? `<p class="evento-desc">${escapeHtml(card.descricao)}</p>` : ""}${edicao}${progressBar(progress, "red", `Carimbos do card ${card.nome}`)}<div class="route-card-foot"><span>${card.feitos}/${card.total} pontos do card</span></div><ul class="evento-pontos">${pontos}</ul><p class="evento-nota">${nota}</p></article>`;
   }).join("");
   return `<section aria-labelledby="eventos-title"><div class="section-heading"><div><h2 id="eventos-title">Eventos e patrocínios</h2><p>Cards com data. Não mudam sua rota nem seus certificados.</p></div></div><div class="evento-lista">${itens}</div></section>`;
 }
@@ -320,6 +332,7 @@ function renderCollection(state) {
   ];
   return `${pageHead("Coleção", "Carimbos", CITY.name)}
     <div class="stats-strip"><div class="stat-card"><span class="stat-value">${state.conquered.length}</span><span class="stat-label">carimbos únicos</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas na coleção</span></div><div class="stat-card"><span class="stat-value">${city.percent}%</span><span class="stat-label">da cidade</span></div></div>
+    ${renderPokedex(state)}
     <div class="collection-grid">${COLLECTIONS.map((collection) => {
       const progress = progressFor(state, collection.pointIds);
       const tiles = collection.pointIds.slice(0, 12).map((id, index) => {
@@ -414,7 +427,8 @@ export function renderProfile(state, mensagem = null) {
       <h2 class="card-title">Excluir conta</h2>
       <p class="small muted">Apaga a conta e todos os carimbos deste aparelho. Não tem como desfazer.</p>
       <button class="danger-button button-full" type="button" data-action="delete-account">Excluir conta e dados</button>
-    </article>`;
+    </article>
+    <p class="small muted legal-links"><a href="/privacidade">Política de Privacidade</a> · <a href="/excluir-conta">Como excluir a conta</a></p>`;
 }
 
 

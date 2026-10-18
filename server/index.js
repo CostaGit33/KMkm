@@ -9,7 +9,8 @@ import { initializeDatabase } from './db/init.js';
 import { inicioDoDiaLocal } from './time.js';
 import { adminRouter, catalogoPublico } from './admin.js';
 import { gamificacaoRouter } from './gamificacao.js';
-import { cartaoAtivoNoPonto, cartoesDaCaderneta, estadoDoCard } from './eventos.js';
+import { cartaoAtivoNoPonto, cartoesDaCaderneta, emitirNumero, estadoDoCard } from './eventos.js';
+import { albumDaPessoa } from './criaturas.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
 
 const JANELA_REPETIDO_MIN = 30;
@@ -21,6 +22,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (req.headers['x-forwarded-proto'] === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
   res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self'; manifest-src 'self'");
@@ -226,6 +228,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   let card = null;
   let cardCarimbo = null;
   let cardRepetido = false;
+  let edicao = null;
   try {
     await connection.beginTransaction();
     // Serializa tentativas simultâneas da mesma conta. Sem esse lock, dois toques
@@ -265,6 +268,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
         cardCarimbo = old[0];
         cardRepetido = true;
       }
+      edicao = await emitirNumero(connection, card, usuario.id);
     }
     await connection.commit();
   } catch (error) {
@@ -306,6 +310,16 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
      WHERE c.usuario_id = ? AND x.rota_id = ? AND c.evento_id IS NULL`,
     [usuario.id, tag.rota_id],
   );
+  // Captura: a primeira vez que a pessoa carimba este ponto (fora de cards) revela a criatura do ponto.
+  const [{ passagens }] = await q('SELECT COUNT(*) AS passagens FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL', [usuario.id, tag.id]);
+  const album = await albumDaPessoa(usuario.id);
+  const criatura = {
+    nome: tag.criatura,
+    raridade: tag.raridade || 'comum',
+    nova: !repetido && Number(passagens) === 1,
+    capturadas: album.capturadas,
+    total: album.total,
+  };
   const [{ hoje }] = await q(
     `SELECT COUNT(*) AS hoje FROM carimbos
      WHERE tag_id = ? AND evento_id IS NULL AND criado_em >= ?`,
@@ -330,6 +344,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
       patrocinado_por: card.tipo === 'patrocinio' && card.patrocinador ? card.patrocinador : null,
       fim_em: card.fim_em,
       repetido: cardRepetido,
+      edicao,
       carimbo: {
         ...cardCarimbo,
         tag_nome: tag.nome,
@@ -339,6 +354,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
         cor: tag.cor,
       },
     } : null,
+    criatura,
     hoje: Number(hoje),
     turma,
     guardiao: await guardiao(tag.id),
@@ -362,16 +378,25 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   const [liga] = await q('SELECT 1 FROM evento_tags WHERE evento_id = ? AND tag_id = ?', [card.id, tag.id]);
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
   let repetido = false;
-  let id;
+  let edicao = null;
+  const connection = await pool.getConnection();
   try {
-    const [ins] = await pool.query('INSERT INTO carimbos (usuario_id, tag_id, seed, evento_id) VALUES (?, ?, ?, ?)', [req.u.id, tag.id, crypto.randomInt(2 ** 31), card.id]);
-    id = ins.insertId;
+    await connection.beginTransaction();
+    await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [req.u.id]);
+    try {
+      await connection.query('INSERT INTO carimbos (usuario_id, tag_id, seed, evento_id) VALUES (?, ?, ?, ?)', [req.u.id, tag.id, crypto.randomInt(2 ** 31), card.id]);
+    } catch (error) {
+      if (error?.code !== 'ER_DUP_ENTRY') throw error;
+      repetido = true;
+    }
+    edicao = await emitirNumero(connection, card, req.u.id);
+    await connection.commit();
   } catch (error) {
-    if (error?.code !== 'ER_DUP_ENTRY') throw error;
-    repetido = true;
-  }
+    await connection.rollback();
+    throw error;
+  } finally { connection.release(); }
   const [carimbo] = await q('SELECT * FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id = ?', [req.u.id, tag.id, card.id]);
-  res.json({ repetido, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, cor: tag.cor } });
+  res.json({ repetido, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, cor: tag.cor } });
 }));
 
 app.get('/api/caderneta', auth, wrap(async (req, res) => {
@@ -426,6 +451,7 @@ app.get('/api/caderneta', auth, wrap(async (req, res) => {
   res.json({
     usuario: { apelido: req.u.apelido },
     eventos: await cartoesDaCaderneta(req.u.id),
+    colecao: await albumDaPessoa(req.u.id),
     rotas: Object.values(rotas).map((rota) => ({
       ...rota,
       completa: rota.pontos.every((ponto) => ponto.carimbo),
@@ -469,6 +495,22 @@ app.get('/api/saude', wrap(async (_req, res) => {
   await q('SELECT 1 AS ok');
   res.json({ ok: true, banco: 'ok' });
 }));
+
+// Páginas públicas exigidas pela Google Play: política de privacidade e instruções de exclusão de conta.
+// O e-mail de contato vem da variável CONTATO_EMAIL (não fica escrito no código nem no repositório).
+const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
+const DATA_POLITICA = '18 de outubro de 2026';
+function paginaPublica(arquivo) {
+  return (_req, res) => {
+    const contato = process.env.CONTATO_EMAIL || 'o contato informado na ficha do app na loja (defina CONTATO_EMAIL no servidor)';
+    const html = fs.readFileSync(path.join(dirPaginas, arquivo), 'utf8').replaceAll('{{CONTATO}}', contato.replace(/[<>&]/g, '')).replaceAll('{{DATA}}', DATA_POLITICA);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(html);
+  };
+}
+app.get(['/privacidade', '/privacidade/'], paginaPublica('privacidade.html'));
+app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
 
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {

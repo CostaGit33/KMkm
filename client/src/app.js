@@ -4,7 +4,7 @@ import { renderAuth, validarNome, validarEmail, validarSenha, gerarSenha, senhaC
 import { importServerStamps } from "./store.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
 import { applyFieldMarks } from "./geo.js";
-import { setEventos, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
+import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
 import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
 import { startIntro } from "./intro.js";
@@ -232,7 +232,7 @@ function handleClick(event) {
     case "logout":
       sairContaServidor().catch(() => {});
       state = signOut(state);
-      cartoesAtuais = []; setEventos([]);
+      cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
       view = "home";
       authMessage = "";
       authDraft = {};
@@ -245,7 +245,7 @@ function handleClick(event) {
           // Sem internet não dá para limpar o servidor: a pessoa decide se apaga só o aparelho, sabendo disso.
           if (!servidorLimpo && !window.confirm("Sem conexão com o servidor. Apagar só os dados deste aparelho? Os carimbos de tags guardados no servidor continuam lá até você apagar a conta com internet.")) return;
           state = resetLocalState();
-          cartoesAtuais = []; setEventos([]);
+          cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
           view = "home";
           introDone = false;
           authMessage = "";
@@ -497,6 +497,7 @@ app.addEventListener("submit", handleSubmit);
 // Carimbos de tags físicas (no servidor) entram na caderneta: ao abrir, ao voltar para o app e ao entrar na conta.
 let sincronizando = false;
 let cartoesAtuais = [];
+let colecaoAtual = null;
 let ultimaSincronizacao = 0;
 async function sincronizarComServidor() {
   if (sincronizando || !isSignedIn(state) || Date.now() - ultimaSincronizacao < 15000) return;
@@ -507,7 +508,7 @@ async function sincronizarComServidor() {
     } catch (error) {
       if (error.status === 401) {
         state = signOut(state);
-      cartoesAtuais = []; setEventos([]);
+      cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
         authMessage = "Sua sessão expirou. Entre novamente.";
         render();
         return;
@@ -520,7 +521,10 @@ async function sincronizarComServidor() {
     const anteriores = JSON.stringify(cartoesAtuais);
     cartoesAtuais = caderneta.eventos;
     setEventos(cartoesAtuais);
-    if (JSON.stringify(cartoesAtuais) !== anteriores) render();
+    const colecaoAntes = JSON.stringify(colecaoAtual);
+    colecaoAtual = caderneta.colecao;
+    setColecao(colecaoAtual);
+    if (JSON.stringify(cartoesAtuais) !== anteriores || JSON.stringify(colecaoAtual) !== colecaoAntes) render();
     const jaConquistados = new Set(state.conquered);
     const resultado = importServerStamps(state, itens);
     if (resultado.imported > 0) {

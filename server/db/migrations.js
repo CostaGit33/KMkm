@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { q } from './database.js';
+import { atribuirCriaturas } from '../criaturas.js';
 
 const dir = fileURLToPath(new URL('./migrations/', import.meta.url));
 const databaseName = new URL(process.env.DATABASE_URL || 'mysql://caderneta:caderneta@127.0.0.1:3306/caderneta').pathname.slice(1);
@@ -196,6 +197,25 @@ async function ensureGamificationSchema() {
     await q('CREATE INDEX idx_carimbos_gamificacao_data ON carimbos (criado_em, usuario_id, tag_id)');
   }
 }
+// Pokédex (criatura e raridade por ponto) e edição numerada (tiragem e números emitidos por card).
+// O número guarda a pessoa com SET NULL: excluir a conta anonimiza a linha, mas o número nunca é reemitido.
+async function ensureColecaoEdicaoSchema() {
+  await ensureColumn('tags', 'criatura', 'VARCHAR(60) NULL');
+  await ensureColumn('tags', 'raridade', 'VARCHAR(12) NULL');
+  await ensureColumn('eventos', 'tiragem', 'INT UNSIGNED NULL');
+  await ensureColumn('eventos', 'emitidos', 'INT UNSIGNED NOT NULL DEFAULT 0');
+  await q(`CREATE TABLE IF NOT EXISTS edicao_numeros (
+    evento_id INT NOT NULL,
+    numero INT UNSIGNED NOT NULL,
+    usuario_id INT NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (evento_id, numero),
+    UNIQUE KEY uq_edicao_evento_usuario (evento_id, usuario_id),
+    CONSTRAINT edicao_numeros_evento_fk FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE,
+    CONSTRAINT edicao_numeros_usuario_fk FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+  )`);
+  await atribuirCriaturas();
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
@@ -213,4 +233,5 @@ export async function runMigrations() {
   await ensureSemDemonstracao();
   await ensureCatalogoLimpo();
   await ensureGamificationSchema();
+  await ensureColecaoEdicaoSchema();
 }

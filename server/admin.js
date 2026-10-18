@@ -5,6 +5,7 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { pool, q } from './db/database.js';
 import { instanteLocal } from './time.js';
+import { RARIDADES, atribuirCriaturas } from './criaturas.js';
 import { MAX_PONTOS_PATROCINIO, MIN_PONTOS_PATROCINIO, TIPOS, conflitosDeJanela, relatorioAgregado } from './eventos.js';
 
 const FUSO = process.env.APP_TZ || 'America/Bahia';
@@ -52,6 +53,8 @@ function dadosDoPonto(body) {
     endereco: opcional(body.endereco, 200),
     nota: opcional(body.nota, 400),
     fonte_mapa: opcional(body.fonte_mapa, 80),
+    criatura: opcional(body.criatura, 60),
+    raridade: RARIDADES.includes(body.raridade) ? body.raridade : null,
     lat,
     lng,
   };
@@ -103,6 +106,8 @@ async function validarEvento(body, { ignorarId = 0, soTexto = false } = {}) {
   if (fim <= inicio) falha(400, 'fim_antes_do_inicio');
   const codigos = [...new Set((Array.isArray(body.codigos) ? body.codigos : []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))];
   if (!codigos.length) falha(400, 'pontos_obrigatorios');
+  const tiragemBruta = body.tiragem === undefined || body.tiragem === null || String(body.tiragem).trim() === '' ? null : Number(body.tiragem);
+  if (tiragemBruta !== null && (!Number.isInteger(tiragemBruta) || tiragemBruta < 1 || tiragemBruta > 100000)) falha(400, 'tiragem_invalida', { minimo: 1, maximo: 100000 });
   const patrocinador = texto(body.patrocinador, 120);
   if (tipo === 'patrocinio') {
     if (codigos.length < MIN_PONTOS_PATROCINIO || codigos.length > MAX_PONTOS_PATROCINIO) falha(400, 'pontos_patrocinio_fora_da_faixa', { minimo: MIN_PONTOS_PATROCINIO, maximo: MAX_PONTOS_PATROCINIO, recebidos: codigos.length });
@@ -115,7 +120,7 @@ async function validarEvento(body, { ignorarId = 0, soTexto = false } = {}) {
   if (body.publicar && fechados.length) falha(409, 'ponto_nao_publicado', { codigos: fechados });
   const conflitos = await conflitosDeJanela(tags.map((t) => t.id), inicio, fim, ignorarId);
   if (conflitos.length) falha(409, 'conflito_de_janela', { conflitos: conflitos.map((c) => `${c.slug} (${c.codigo})`) });
-  return { slug, nome, tipo, descricao, patrocinador, inicio, fim, tags, codigos };
+  return { slug, nome, tipo, descricao, patrocinador, inicio, fim, tags, codigos, tiragem: tiragemBruta };
 }
 
 async function gravarPatrocinador(conn, nome) {
@@ -165,12 +170,12 @@ export function adminRouter({ limit, wrap }) {
   // Tudo que as telas de catálogo precisam, numa chamada só.
   router.get('/dados', h(async (_req, res) => {
     const rotas = await q(`SELECT r.id, r.nome, r.tipo, r.cor, r.km, r.status, r.subtitulo, (SELECT COUNT(*) FROM tags t WHERE t.rota_id = r.id) AS pontos FROM rotas r ORDER BY r.id`);
-    const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa,
+    const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.criatura, t.raridade,
       t.rota_id, (SELECT COUNT(*) FROM carimbos c WHERE c.tag_id = t.id) AS carimbos, (SELECT COUNT(*) FROM evento_tags et WHERE et.tag_id = t.id) AS eventos
       FROM tags t ORDER BY t.rota_id, t.ordem, t.id`);
     const circuitos = await q('SELECT id, slug, nome, subtitulo, icone, cor, ordem, status FROM circuitos ORDER BY ordem, id');
     const ligacoes = await q('SELECT cp.circuito_id, t.codigo FROM circuito_pontos cp JOIN tags t ON t.id = cp.tag_id ORDER BY cp.circuito_id, cp.ordem');
-    const eventos = await q(`SELECT e.id, e.slug, e.nome, e.tipo, e.descricao, e.status, e.inicio_em, e.fim_em, p.nome AS patrocinador,
+    const eventos = await q(`SELECT e.id, e.slug, e.nome, e.tipo, e.descricao, e.status, e.inicio_em, e.fim_em, e.tiragem, e.emitidos, p.nome AS patrocinador,
       (SELECT COUNT(*) FROM carimbos c WHERE c.evento_id = e.id) AS carimbos FROM eventos e LEFT JOIN patrocinadores p ON p.id = e.patrocinador_id ORDER BY e.inicio_em DESC, e.id DESC`);
     const ev = await q('SELECT et.evento_id, t.codigo FROM evento_tags et JOIN tags t ON t.id = et.tag_id ORDER BY t.ordem');
     const patrocinadores = await q('SELECT p.id, p.nome, (SELECT COUNT(*) FROM eventos e WHERE e.patrocinador_id = p.id) AS eventos FROM patrocinadores p ORDER BY p.nome');
@@ -184,7 +189,7 @@ export function adminRouter({ limit, wrap }) {
         categorias: String(p.categorias || '').split(',').filter(Boolean), carimbos: Number(p.carimbos), eventos: Number(p.eventos),
       })),
       circuitos: circuitos.map((c) => ({ ...c, codigos: ligacoes.filter((l) => l.circuito_id === c.id).map((l) => l.codigo) })),
-      eventos: eventos.map((e) => ({ ...e, carimbos: Number(e.carimbos), codigos: ev.filter((x) => x.evento_id === e.id).map((x) => x.codigo) })),
+      eventos: eventos.map((e) => ({ ...e, tiragem: e.tiragem == null ? null : Number(e.tiragem), emitidos: Number(e.emitidos), carimbos: Number(e.carimbos), codigos: ev.filter((x) => x.evento_id === e.id).map((x) => x.codigo) })),
       patrocinadores: patrocinadores.map((p) => ({ ...p, eventos: Number(p.eventos) })),
     });
   }));
@@ -201,10 +206,11 @@ export function adminRouter({ limit, wrap }) {
     try {
       await tx(async (c) => {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
-        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto]);
+        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto, criatura, raridade)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto, dados.criatura, dados.raridade]);
       });
+      await atribuirCriaturas();
     } catch (error) {
       if (error?.code === 'ER_DUP_ENTRY') falha(409, 'codigo_ja_existe');
       throw error;
@@ -228,8 +234,8 @@ export function adminRouter({ limit, wrap }) {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
         ordem = prox;
       }
-      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ? WHERE id = ?`,
-        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, tag.id]);
+      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ?, criatura = COALESCE(?, criatura), raridade = COALESCE(?, raridade) WHERE id = ?`,
+        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, dados.criatura, dados.raridade, tag.id]);
       if (rotaId !== tag.rota_id) await renumerar(c, tag.rota_id);
     });
     await registrar(req, 'ponto.editar', tag.codigo, dados.nome);
@@ -384,8 +390,8 @@ export function adminRouter({ limit, wrap }) {
     try {
       await tx(async (c) => {
         const patrocinadorId = v.tipo === 'patrocinio' ? await gravarPatrocinador(c, v.patrocinador) : null;
-        const [r] = await c.query('INSERT INTO eventos (slug, nome, tipo, descricao, patrocinador_id, inicio_em, fim_em, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [v.slug, v.nome, v.tipo, v.descricao, patrocinadorId, v.inicio, v.fim, req.body.publicar ? 'publicado' : 'rascunho']);
+        const [r] = await c.query('INSERT INTO eventos (slug, nome, tipo, descricao, patrocinador_id, inicio_em, fim_em, tiragem, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [v.slug, v.nome, v.tipo, v.descricao, patrocinadorId, v.inicio, v.fim, v.tiragem, req.body.publicar ? 'publicado' : 'rascunho']);
         for (const t of v.tags) await c.query('INSERT INTO evento_tags (evento_id, tag_id) VALUES (?, ?)', [r.insertId, t.id]);
       });
     } catch (error) {
@@ -409,7 +415,7 @@ export function adminRouter({ limit, wrap }) {
     const v = await validarEvento({ ...req.body, slug: ev.slug, publicar: ev.status === 'publicado' }, { ignorarId: ev.id });
     await tx(async (c) => {
       const patrocinadorId = v.tipo === 'patrocinio' ? await gravarPatrocinador(c, v.patrocinador) : null;
-      await c.query('UPDATE eventos SET nome = ?, tipo = ?, descricao = ?, patrocinador_id = ?, inicio_em = ?, fim_em = ? WHERE id = ?', [v.nome, v.tipo, v.descricao, patrocinadorId, v.inicio, v.fim, ev.id]);
+      await c.query('UPDATE eventos SET nome = ?, tipo = ?, descricao = ?, patrocinador_id = ?, inicio_em = ?, fim_em = ?, tiragem = ? WHERE id = ?', [v.nome, v.tipo, v.descricao, patrocinadorId, v.inicio, v.fim, v.tiragem, ev.id]);
       await c.query('DELETE FROM evento_tags WHERE evento_id = ?', [ev.id]);
       for (const t of v.tags) await c.query('INSERT INTO evento_tags (evento_id, tag_id) VALUES (?, ?)', [ev.id, t.id]);
     });

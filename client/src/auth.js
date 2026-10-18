@@ -76,6 +76,7 @@ export function renderAuth({ temConta = false, mensagem = "", emailSugerido = ""
       ${mensagem ? `<p class="auth-error" role="alert">${esc(mensagem)}</p>` : ""}
       <button class="primary-button button-full" type="submit">${criar ? "Criar conta" : "Entrar"}</button>
     </form>
+    <p class="small muted legal-links">Ao continuar você concorda com a <a href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
     ${criar ? "" : `<div class="auth-foot"><p class="small muted">Esqueceu a senha? Por enquanto não há recuperação. A única saída é excluir a conta deste aparelho, o que apaga os carimbos.</p><button class="text-link" type="button" data-action="delete-account">Excluir conta deste aparelho</button></div>`}
   </section>`;
 }

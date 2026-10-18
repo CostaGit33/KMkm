@@ -32,6 +32,22 @@ export async function cartaoAtivoNoPonto(conn, tagId) {
   return rows[0] || null;
 }
 
+// Edição numerada: a pessoa recebe, uma única vez por card, o próximo número da tiragem (nº N/tiragem).
+// Roda dentro da transação do toque. A linha do card é travada, então dois toques ao mesmo tempo nunca
+// recebem o mesmo número nem passam da tiragem. Devolve null quando o card não é numerado.
+export async function emitirNumero(conn, card, usuarioId) {
+  const tiragem = Number(card?.tiragem || 0);
+  if (!tiragem) return null;
+  const [[ev]] = await conn.query('SELECT id, emitidos FROM eventos WHERE id = ? FOR UPDATE', [card.id]);
+  const [[ja]] = await conn.query('SELECT numero FROM edicao_numeros WHERE evento_id = ? AND usuario_id = ?', [card.id, usuarioId]);
+  if (ja) return { numero: Number(ja.numero), tiragem, nova: false, esgotada: Number(ev.emitidos) >= tiragem };
+  if (Number(ev.emitidos) >= tiragem) return { numero: null, tiragem, nova: false, esgotada: true };
+  const numero = Number(ev.emitidos) + 1;
+  await conn.query('INSERT INTO edicao_numeros (evento_id, numero, usuario_id) VALUES (?, ?, ?)', [card.id, numero, usuarioId]);
+  await conn.query('UPDATE eventos SET emitidos = ? WHERE id = ?', [numero, card.id]);
+  return { numero, tiragem, nova: true, esgotada: numero >= tiragem };
+}
+
 // Já existe outro card (ativo ou futuro, não cancelado) nesses pontos dentro da janela?
 export async function conflitosDeJanela(tagIds, inicio, fim, ignorarId = 0) {
   if (!tagIds.length) return [];
@@ -48,7 +64,7 @@ export async function conflitosDeJanela(tagIds, inicio, fim, ignorarId = 0) {
 // Cards da caderneta da pessoa: publicados; os encerrados só aparecem se ela tem carimbo neles.
 export async function cartoesDaCaderneta(usuarioId) {
   const cards = await q(
-    `SELECT e.id, e.slug, e.nome, e.tipo, e.descricao, e.inicio_em, e.fim_em, e.status, p.nome AS patrocinador
+    `SELECT e.id, e.slug, e.nome, e.tipo, e.descricao, e.inicio_em, e.fim_em, e.status, e.tiragem, e.emitidos, p.nome AS patrocinador
      FROM eventos e LEFT JOIN patrocinadores p ON p.id = e.patrocinador_id
      WHERE e.status = 'publicado' ORDER BY e.inicio_em DESC, e.id DESC`,
   );
@@ -63,6 +79,7 @@ export async function cartoesDaCaderneta(usuarioId) {
      WHERE et.evento_id IN (${marks}) ORDER BY et.evento_id, t.ordem`,
     [usuarioId, ...ids],
   );
+  const numeros = await q(`SELECT evento_id, numero FROM edicao_numeros WHERE usuario_id = ? AND evento_id IN (${marks})`, [usuarioId, ...ids]);
   const agora = new Date();
   const saida = [];
   for (const card of cards) {
@@ -91,6 +108,11 @@ export async function cartoesDaCaderneta(usuarioId) {
       feitos,
       total: lista.length,
       pontos: lista,
+      edicao: card.tiragem ? {
+        tiragem: Number(card.tiragem),
+        emitidos: Number(card.emitidos),
+        numero: numeros.find((n) => n.evento_id === card.id)?.numero ?? null,
+      } : null,
     });
   }
   return saida;
@@ -101,7 +123,7 @@ const limitar = (n) => (n > 0 && n < MIN_RELATORIO ? `<${MIN_RELATORIO}` : n);
 // Relatório agregado: sem nome, apelido, e-mail ou id de pessoa. Contagens pequenas são ocultadas.
 export async function relatorioAgregado(slug, fuso = 'America/Bahia') {
   const [card] = await q(
-    `SELECT e.id, e.slug, e.nome, e.tipo, e.inicio_em, e.fim_em, e.status, p.nome AS patrocinador
+    `SELECT e.id, e.slug, e.nome, e.tipo, e.inicio_em, e.fim_em, e.status, e.tiragem, e.emitidos, p.nome AS patrocinador
      FROM eventos e LEFT JOIN patrocinadores p ON p.id = e.patrocinador_id WHERE e.slug = ?`,
     [slug],
   );
@@ -128,6 +150,7 @@ export async function relatorioAgregado(slug, fuso = 'America/Bahia') {
   );
   return {
     evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinador: card.patrocinador, inicio_em: card.inicio_em, fim_em: card.fim_em, status: card.status },
+    edicao: card.tiragem ? { tiragem: Number(card.tiragem), emitidos: Number(card.emitidos), esgotada: Number(card.emitidos) >= Number(card.tiragem) } : null,
     minimo_para_exibir: MIN_RELATORIO,
     carimbos: limitar(Number(tot.carimbos)),
     pessoas: limitar(Number(tot.pessoas)),

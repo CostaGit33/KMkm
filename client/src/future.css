@@ -569,3 +569,29 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .mini-dot-key.mystery { background: var(--ochre); }
 .mini-map-note { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .home-stamp, .mini-dot { transition: none !important; } }
+
+/* Pokédex de Eunápolis, captura no toque e edição numerada */
+.pokedex-barra { height: 8px; border-radius: 99px; background: var(--card-strong); overflow: hidden; margin: 4px 0 14px; }
+.pokedex-barra span { display: block; height: 100%; background: var(--blue); border-radius: inherit; transition: width .4s ease; }
+.pokedex-grid { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; }
+.criatura-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 6px 12px; border: 1px solid var(--rule); border-radius: 14px; background: var(--card); min-width: 0; }
+.criatura-card strong { font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; }
+.criatura-card small { font-size: 11px; color: var(--muted); line-height: 1.25; }
+.criatura-card.bloqueada { opacity: .72; border-style: dashed; }
+.criatura-card.r-raro.capturada { border-color: #4f93d8; }
+.criatura-card.r-epico.capturada { border-color: #8f6be0; }
+.criatura-card.r-lendario.capturada { border-color: #d9a21f; box-shadow: 0 0 0 1px #d9a21f55; }
+.criatura-arte { width: 76px; height: 76px; display: grid; place-items: center; }
+.tag-criatura { text-align: center; }
+.tag-criatura-arte { display: grid; place-items: center; margin: 8px 0 4px; }
+.tag-criatura.nova { border-color: var(--blue); animation: criatura-pop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.tag-criatura.nova .eyebrow { color: var(--blue); }
+@keyframes criatura-pop { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+.tag-edicao { margin: 10px auto 2px; padding: 10px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--card-strong); display: grid; gap: 2px; text-align: center; }
+.tag-edicao strong { font-size: 20px; letter-spacing: .01em; }
+.tag-edicao small { color: var(--muted); }
+.tag-edicao.esgotada strong { font-size: 16px; color: var(--muted); }
+.evento-edicao { margin: 8px 0 2px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .tag-criatura.nova { animation: none; } .pokedex-barra span { transition: none; } }
+.legal-links { text-align: center; margin: 18px 0 4px; } .legal-links a { color: var(--blue); }
+.tag-criatura .outline-button { margin-top: 14px; }

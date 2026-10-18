@@ -1,6 +1,7 @@
 import { api, entrar, token } from './api.js';
 import { findPointByCode } from './data.js';
 import { installInk, stampHtml } from './stamp-kit.js';
+import { criaturaSvg, estrelas, rotuloRaridade } from './criaturas.js';
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 // Se o app já tem conta neste aparelho, o apelido vem preenchido (um toque para carimbar).
@@ -31,8 +32,20 @@ function cartaoEvento(result, code) {
   if (!ev) return '';
   const point = findPoint(code, { carimbo: ev.carimbo });
   const marca = stampHtml(point, ev.carimbo?.ordem || 1, { entry: { at: ev.carimbo?.criado_em || new Date().toISOString() }, size: 170, plus: true });
+  const ed = ev.edicao;
+  const numero = ed ? `<div class="tag-edicao ${ed.numero ? '' : 'esgotada'}" role="status"><strong>${ed.numero ? `Carimbo nº ${ed.numero}/${ed.tiragem}` : 'Edição esgotada'}</strong><small>${ed.numero ? (ed.nova ? 'Número só seu, em ordem de chegada.' : 'Este é o seu número nesta edição.') : `Os ${ed.tiragem} números já foram entregues. Seu carimbo de visita continua valendo.`}</small></div>` : '';
   const origem = ev.patrocinado_por ? `Patrocinado por ${escapeHtml(ev.patrocinado_por)}` : 'Evento';
-  return `<article class="card tag-card tag-evento"><p class="eyebrow">${origem}</p><h2 class="page-title">${escapeHtml(ev.nome)}</h2><div class="tag-stamp">${marca}</div><p class="page-subtitle">${ev.repetido ? 'Este ponto já está no seu card.' : 'Carimbo extra do card. Ele fica guardado na sua caderneta, separado da rota.'}</p></article>`;
+  return `<article class="card tag-card tag-evento"><p class="eyebrow">${origem}</p><h2 class="page-title">${escapeHtml(ev.nome)}</h2><div class="tag-stamp">${marca}</div>${numero}<p class="page-subtitle">${ev.repetido ? 'Este ponto já está no seu card.' : 'Carimbo extra do card. Ele fica guardado na sua caderneta, separado da rota.'}</p></article>`;
+}
+
+// Captura estilo Pokédex: a primeira passagem por um ponto revela a criatura dele.
+function cartaoCriatura(result) {
+  const c = result.criatura;
+  if (!c?.nome) return '';
+  const arte = criaturaSvg(c.nome, { raridade: c.raridade, size: 150 });
+  const progresso = `${c.capturadas} de ${c.total} criaturas na sua Pokédex`;
+  if (!c.nova) return `<article class="card tag-card tag-criatura"><div class="tag-criatura-arte">${arte}</div><p class="eyebrow">Criatura deste ponto</p><h2 class="page-title">${escapeHtml(c.nome)}</h2><p class="page-subtitle">${estrelas(c.raridade)} ${rotuloRaridade(c.raridade)} · já capturada. ${progresso}.</p></article>`;
+  return `<article class="card tag-card tag-criatura nova" role="status"><p class="eyebrow">Nova captura!</p><div class="tag-criatura-arte">${arte}</div><h2 class="page-title">${escapeHtml(c.nome)}</h2><p class="page-subtitle">${estrelas(c.raridade)} ${rotuloRaridade(c.raridade)} · ${progresso}.</p><a class="outline-button button-full" href="/">Ver na Pokédex</a></article>`;
 }
 
 async function stamp(code) {
@@ -44,7 +57,7 @@ async function stamp(code) {
     const stamp = stampHtml(point, result.carimbo?.ordem || 1, { entry: { at: result.carimbo?.criado_em || new Date().toISOString() }, size: 230, plus: true });
     const turma = result.turma ? `<article class="card tag-note"><strong>${result.turma.formou ? 'Carimbo de turma formado!' : 'Carimbo coletivo em andamento'}</strong><p>${result.turma.formou ? 'A turma deixou uma marca conjunta neste ponto.' : `${result.turma.presentes} presentes. Faltam ${Math.max(0, result.turma.necessarios - result.turma.presentes)} em até 4 minutos.`}</p></article>` : '';
     const guardiao = result.guardiao ? `<article class="card tag-note"><strong>Guardião do ponto</strong><p>${escapeHtml(result.guardiao.apelido)} · ${result.guardiao.passagens} passagens</p></article>` : '';
-    content.innerHTML = `<article class="card tag-card tag-success"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p><div class="tag-stamp">${stamp}</div><h1 class="page-title">${result.repetido ? 'Já está na página' : 'Carimbado!'}</h1><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Hoje: ${result.hoje} passagem(ns) neste ponto.</p>${findPointByCode(code) ? '<p class="small muted">Este carimbo entra na página do ponto quando você abrir a caderneta.</p>' : ''}<a class="primary-button button-full" href="/">Ver minha caderneta</a></article>${cartaoEvento(result, code)}${turma}${guardiao}`;
+    content.innerHTML = `<article class="card tag-card tag-success"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p><div class="tag-stamp">${stamp}</div><h1 class="page-title">${result.repetido ? 'Já está na página' : 'Carimbado!'}</h1><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Hoje: ${result.hoje} passagem(ns) neste ponto.</p>${findPointByCode(code) ? '<p class="small muted">Este carimbo entra na página do ponto quando você abrir a caderneta.</p>' : ''}<a class="primary-button button-full" href="/">Ver minha caderneta</a></article>${cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
   } catch (error) {
     content.innerHTML = `<div class="card tag-card"><h1 class="page-title">${error.status === 404 ? 'Tag não encontrada' : 'Não foi possível carimbar'}</h1><p class="page-subtitle">${error.status === 404 ? 'Confira o código deste ponto.' : 'Tente novamente quando houver conexão.'}</p><button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button><a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
     document.getElementById('tag-retry')?.addEventListener('click', () => stamp(code));

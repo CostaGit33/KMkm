@@ -145,6 +145,8 @@ function formularioPonto(p) {
       <label class="campo"><span>Endereço</span><input type="text" name="endereco" value="${esc(d.endereco)}" maxlength="200" /></label>
       <label class="campo"><span>Fonte da coordenada</span><input type="text" name="fonte_mapa" value="${esc(d.fonte_mapa)}" maxlength="80" placeholder="Ex.: conferido em campo em 12/10" /></label>
       <label class="campo"><span>Descrição curta (aparece na página do ponto)</span><textarea name="nota" maxlength="400">${esc(d.nota)}</textarea></label>
+      <div class="dois"><label class="campo"><span>Criatura da Pokédex (vazio = automática)</span><input type="text" name="criatura" value="${esc(d.criatura || '')}" maxlength="60" /></label>
+        <label class="campo"><span>Raridade</span><select name="raridade">${['comum', 'raro', 'epico', 'lendario'].map((r) => `<option value="${r}" ${(d.raridade || 'comum') === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label></div>
       <div class="dois"><label class="campo"><span>Ícone do carimbo</span><input type="text" name="icone" value="${esc(d.icone)}" maxlength="4" /></label>
         <label class="campo"><span>Formato do carimbo</span><select name="forma"><option value="c" ${d.forma === 'c' ? 'selected' : ''}>Círculo</option><option value="r" ${d.forma === 'r' ? 'selected' : ''}>Retângulo</option></select></label></div>
       ${novo ? `<label class="campo"><span>Status inicial</span><select name="status"><option value="pendente">Pendente (valide em campo antes de publicar)</option><option value="publicado">Publicado (já recebe carimbo)</option></select></label>` : ''}
@@ -173,7 +175,7 @@ function formularioPonto(p) {
       const corpo = {
         codigo: String(fd.get('codigo') || '').trim().toLowerCase(), rota_id: Number(fd.get('rota_id')), nome: fd.get('nome'),
         categorias: fd.getAll('categorias'), lat: fd.get('lat'), lng: fd.get('lng'), endereco: fd.get('endereco'), fonte_mapa: fd.get('fonte_mapa'), nota: fd.get('nota'),
-        icone: fd.get('icone'), forma: fd.get('forma'), oculto: fd.get('oculto') === 'on', parceiro: fd.get('parceiro') === 'on', status: fd.get('status') || undefined,
+        criatura: fd.get('criatura'), raridade: fd.get('raridade'), icone: fd.get('icone'), forma: fd.get('forma'), oculto: fd.get('oculto') === 'on', parceiro: fd.get('parceiro') === 'on', status: fd.get('status') || undefined,
       };
       if (corpo.status === 'publicado' && !corpo.lat && !(await confirmar('Publicar sem coordenadas?', 'O ponto não vai aparecer no mapa, mas já poderá receber carimbo. Publicar assim mesmo?'))) return;
       const botao = $('button[type=submit]', f); botao.disabled = true;
@@ -275,7 +277,7 @@ function htmlEventos() {
   return `<div class="barra"><span class="espaco"></span><button class="btn pri" data-act="novo-evento">+ Novo evento ou patrocínio</button></div>
     <p class="ajuda">Um card dá um segundo carimbo (do evento) a quem toca num dos pontos durante a janela. Cada ponto só pode ter um card por vez. Horários em Bahia (${esc(fuso)}).</p>
     ${eventos.length ? eventos.map((e) => { const est = estadoEvento(e); return `<div class="cartao"><div class="topo-cartao"><div class="corpo"><h3>${esc(e.nome)}</h3>
-      <div style="color:var(--suave);font-size:13px;display:flex;gap:6px 12px;flex-wrap:wrap;margin-top:4px"><span class="chip ${est}">${ROTULO_ESTADO[est]}</span><span>${e.tipo === 'patrocinio' ? `Patrocínio${e.patrocinador ? ` · ${esc(e.patrocinador)}` : ''}` : 'Evento'}</span><span>${legivel(e.inicio_em, fuso)} → ${legivel(e.fim_em, fuso)}</span><span>${e.carimbos} carimbo(s)</span></div>
+      <div style="color:var(--suave);font-size:13px;display:flex;gap:6px 12px;flex-wrap:wrap;margin-top:4px"><span class="chip ${est}">${ROTULO_ESTADO[est]}</span><span>${e.tipo === 'patrocinio' ? `Patrocínio${e.patrocinador ? ` · ${esc(e.patrocinador)}` : ''}` : 'Evento'}</span><span>${legivel(e.inicio_em, fuso)} → ${legivel(e.fim_em, fuso)}</span><span>${e.carimbos} carimbo(s)</span>${e.tiragem ? `<span>Edição numerada: ${e.emitidos}/${e.tiragem}${e.emitidos >= e.tiragem ? ' · esgotada' : ''}</span>` : ''}</div>
       ${e.descricao ? `<p class="ajuda" style="margin:6px 0 0">${esc(e.descricao)}</p>` : ''}<div class="pontos-chips">${e.codigos.map((c) => `<span class="cod">${esc(c)}</span>`).join('')}</div></div></div>
       <div class="acoes"><button class="btn mini" data-act="editar-evento" data-id="${esc(e.slug)}">Editar</button>
         ${e.status !== 'publicado' && e.status !== 'cancelado' ? `<button class="btn mini pri" data-act="status-evento" data-id="${esc(e.slug)}" data-valor="publicado">Publicar</button>` : ''}
@@ -298,6 +300,7 @@ function formularioEvento(ev) {
       <label class="campo"><span>Nome <b>*</b></span><input type="text" name="nome" value="${esc(d.nome)}" maxlength="160" /></label>
       <div class="dois"><label class="campo"><span>Tipo</span><select name="tipo" ${travado ? 'disabled' : ''}><option value="evento" ${d.tipo === 'evento' ? 'selected' : ''}>Evento</option><option value="patrocinio" ${d.tipo === 'patrocinio' ? 'selected' : ''}>Patrocínio (${lim.minimo}–${lim.maximo} pontos)</option></select></label>
         <label class="campo" data-bloco-patro><span>Patrocinador <b>*</b></span><input type="text" name="patrocinador" list="lista-patro" value="${esc(d.patrocinador || '')}" maxlength="120" ${travado ? 'disabled' : ''} /><datalist id="lista-patro">${patrocinadores.map((p) => `<option value="${esc(p.nome)}">`).join('')}</datalist></label></div>
+      <label class="campo"><span>Tiragem numerada (opcional)</span><input type="number" name="tiragem" min="1" max="100000" step="1" value="${d.tiragem ?? ''}" placeholder="Ex.: 100 → carimbo nº N/100" ${travado ? 'disabled' : ''} /><small class="ajuda">Cada pessoa recebe um número único, em ordem de chegada. Trava depois do primeiro carimbo.</small></label>
       <label class="campo"><span>Descrição (até 400 caracteres)</span><textarea name="descricao" maxlength="400">${esc(d.descricao || '')}</textarea></label>
       <div class="dois"><label class="campo"><span>Início (Bahia) <b>*</b></span><input type="datetime-local" name="inicio" value="${paraCampoLocal(d.inicio_em, fuso)}" ${travado ? 'disabled' : ''} /></label>
         <label class="campo"><span>Fim (Bahia) <b>*</b></span><input type="datetime-local" name="fim" value="${paraCampoLocal(d.fim_em, fuso)}" ${travado ? 'disabled' : ''} /></label></div>
@@ -317,7 +320,7 @@ function formularioEvento(ev) {
       const fd = new FormData(f);
       const corpo = travado ? { nome: fd.get('nome'), descricao: fd.get('descricao') } : {
         nome: fd.get('nome'), tipo: fd.get('tipo'), descricao: fd.get('descricao'), patrocinador: fd.get('tipo') === 'patrocinio' ? fd.get('patrocinador') : '',
-        inicio: String(fd.get('inicio') || '').replace('T', ' '), fim: String(fd.get('fim') || '').replace('T', ' '), codigos: fd.getAll('codigos'), publicar: fd.get('publicar') === 'on',
+        inicio: String(fd.get('inicio') || '').replace('T', ' '), fim: String(fd.get('fim') || '').replace('T', ' '), codigos: fd.getAll('codigos'), tiragem: fd.get('tiragem'), publicar: fd.get('publicar') === 'on',
       };
       const botao = $('button[type=submit]', f); botao.disabled = true;
       try {

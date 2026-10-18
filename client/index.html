@@ -6,12 +6,7 @@
     <meta name="theme-color" content="#0e0e0f" />
     <meta name="color-scheme" content="dark light" />
     <style>html[data-theme="dark"], html[data-theme="dark"] body { background: #0e0e0f; }</style>
-    <script>
-      try {
-        var s = JSON.parse(localStorage.getItem("mais1km-eunapolis:v4"));
-        if (s && s.themeChosen === true && s.theme === "light") document.documentElement.dataset.theme = "light";
-      } catch (e) {}
-    </script>
+    <script src="/theme-init.js"></script>
     <meta name="description" content="+1 KM: uma caderneta permanente para explorar Eunápolis, guardar carimbos e ganhar XP." />
     <title>+1 KM · Eunápolis</title>
     <link rel="manifest" href="/manifest.webmanifest" />

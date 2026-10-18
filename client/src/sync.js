@@ -17,7 +17,7 @@ export async function lerCaderneta() {
         if (ponto.codigo && quando && Number.isFinite(Date.parse(quando))) itens.push({ codigo: String(ponto.codigo), at: new Date(quando).toISOString() });
       }
     }
-    return { itens, eventos: Array.isArray(dados.eventos) ? dados.eventos : [] };
+    return { itens, eventos: Array.isArray(dados.eventos) ? dados.eventos : [], colecao: dados.colecao && Array.isArray(dados.colecao.itens) ? dados.colecao : null };
   } catch {
     return null;
   }
