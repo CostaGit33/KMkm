@@ -197,7 +197,7 @@ async function ensureGamificationSchema() {
     await q('CREATE INDEX idx_carimbos_gamificacao_data ON carimbos (criado_em, usuario_id, tag_id)');
   }
 }
-// Pokédex (criatura e raridade por ponto) e edição numerada (tiragem e números emitidos por card).
+// Coleção de cartas (personagem, categoria e raridade por ponto) e edição numerada (tiragem e números emitidos por card).
 // O número guarda a pessoa com SET NULL: excluir a conta anonimiza a linha, mas o número nunca é reemitido.
 async function ensureColecaoEdicaoSchema() {
   await ensureColumn('tags', 'criatura', 'VARCHAR(60) NULL');

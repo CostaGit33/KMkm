@@ -1,6 +1,21 @@
 // Coleção de cartas de Eunápolis: uma carta numerada por ponto, com personagem, categoria, raridade e evolução por tempo.
 // Tudo aqui é leitura: a carta é desbloqueada pelo primeiro carimbo de rota e não gera XP nem pode ser trocada.
-import { criaturaSvg, estrelas, rotuloRaridade } from './criaturas.js';
+const RARIDADE = { comum: ['Comum', 1], raro: ['Rara', 2], epico: ['Épica', 3], lendario: ['Lendária', 4] };
+const rotuloRaridade = (r) => (RARIDADE[r] || RARIDADE.comum)[0];
+const estrelas = (r) => '★'.repeat((RARIDADE[r] || RARIDADE.comum)[1]);
+// Emblemas dourados por categoria (arte provisória até a ilustração final do ponto ser enviada).
+const EMBLEMAS = {
+  natureza: '<path d="M50 18c-18 10-26 30-18 48 4 8 10 12 18 16 8-4 14-8 18-16 8-18 0-38-18-48z"/><path d="M50 30v52" fill="none"/>',
+  historia: '<path d="M22 40 50 22l28 18z"/><path d="M28 46v26M42 46v26M58 46v26M72 46v26M22 78h56" fill="none"/>',
+  cultura: '<path d="M40 62V28l30-6v34" fill="none"/><ellipse cx="34" cy="64" rx="9" ry="7"/><ellipse cx="64" cy="58" rx="9" ry="7"/>',
+  trabalho: '<path d="M50 84V44" fill="none"/><path d="M50 52C34 52 26 42 26 28c14 0 24 8 24 24zM50 44c0-14 10-22 24-22 0 14-8 22-24 22z"/>',
+  litoral: '<path d="M16 46c8-8 16-8 22 0s14 8 22 0 14-8 24 0M16 62c8-8 16-8 22 0s14 8 22 0 14-8 24 0M16 78c8-8 16-8 22 0s14 8 22 0 14-8 24 0" fill="none"/>',
+  misterio: '<path d="M50 14l7 29 29 7-29 7-7 29-7-29-29-7 29-7z"/>',
+};
+function emblemaSvg(categoria, bloqueada, size) {
+  const g = EMBLEMAS[categoria] || EMBLEMAS.cultura;
+  return `<svg class="carta-emblema" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${esc(categoria)}"><g fill="#d9a84a" stroke="#d9a84a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="${bloqueada ? '.28' : '.95'}" transform="translate(12 12) scale(.76)">${g}</g></svg>`;
+}
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -19,9 +34,9 @@ const num = (n) => String(n || 0).padStart(3, '0');
 
 // Arte: arquivo definido no admin (em /cartas/) ou, sem ele, o desenho gerado do nome.
 function arteHtml(i, size) {
-  if (!i.capturada) return criaturaSvg('?', { silhueta: true, size });
+  if (!i.capturada) return emblemaSvg(i.categoria, true, size);
   if (i.arte && /^[\w.-]{1,80}$/.test(i.arte)) return `<img class="carta-img" src="/cartas/${esc(i.arte)}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" />`;
-  return criaturaSvg(i.criatura, { raridade: i.raridade, size });
+  return emblemaSvg(i.categoria, false, size);
 }
 
 export function cartaHtml(i, { size = 96, tag = 'button' } = {}) {

@@ -89,7 +89,7 @@ async function basico() {
   r = await c.s.chamar('GET', '/api/caderneta');
   ok('GET /api/caderneta traz rotas, eventos e coleção', r.status === 200 && Array.isArray(r.json?.rotas) && Array.isArray(r.json?.eventos) && r.json?.colecao && Array.isArray(r.json.colecao.itens), `${r.status} ${r.texto.slice(0, 100)}`);
   const colecao = r.json?.colecao;
-  ok('Coleção nova começa com 0 capturadas e sem revelar nomes', colecao && colecao.capturadas === 0 && colecao.itens.every((i) => i.criatura === null && i.capturada === false));
+  ok('Coleção nova começa com 0 desbloqueadas e sem revelar nomes', colecao && colecao.capturadas === 0 && colecao.itens.every((i) => i.criatura === null && i.capturada === false));
 
   r = await c.s.chamar('POST', '/api/tags/tag-que-nao-existe/carimbar', {});
   ok('Carimbar tag inexistente responde 404', r.status === 404 && r.json?.erro === 'tag_inexistente', `${r.status}`);
@@ -97,7 +97,7 @@ async function basico() {
   r = await c.s.chamar('GET', '/api/gamificacao/me');
   ok('GET /api/gamificacao/me responde 200 com XP', r.status === 200 && typeof r.json?.xp?.total === 'number', `${r.status} ${r.texto.slice(0, 100)}`);
 
-  // Primeiro ponto publicado (se houver) para testar a captura.
+  // Primeiro ponto publicado (se houver) para testar o desbloqueio.
   const publicados = (await c.s.chamar('GET', '/api/caderneta')).json?.colecao?.itens ?? [];
   if (publicados.length) {
     const codigo = publicados[0].codigo;
@@ -105,13 +105,13 @@ async function basico() {
     ok(`Carimbar ${codigo} responde 200 e revela a criatura`, r.status === 200 && r.json?.criatura?.nova === true && Boolean(r.json.criatura.nome), `${r.status} ${r.texto.slice(0, 120)}`);
     const nome = r.json?.criatura?.nome;
     r = await c.s.chamar('POST', `/api/tags/${encodeURIComponent(codigo)}/carimbar`, {});
-    ok('Segundo toque no mesmo ponto não captura de novo', r.status === 200 && r.json?.criatura?.nova === false && r.json?.repetido === true, `${r.status}`);
+    ok('Segundo toque no mesmo ponto não desbloqueia de novo', r.status === 200 && r.json?.criatura?.nova === false && r.json?.repetido === true, `${r.status}`);
     r = await c.s.chamar('GET', '/api/caderneta');
     const item = r.json?.colecao?.itens?.find((i) => i.codigo === codigo);
     ok('Carta traz número, categoria, estágio 0 e próximo estágio em 5 dias', Number.isInteger(item?.carta) && ['natureza','historia','cultura','trabalho','litoral','misterio'].includes(item?.categoria) && item?.estagio === 0 && item?.proximo_estagio?.em_dias === 5, JSON.stringify(item));
-    ok('Coleção passa a mostrar a criatura capturada', item?.capturada === true && item?.criatura === nome && r.json.colecao.capturadas === 1, JSON.stringify(item));
+    ok('Coleção passa a mostrar o personagem desbloqueado', item?.capturada === true && item?.criatura === nome && r.json.colecao.capturadas === 1, JSON.stringify(item));
   } else {
-    console.log('· Nenhum ponto publicado no servidor: pulei os testes de captura.');
+    console.log('· Nenhum ponto publicado no servidor: pulei os testes de desbloqueio.');
   }
 
   r = await c.s.chamar('DELETE', '/api/eu');

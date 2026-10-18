@@ -87,8 +87,8 @@ Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o ca
 - **Testar o pódio sem dados reais:** `node server/scripts/teste-podio.js criar seu@email.com` cria 2 participantes fictícios (Ana e Beto, domínio `@teste.invalid`) e dá 2 carimbos de teste à sua conta; `... limpar` apaga tudo (carimbos de teste ficam marcados em `carimbos.especial = 'teste-podio'`). Rode `limpar` antes de publicar.
 
 
-## Pokédex, edição numerada e testes de API (V8.7)
-- **Pokédex de Eunápolis:** cada ponto publicado tem uma criatura (`tags.criatura`, `tags.raridade`; o admin pode editar, o resto é preenchido automaticamente). A criatura é "capturada" no primeiro carimbo de rota da pessoa no ponto; não há tabela nova, não dá XP e não entra no pódio. `GET /api/caderneta` devolve `colecao`, e `POST /api/tags/:codigo/carimbar` devolve `criatura` (`nova`, `capturadas`, `total`). Arte gerada no cliente em `client/src/criaturas.js`.
+## coleção, edição numerada e testes de API (V8.7)
+- **Coleção de cartas de Eunápolis:** cada ponto publicado tem um personagem (`tags.criatura`, `tags.raridade`; o admin pode editar, o resto é preenchido automaticamente). O personagem é desbloqueado no primeiro carimbo de rota da pessoa no ponto; não há tabela nova, não dá XP e não entra no pódio. `GET /api/caderneta` devolve `colecao`, e `POST /api/tags/:codigo/carimbar` devolve `criatura` (`nova`, `capturadas`, `total`). Arte gerada no cliente em `client/src/criaturas.js`.
 - **Edição numerada patrocinada:** `eventos.tiragem` e `eventos.emitidos`, tabela `edicao_numeros`. O número é emitido dentro da transação do toque, com a linha do card travada (`FOR UPDATE`), um por conta, sem reemissão mesmo se a conta for excluída. O admin define a tiragem no formulário do card; ela trava depois do primeiro carimbo.
 - **Páginas públicas:** `/privacidade` e `/excluir-conta` (defina `CONTATO_EMAIL`). Guia da loja em `docs/PLAY-STORE.md`.
 - **Testes:** `npm --prefix server test`; `server/scripts/smoke.mjs` (contra qualquer `BASE_URL`, `--profundo` para a edição numerada); coleção `postman/mais1km.postman_collection.json`.

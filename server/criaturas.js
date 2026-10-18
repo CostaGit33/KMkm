@@ -1,5 +1,5 @@
-// Pokédex de Eunápolis: cada ponto publicado guarda uma criatura da fauna local, "capturada" no primeiro carimbo da pessoa.
-// A captura não tem tabela própria: ela é o primeiro carimbo de rota (evento_id NULL) da pessoa naquele ponto,
+// Personagens da coleção de cartas de Eunápolis: cada ponto publicado guarda um personagem, desbloqueado no primeiro carimbo da pessoa.
+// O desbloqueio não tem tabela própria: ele é o primeiro carimbo de rota (evento_id NULL) da pessoa naquele ponto,
 // então não cria XP, não muda o pódio e não pode ser comprada, trocada nem transferida.
 import { q } from './db/database.js';
 
@@ -93,7 +93,7 @@ export async function atribuirCriaturas(consulta = q) {
   }
 }
 
-// Álbum da pessoa: todo ponto publicado como carta numerada. Nome, história e frase só aparecem depois da captura.
+// Álbum da pessoa: todo ponto publicado como carta numerada. Nome, história e frase só aparecem depois do desbloqueio.
 export async function albumDaPessoa(usuarioId) {
   const linhas = await q(
     `SELECT t.codigo, t.nome AS ponto, t.criatura, t.raridade, t.ordem, t.carta, t.arte, t.frase, t.historia, t.oculto, t.categorias, t.categoria_carta,

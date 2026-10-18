@@ -345,7 +345,7 @@
       ]
     },
     {
-      "name": "3 · Conta, captura e exclusão",
+      "name": "3 · Conta, desbloqueio e exclusão",
       "item": [
         {
           "name": "Criar conta descartável",
@@ -545,7 +545,7 @@
           }
         },
         {
-          "name": "Carimbar o primeiro ponto publicado (captura)",
+          "name": "Carimbar o primeiro ponto publicado (desbloqueio)",
           "event": [
             {
               "listen": "test",
@@ -554,7 +554,7 @@
                 "exec": [
                   "const ponto = pm.collectionVariables.get('ponto'); if (!ponto) { pm.test.skip('sem ponto publicado no servidor'); return; }",
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json(); pm.test('captura nova com criatura', () => { pm.expect(j.criatura.nova).to.eql(true); pm.expect(j.criatura.nome).to.be.a('string').and.not.empty; });",
+                  "const j = pm.response.json(); pm.test('carta desbloqueada com personagem', () => { pm.expect(j.criatura.nova).to.eql(true); pm.expect(j.criatura.nome).to.be.a('string').and.not.empty; });",
                   "pm.collectionVariables.set('criatura', j.criatura.nome);"
                 ]
               }
@@ -587,7 +587,7 @@
           }
         },
         {
-          "name": "Segundo toque não captura de novo",
+          "name": "Segundo toque não desbloqueia de novo",
           "event": [
             {
               "listen": "test",
@@ -596,7 +596,7 @@
                 "exec": [
                   "const ponto = pm.collectionVariables.get('ponto'); if (!ponto) { pm.test.skip('sem ponto publicado no servidor'); return; }",
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json(); pm.test('repetido e sem nova captura', () => { pm.expect(j.repetido).to.eql(true); pm.expect(j.criatura.nova).to.eql(false); });"
+                  "const j = pm.response.json(); pm.test('repetido e sem novo desbloqueio', () => { pm.expect(j.repetido).to.eql(true); pm.expect(j.criatura.nova).to.eql(false); });"
                 ]
               }
             }

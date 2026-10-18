@@ -570,7 +570,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .mini-map-note { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .home-stamp, .mini-dot { transition: none !important; } }
 
-/* Pokédex de Eunápolis, captura no toque e edição numerada */
+/* Coleção de cartas, desbloqueio no toque e edição numerada */
 .colecao-barra { height: 8px; border-radius: 99px; background: var(--card-strong); overflow: hidden; margin: 4px 0 14px; }
 .colecao-barra span { display: block; height: 100%; background: var(--blue); border-radius: inherit; transition: width .4s ease; }
 .tag-criatura { text-align: center; }

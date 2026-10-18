@@ -310,7 +310,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
      WHERE c.usuario_id = ? AND x.rota_id = ? AND c.evento_id IS NULL`,
     [usuario.id, tag.rota_id],
   );
-  // Captura: a primeira vez que a pessoa carimba este ponto (fora de cards) revela a criatura do ponto.
+  // Desbloqueio: a primeira vez que a pessoa carimba este ponto (fora de cards) revela a criatura do ponto.
   const [{ passagens }] = await q('SELECT COUNT(*) AS passagens FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL', [usuario.id, tag.id]);
   const album = await albumDaPessoa(usuario.id);
   const carta = album.itens.find((i) => i.codigo === tag.codigo);

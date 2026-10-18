@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emitirNumero } from '../eventos.js';
 import { POOL_CRIATURAS, RARIDADES, estagioPorDias, categoriaDaCarta, CATEGORIAS_CARTA } from '../criaturas.js';
-import { criaturaSvg } from '../../client/src/criaturas.js';
 
 // Conexão falsa que imita as tabelas eventos e edicao_numeros, só o suficiente para exercitar a regra.
 // Como no mysql2, cada consulta devolve [linhas]; o código da regra desestrutura a primeira linha.
@@ -42,15 +41,6 @@ test('o pool de criaturas não tem nomes repetidos e as raridades são as quatro
   assert.equal(new Set(POOL_CRIATURAS).size, POOL_CRIATURAS.length);
   assert.ok(POOL_CRIATURAS.length >= 40);
   assert.deepEqual(RARIDADES, ['comum', 'raro', 'epico', 'lendario']);
-});
-
-test('arte da criatura: determinística, distinta por nome e sem revelar o nome na silhueta', () => {
-  assert.equal(criaturaSvg('Quati'), criaturaSvg('Quati'));
-  assert.notEqual(criaturaSvg('Quati'), criaturaSvg('Jacu'));
-  const sombra = criaturaSvg('Onça-parda', { silhueta: true });
-  assert.ok(!sombra.includes('Onça'));
-  assert.match(criaturaSvg('Anta', { raridade: 'lendario' }), /stroke="#ffc53d"/);
-  assert.ok(!criaturaSvg('Anta', { raridade: 'comum' }).includes('stroke-dasharray'));
 });
 
 test('evolução da carta: estágios em 0, 5, 30 e 45 dias', () => {
