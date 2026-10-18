@@ -105,7 +105,7 @@ const appInstalado = () => {
 
 export function renderChrome(state, activeView, activeRouteId = "", menuOpen = false) {
   document.documentElement.dataset.theme = state.theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#060a14" : "#e8f0fa");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#0e0e0f" : "#f4f4f5");
   const logo = `<img class="brand-mark" src="/icons/stamp.svg" alt="" width="42" height="42" />`;
   const avatar = state.account ? `<button class="icon-button avatar-button" type="button" data-action="switch-view" data-view="profile" aria-label="Meu perfil" title="Meu perfil">${escapeHtml(iniciais(state.account.nome))}</button>` : "";
   document.getElementById("topbar").innerHTML = `

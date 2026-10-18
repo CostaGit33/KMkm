@@ -11,7 +11,7 @@
   --rule: #cdbd9f;
   --red: #b8322a;
   --red-dark: #842a22;
-  --blue: #2b4c9b;
+  --blue: #5f6167;
   --green: #2f6b45;
   --ochre: #c98a14;
   --frame: #47351f;
@@ -857,7 +857,7 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 .real-map .leaflet-popup-content { margin: 10px 12px; color: #172329; font-family: var(--type); font-size: 11px; line-height: 1.45; }
 .real-map .leaflet-popup-content strong { font-family: var(--display); font-weight: 400; }
 .real-map .leaflet-tooltip { border: 1px solid #172329; border-radius: 4px; box-shadow: 2px 2px 0 rgb(23 35 41 / 24%); font-family: var(--type); font-size: 10px; }
-.real-map .leaflet-popup-content small { display: inline-block; margin-top: 3px; color: #53636a; }
+.real-map .leaflet-popup-content small { display: inline-block; margin-top: 3px; color: #5e5f5f; }
 .real-map .leaflet-marker-icon.real-map-marker--area-anchor { filter: drop-shadow(0 0 3px var(--ochre)); }
 .map-legend .legend-dot.anchor { background: transparent; border: 2px dashed var(--ochre); }
 .map-source { margin: 0; padding: 8px 14px 12px; color: var(--muted); background: var(--card); font-size: 10px; line-height: 1.4; }

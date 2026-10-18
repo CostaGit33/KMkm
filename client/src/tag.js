@@ -17,7 +17,7 @@ const findPoint = (code, result) => findPointByCode(code) || {
 
 function shell(content) {
   document.documentElement.dataset.theme = temaLocal();
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaLocal() === 'light' ? '#e8f0fa' : '#060a14');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaLocal() === 'light' ? '#f4f4f5' : '#0e0e0f');
   document.body.innerHTML = `<main class="tag-page"><div class="tag-brand"><img src="/icons/stamp.svg" alt="" width="58" height="58"><strong>+1 KM</strong><span>carimbo de rota</span></div><div id="tag-content">${content}</div></main>`;
 }
 
