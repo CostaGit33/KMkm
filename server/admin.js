@@ -5,7 +5,7 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { pool, q } from './db/database.js';
 import { instanteLocal } from './time.js';
-import { RARIDADES, atribuirCriaturas } from './criaturas.js';
+import { CATEGORIAS_CARTA, RARIDADES, atribuirCriaturas } from './criaturas.js';
 import { MAX_PONTOS_PATROCINIO, MIN_PONTOS_PATROCINIO, TIPOS, conflitosDeJanela, relatorioAgregado } from './eventos.js';
 
 const FUSO = process.env.APP_TZ || 'America/Bahia';
@@ -55,6 +55,10 @@ function dadosDoPonto(body) {
     fonte_mapa: opcional(body.fonte_mapa, 80),
     criatura: opcional(body.criatura, 60),
     raridade: RARIDADES.includes(body.raridade) ? body.raridade : null,
+    categoria_carta: CATEGORIAS_CARTA.includes(body.categoria_carta) ? body.categoria_carta : null,
+    frase: opcional(body.frase, 160),
+    historia: opcional(body.historia, 400),
+    arte: /^[\w.-]{1,80}$/.test(String(body.arte || '').trim()) ? String(body.arte).trim() : null,
     lat,
     lng,
   };
@@ -170,7 +174,7 @@ export function adminRouter({ limit, wrap }) {
   // Tudo que as telas de catálogo precisam, numa chamada só.
   router.get('/dados', h(async (_req, res) => {
     const rotas = await q(`SELECT r.id, r.nome, r.tipo, r.cor, r.km, r.status, r.subtitulo, (SELECT COUNT(*) FROM tags t WHERE t.rota_id = r.id) AS pontos FROM rotas r ORDER BY r.id`);
-    const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.criatura, t.raridade,
+    const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.criatura, t.raridade, t.categoria_carta, t.frase, t.historia, t.arte, t.carta,
       t.rota_id, (SELECT COUNT(*) FROM carimbos c WHERE c.tag_id = t.id) AS carimbos, (SELECT COUNT(*) FROM evento_tags et WHERE et.tag_id = t.id) AS eventos
       FROM tags t ORDER BY t.rota_id, t.ordem, t.id`);
     const circuitos = await q('SELECT id, slug, nome, subtitulo, icone, cor, ordem, status FROM circuitos ORDER BY ordem, id');
@@ -206,9 +210,9 @@ export function adminRouter({ limit, wrap }) {
     try {
       await tx(async (c) => {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
-        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto, criatura, raridade)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto, dados.criatura, dados.raridade]);
+        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto, criatura, raridade, categoria_carta, frase, historia, arte)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte]);
       });
       await atribuirCriaturas();
     } catch (error) {
@@ -234,8 +238,8 @@ export function adminRouter({ limit, wrap }) {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
         ordem = prox;
       }
-      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ?, criatura = COALESCE(?, criatura), raridade = COALESCE(?, raridade) WHERE id = ?`,
-        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, dados.criatura, dados.raridade, tag.id]);
+      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ?, criatura = COALESCE(?, criatura), raridade = COALESCE(?, raridade), categoria_carta = COALESCE(?, categoria_carta), frase = ?, historia = ?, arte = ? WHERE id = ?`,
+        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte, tag.id]);
       if (rotaId !== tag.rota_id) await renumerar(c, tag.rota_id);
     });
     await registrar(req, 'ponto.editar', tag.codigo, dados.nome);

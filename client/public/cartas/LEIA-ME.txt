@@ -1,0 +1,2 @@
+Coloque aqui as ilustrações finais das cartas (ex.: 03.webp).
+O nome do arquivo é definido no painel admin, campo "Arte".

@@ -1,7 +1,7 @@
 import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, getCategory, getPoint } from "./data.js";
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
-import { criaturaSvg, estrelas, rotuloRaridade } from "./criaturas.js";
+import { secaoColecao } from "./cartas.js";
 
 const NAV_ITEMS = [
   { id: "home", label: "Caderneta", icon: "▤" },
@@ -159,15 +159,12 @@ function historyRows(state, count = 4) {
 // Cards de eventos e patrocínios (vêm do servidor; não alteram a caderneta local nem o certificado das rotas).
 let cartoes = [];
 export function setEventos(lista) { cartoes = Array.isArray(lista) ? lista : []; }
-// Pokédex da conta (vem do servidor): criaturas capturadas e silhuetas das que faltam.
+// Coleção de cartas da conta (vem do servidor): personagens desbloqueados e cartas ainda bloqueadas.
 let colecaoServidor = null;
 export function setColecao(colecao) { colecaoServidor = colecao && Array.isArray(colecao.itens) ? colecao : null; }
-function renderPokedex(state) {
-  if (!colecaoServidor || !colecaoServidor.itens.length || !(state.account && state.session)) return "";
-  const { total, capturadas, itens } = colecaoServidor;
-  const percent = total ? Math.round((capturadas / total) * 100) : 0;
-  const cartas = itens.map((i) => `<li class="criatura-card ${i.capturada ? "capturada" : "bloqueada"} r-${escapeHtml(i.raridade)}" title="${i.capturada ? escapeHtml(i.criatura) : "Encoste na tag deste ponto para capturar"}"><div class="criatura-arte">${criaturaSvg(i.criatura, { raridade: i.raridade, silhueta: !i.capturada, size: 76 })}</div><strong>${i.capturada ? escapeHtml(i.criatura) : "???"}</strong><small>${i.capturada ? `${estrelas(i.raridade)} ${rotuloRaridade(i.raridade)}` : escapeHtml(i.ponto)}</small></li>`).join("");
-  return `<section aria-labelledby="pokedex-title"><div class="section-heading"><div><h2 id="pokedex-title">Pokédex de Eunápolis</h2><p>Cada ponto guarda uma criatura. Capture ao encostar na tag pela primeira vez.</p></div><strong class="route-count">${capturadas}/${total}</strong></div><div class="pokedex-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${capturadas}" aria-label="Criaturas capturadas"><span style="width:${percent}%"></span></div><ul class="pokedex-grid">${cartas}</ul></section>`;
+function renderColecao(state) {
+  if (!(state.account && state.session)) return "";
+  return secaoColecao(colecaoServidor);
 }
 const ESTADO_CARD = { ao_vivo: ["Ao vivo", "conquered"], em_breve: ["Em breve", "mystery"], encerrado: ["Coleção encerrada", "discovered"] };
 function janelaDoCard(card) {
@@ -332,7 +329,7 @@ function renderCollection(state) {
   ];
   return `${pageHead("Coleção", "Carimbos", CITY.name)}
     <div class="stats-strip"><div class="stat-card"><span class="stat-value">${state.conquered.length}</span><span class="stat-label">carimbos únicos</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas na coleção</span></div><div class="stat-card"><span class="stat-value">${city.percent}%</span><span class="stat-label">da cidade</span></div></div>
-    ${renderPokedex(state)}
+    ${renderColecao(state)}
     <div class="collection-grid">${COLLECTIONS.map((collection) => {
       const progress = progressFor(state, collection.pointIds);
       const tiles = collection.pointIds.slice(0, 12).map((id, index) => {

@@ -2,57 +2,57 @@
    +1 KM · CAMADA FUTURISTA (V6)
    Carregada depois de styles.css. Troca paleta, tipografia, superfícies e
    movimento, mantendo toda a estrutura, classes e comportamento da V5.
-   Tema "dark" = Noite Neon (padrão). Tema "light" = Holo Dia.
+   Tema "dark" = Verde e ouro (padrão). Tema "light" = Pergaminho.
    ========================================================================== */
 
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #0e0e0f;
-  --paper-deep: #141415;
-  --card: #19191a;
-  --card-strong: #252526;
-  --ink: #f2f2f3;
-  --muted: #a9a9b0;
-  --rule: #3a3a3d;
-  --red: #ff4d3f;
-  --red-dark: #ff9086;
-  --blue: #4da3ff;
-  --green: #3dffb0;
-  --ochre: #ffc53d;
-  --frame: #000000;
+  --paper: #0b1a14;
+  --paper-deep: #102319;
+  --card: #12281e;
+  --card-strong: #1b3a2c;
+  --ink: #f4ecd6;
+  --muted: #b4b9a6;
+  --rule: #3b5242;
+  --red: #d9a84a;
+  --red-dark: #f0d08c;
+  --blue: #7fd0a4;
+  --green: #6fe0a8;
+  --ochre: #e5bd52;
+  --frame: #050d09;
   --line: rgba(255, 255, 255, .14);
   --line-strong: rgba(255, 255, 255, .34);
-  --glow: rgba(77, 163, 255, .22);
-  --glow-red: rgba(255, 77, 63, .45);
-  --glass: rgba(25, 25, 26, .72);
-  --on-accent: #0b0b0c;
+  --glow: rgba(217,168,74,.20);
+  --glow-red: rgba(217,168,74,.42);
+  --glass: rgba(18,40,30,.78);
+  --on-accent: #10201a;
   --shadow: 0 10px 34px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .06);
-  --display: "Orbitron", "Rajdhani", system-ui, sans-serif;
-  --type: "Rajdhani", "Segoe UI", system-ui, sans-serif;
-  --brand: "Alfa Slab One", Georgia, serif;
+  --display: "Cinzel", Georgia, serif;
+  --type: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --brand: "Yellowtail", "Brush Script MT", cursive;
   background: var(--paper);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --paper: #f4f4f5;
-  --paper-deep: #e8e8ea;
-  --card: #ffffff;
-  --card-strong: #f0f0f2;
-  --ink: #17171a;
-  --muted: #5b5b63;
-  --rule: #d4d4d8;
-  --red: #d92b1e;
-  --red-dark: #a81e14;
-  --blue: #1c6fd1;
-  --green: #0b9a62;
-  --ochre: #c68300;
-  --frame: #17171a;
+  --paper: #f3ead7;
+  --paper-deep: #e9dfc7;
+  --card: #fbf5e6;
+  --card-strong: #efe4cc;
+  --ink: #14271e;
+  --muted: #5a6155;
+  --rule: #d3c7a8;
+  --red: #a97614;
+  --red-dark: #7a520b;
+  --blue: #1f5a43;
+  --green: #1f7a52;
+  --ochre: #a97614;
+  --frame: #14271e;
   --line: rgba(0, 0, 0, .14);
   --line-strong: rgba(0, 0, 0, .34);
-  --glow: rgba(28, 111, 209, .18);
-  --glow-red: rgba(217, 43, 30, .3);
+  --glow: rgba(169,118,20,.16);
+  --glow-red: rgba(169,118,20,.28);
   --glass: rgba(255, 255, 255, .78);
   --on-accent: #ffffff;
   --shadow: 0 8px 26px rgba(0, 0, 0, .10), 0 0 0 1px rgba(0, 0, 0, .06);
@@ -571,17 +571,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media (prefers-reduced-motion: reduce) { .home-stamp, .mini-dot { transition: none !important; } }
 
 /* Pokédex de Eunápolis, captura no toque e edição numerada */
-.pokedex-barra { height: 8px; border-radius: 99px; background: var(--card-strong); overflow: hidden; margin: 4px 0 14px; }
-.pokedex-barra span { display: block; height: 100%; background: var(--blue); border-radius: inherit; transition: width .4s ease; }
-.pokedex-grid { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; }
-.criatura-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 6px 12px; border: 1px solid var(--rule); border-radius: 14px; background: var(--card); min-width: 0; }
-.criatura-card strong { font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; }
-.criatura-card small { font-size: 11px; color: var(--muted); line-height: 1.25; }
-.criatura-card.bloqueada { opacity: .72; border-style: dashed; }
-.criatura-card.r-raro.capturada { border-color: #4f93d8; }
-.criatura-card.r-epico.capturada { border-color: #8f6be0; }
-.criatura-card.r-lendario.capturada { border-color: #d9a21f; box-shadow: 0 0 0 1px #d9a21f55; }
-.criatura-arte { width: 76px; height: 76px; display: grid; place-items: center; }
+.colecao-barra { height: 8px; border-radius: 99px; background: var(--card-strong); overflow: hidden; margin: 4px 0 14px; }
+.colecao-barra span { display: block; height: 100%; background: var(--blue); border-radius: inherit; transition: width .4s ease; }
 .tag-criatura { text-align: center; }
 .tag-criatura-arte { display: grid; place-items: center; margin: 8px 0 4px; }
 .tag-criatura.nova { border-color: var(--blue); animation: criatura-pop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
@@ -592,6 +583,61 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .tag-edicao small { color: var(--muted); }
 .tag-edicao.esgotada strong { font-size: 16px; color: var(--muted); }
 .evento-edicao { margin: 8px 0 2px; font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { .tag-criatura.nova { animation: none; } .pokedex-barra span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .tag-criatura.nova { animation: none; } .colecao-barra span { transition: none; } }
 .legal-links { text-align: center; margin: 18px 0 4px; } .legal-links a { color: var(--blue); }
 .tag-criatura .outline-button { margin-top: 14px; }
+
+/* Coleção de cartas: verde profundo com borda dourada */
+.carta-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; scrollbar-width: none; }
+.carta-chip { flex: none; border: 1px solid var(--rule); background: var(--card); color: inherit; border-radius: 99px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.carta-chip small { color: var(--muted); margin-left: 4px; }
+.carta-chip.ativo { background: #1f4a37; border-color: #d9a21f; color: #f6e7b8; }
+.carta-chip.ativo small { color: #e8d49a; }
+.carta-grid { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
+.carta-grid > li[hidden] { display: none; }
+.carta { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; width: 100%; padding: 26px 8px 12px; border: 2px solid #b8891f; border-radius: 16px; background: linear-gradient(170deg, #1f4a37, #12291f); color: #f4ecd2; font: inherit; min-width: 0; }
+button.carta { cursor: pointer; }
+.carta.fechada { background: linear-gradient(170deg, #26302b, #161c19); border-color: #5b5640; border-style: dashed; color: #a7aba4; }
+.carta-num { position: absolute; top: 7px; left: 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #e5bd52; }
+.carta-arte { width: 96px; height: 96px; display: grid; place-items: center; border-radius: 12px; overflow: hidden; background: #0d1f17; }
+.carta-img { width: 100%; height: 100%; object-fit: cover; }
+.carta-nome { font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; margin-top: 4px; }
+.carta-local { font-size: 11px; line-height: 1.25; opacity: .8; }
+.carta-selo { margin-top: 4px; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: #e5bd52; }
+.carta.r-raro.aberta { border-color: #6bb6ff; }
+.carta.r-epico.aberta { border-color: #b48cff; }
+.carta.r-lendario.aberta { border-color: #ffc53d; box-shadow: 0 0 14px #ffc53d55; }
+.carta-dialogo { max-width: min(440px, calc(100vw - 24px)); width: 100%; border: 1px solid #b8891f; border-radius: 18px; padding: 18px 16px 20px; background: #12291f; color: #f4ecd2; }
+.carta-dialogo::backdrop { background: rgba(0, 0, 0, .62); }
+.carta-fechar { position: absolute; top: 8px; right: 12px; border: 0; background: none; color: inherit; font-size: 26px; line-height: 1; cursor: pointer; }
+.carta-detalhe { display: grid; gap: 14px; justify-items: center; }
+.carta-detalhe .carta { max-width: 190px; }
+.carta-info { width: 100%; }
+.carta-info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; font-size: 14px; }
+.carta-info dt { color: #e5bd52; }
+.carta-info dd { margin: 0; }
+.carta-historia { margin: 8px 0; font-size: 14px; line-height: 1.45; }
+.carta-frase { margin: 8px 0 0; padding-left: 12px; border-left: 3px solid #d9a21f; font-style: italic; font-size: 14px; }
+.carta-estagios { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.carta-estagios li { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 2px; border: 1px solid #4b5a4f; border-radius: 10px; font-size: 11px; opacity: .6; }
+.carta-estagios li b { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #26302b; font-size: 12px; }
+.carta-estagios li.feito, .carta-estagios li.atual { opacity: 1; border-color: #d9a21f; }
+.carta-estagios li.feito b, .carta-estagios li.atual b { background: #d9a21f; color: #12291f; }
+.carta-estagios li small { font-size: 10px; opacity: .8; }
+.carta-dica { margin: 0; font-size: 13px; text-align: center; opacity: .9; }
+.tag-evolucao { margin: 0 0 8px; font-weight: 600; color: #d9a21f; }
+.tag-criatura .carta { max-width: 180px; margin: 0 auto; }
+
+/* Cartas no estilo do pôster: arte grande, moldura dourada dupla, faixa verde com nome e selo da categoria */
+.carta { padding: 0 0 8px; gap: 0; border-radius: 12px; border: 2px solid #c79a3a; box-shadow: inset 0 0 0 3px #12291f, inset 0 0 0 4px #8f6d24; background: #12291f; overflow: hidden; font-family: var(--type); }
+.carta-arte { width: 100%; height: auto; aspect-ratio: 4 / 4.6; border-radius: 0; background: radial-gradient(circle at 50% 40%, #2b5a43, #0d1f17); }
+.carta-arte svg, .carta-img { width: 100%; height: 100%; }
+.carta-num { top: 6px; left: 8px; z-index: 1; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #0d1f17cc; border: 1px solid #c79a3a; font-family: "Cinzel", serif; font-size: 12px; }
+.carta-nome { font-family: "Cinzel", serif; font-weight: 700; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-top: 8px; padding: 0 6px; }
+.carta-local { padding: 0 6px; font-size: 10.5px; }
+.carta-selo { margin: 7px 8px 0; padding: 4px 8px; border: 1px solid #8f6d24; border-radius: 8px; background: #0d1f17; font-size: 9.5px; letter-spacing: .14em; color: #e5bd52; }
+.carta.cat-historia .carta-selo { color: #8fb4e8; } .carta.cat-cultura .carta-selo { color: #c9a2e8; } .carta.cat-litoral .carta-selo { color: #7fd0e0; } .carta.cat-misterio .carta-selo { color: #e0b98a; } .carta.cat-trabalho .carta-selo { color: #9fdc9a; }
+.carta.fechada { box-shadow: inset 0 0 0 3px #161c19; }
+.section-heading h2, .page-title { font-family: var(--display); letter-spacing: .06em; }
+.carta-dialogo { font-family: var(--type); } .carta-info dt { font-family: "Cinzel", serif; letter-spacing: .06em; }
+.carta-frase { font-family: "Cinzel", serif; font-style: normal; }

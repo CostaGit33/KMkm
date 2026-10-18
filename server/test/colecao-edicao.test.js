@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emitirNumero } from '../eventos.js';
-import { POOL_CRIATURAS, RARIDADES } from '../criaturas.js';
+import { POOL_CRIATURAS, RARIDADES, estagioPorDias, categoriaDaCarta, CATEGORIAS_CARTA } from '../criaturas.js';
 import { criaturaSvg } from '../../client/src/criaturas.js';
 
 // Conexão falsa que imita as tabelas eventos e edicao_numeros, só o suficiente para exercitar a regra.
@@ -51,4 +51,17 @@ test('arte da criatura: determinística, distinta por nome e sem revelar o nome 
   assert.ok(!sombra.includes('Onça'));
   assert.match(criaturaSvg('Anta', { raridade: 'lendario' }), /stroke="#ffc53d"/);
   assert.ok(!criaturaSvg('Anta', { raridade: 'comum' }).includes('stroke-dasharray'));
+});
+
+test('evolução da carta: estágios em 0, 5, 30 e 45 dias', () => {
+  assert.deepEqual([0, 4, 5, 29, 30, 44, 45, 400].map(estagioPorDias), [0, 0, 1, 1, 2, 2, 3, 3]);
+});
+
+test('categoria da carta: oculto vira Mistério, sabores Trabalho, praias Litoral', () => {
+  assert.equal(categoriaDaCarta({ oculto: 1, categorias: 'natureza' }), 'misterio');
+  assert.equal(categoriaDaCarta({ categorias: 'sabores' }), 'trabalho');
+  assert.equal(categoriaDaCarta({ categorias: 'praias' }), 'litoral');
+  assert.equal(categoriaDaCarta({ categorias: 'natureza,historia' }), 'natureza');
+  assert.equal(categoriaDaCarta({ categorias: '' }), 'cultura');
+  assert.ok(CATEGORIAS_CARTA.includes(categoriaDaCarta({ categorias: 'x' })));
 });

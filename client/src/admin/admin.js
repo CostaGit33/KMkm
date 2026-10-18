@@ -145,8 +145,13 @@ function formularioPonto(p) {
       <label class="campo"><span>Endereço</span><input type="text" name="endereco" value="${esc(d.endereco)}" maxlength="200" /></label>
       <label class="campo"><span>Fonte da coordenada</span><input type="text" name="fonte_mapa" value="${esc(d.fonte_mapa)}" maxlength="80" placeholder="Ex.: conferido em campo em 12/10" /></label>
       <label class="campo"><span>Descrição curta (aparece na página do ponto)</span><textarea name="nota" maxlength="400">${esc(d.nota)}</textarea></label>
-      <div class="dois"><label class="campo"><span>Criatura da Pokédex (vazio = automática)</span><input type="text" name="criatura" value="${esc(d.criatura || '')}" maxlength="60" /></label>
-        <label class="campo"><span>Raridade</span><select name="raridade">${['comum', 'raro', 'epico', 'lendario'].map((r) => `<option value="${r}" ${(d.raridade || 'comum') === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label></div>
+      <h4 style="margin:14px 0 4px">Carta do personagem</h4>
+      <div class="dois"><label class="campo"><span>Personagem (vazio = automático)</span><input type="text" name="criatura" value="${esc(d.criatura || '')}" maxlength="60" /></label>
+        <label class="campo"><span>Categoria da carta</span><select name="categoria_carta">${[['natureza', 'Natureza'], ['historia', 'História'], ['cultura', 'Cultura'], ['trabalho', 'Trabalho'], ['litoral', 'Litoral'], ['misterio', 'Mistério']].map(([v, n]) => `<option value="${v}" ${(d.categoria_carta || '') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
+      <div class="dois"><label class="campo"><span>Raridade</span><select name="raridade">${['comum', 'raro', 'epico', 'lendario'].map((r) => `<option value="${r}" ${(d.raridade || 'comum') === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label class="campo"><span>Arte (arquivo em /cartas/)</span><input type="text" name="arte" value="${esc(d.arte || '')}" maxlength="80" placeholder="Ex.: 03.webp" /></label></div>
+      <label class="campo"><span>História do personagem (até 400 caracteres)</span><textarea name="historia" maxlength="400">${esc(d.historia || '')}</textarea></label>
+      <label class="campo"><span>Frase da carta</span><input type="text" name="frase" value="${esc(d.frase || '')}" maxlength="160" /></label>
       <div class="dois"><label class="campo"><span>Ícone do carimbo</span><input type="text" name="icone" value="${esc(d.icone)}" maxlength="4" /></label>
         <label class="campo"><span>Formato do carimbo</span><select name="forma"><option value="c" ${d.forma === 'c' ? 'selected' : ''}>Círculo</option><option value="r" ${d.forma === 'r' ? 'selected' : ''}>Retângulo</option></select></label></div>
       ${novo ? `<label class="campo"><span>Status inicial</span><select name="status"><option value="pendente">Pendente (valide em campo antes de publicar)</option><option value="publicado">Publicado (já recebe carimbo)</option></select></label>` : ''}
@@ -175,7 +180,7 @@ function formularioPonto(p) {
       const corpo = {
         codigo: String(fd.get('codigo') || '').trim().toLowerCase(), rota_id: Number(fd.get('rota_id')), nome: fd.get('nome'),
         categorias: fd.getAll('categorias'), lat: fd.get('lat'), lng: fd.get('lng'), endereco: fd.get('endereco'), fonte_mapa: fd.get('fonte_mapa'), nota: fd.get('nota'),
-        criatura: fd.get('criatura'), raridade: fd.get('raridade'), icone: fd.get('icone'), forma: fd.get('forma'), oculto: fd.get('oculto') === 'on', parceiro: fd.get('parceiro') === 'on', status: fd.get('status') || undefined,
+        criatura: fd.get('criatura'), raridade: fd.get('raridade'), categoria_carta: fd.get('categoria_carta'), frase: fd.get('frase'), historia: fd.get('historia'), arte: fd.get('arte'), icone: fd.get('icone'), forma: fd.get('forma'), oculto: fd.get('oculto') === 'on', parceiro: fd.get('parceiro') === 'on', status: fd.get('status') || undefined,
       };
       if (corpo.status === 'publicado' && !corpo.lat && !(await confirmar('Publicar sem coordenadas?', 'O ponto não vai aparecer no mapa, mas já poderá receber carimbo. Publicar assim mesmo?'))) return;
       const botao = $('button[type=submit]', f); botao.disabled = true;

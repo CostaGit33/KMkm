@@ -92,3 +92,6 @@ Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o ca
 - **Edição numerada patrocinada:** `eventos.tiragem` e `eventos.emitidos`, tabela `edicao_numeros`. O número é emitido dentro da transação do toque, com a linha do card travada (`FOR UPDATE`), um por conta, sem reemissão mesmo se a conta for excluída. O admin define a tiragem no formulário do card; ela trava depois do primeiro carimbo.
 - **Páginas públicas:** `/privacidade` e `/excluir-conta` (defina `CONTATO_EMAIL`). Guia da loja em `docs/PLAY-STORE.md`.
 - **Testes:** `npm --prefix server test`; `server/scripts/smoke.mjs` (contra qualquer `BASE_URL`, `--profundo` para a edição numerada); coleção `postman/mais1km.postman_collection.json`.
+
+## V8.8 · Coleção de cartas
+Cada ponto publicado é uma carta numerada (personagem, local, categoria, raridade). O primeiro carimbo de rota desbloqueia a carta; voltar ao ponto em 5, 30 e 45 dias evolui o estágio (Descoberta, Reconhecimento, Vínculo, Legado). Seis categorias: Natureza, História, Cultura, Trabalho, Litoral, Mistério. A ilustração final de cada carta vai em `client/public/cartas/` e o nome do arquivo é definido no painel admin (campo "Arte"); sem arquivo, usa-se um desenho gerado. Visual: verde profundo e dourado, fontes Cinzel, Montserrat e Yellowtail.

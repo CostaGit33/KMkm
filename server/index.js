@@ -10,7 +10,7 @@ import { inicioDoDiaLocal } from './time.js';
 import { adminRouter, catalogoPublico } from './admin.js';
 import { gamificacaoRouter } from './gamificacao.js';
 import { cartaoAtivoNoPonto, cartoesDaCaderneta, emitirNumero, estadoDoCard } from './eventos.js';
-import { albumDaPessoa } from './criaturas.js';
+import { albumDaPessoa, estagioPorDias } from './criaturas.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
 
 const JANELA_REPETIDO_MIN = 30;
@@ -313,12 +313,22 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   // Captura: a primeira vez que a pessoa carimba este ponto (fora de cards) revela a criatura do ponto.
   const [{ passagens }] = await q('SELECT COUNT(*) AS passagens FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL', [usuario.id, tag.id]);
   const album = await albumDaPessoa(usuario.id);
+  const carta = album.itens.find((i) => i.codigo === tag.codigo);
+  // Evolução: voltar ao ponto depois de 5, 30 e 45 dias do primeiro carimbo.
+  let evoluiu = false;
+  if (!repetido && Number(passagens) > 1 && carta) {
+    const [anterior] = await q('SELECT MAX(criado_em) AS ultima FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL AND id < ?', [usuario.id, tag.id, carimbo.id]);
+    const diasAntes = anterior?.ultima ? Math.floor((new Date(anterior.ultima) - new Date(carta.capturada_em)) / 86400000) : 0;
+    evoluiu = carta.estagio > estagioPorDias(Math.max(0, diasAntes));
+  }
   const criatura = {
     nome: tag.criatura,
     raridade: tag.raridade || 'comum',
     nova: !repetido && Number(passagens) === 1,
     capturadas: album.capturadas,
     total: album.total,
+    evoluiu,
+    carta,
   };
   const [{ hoje }] = await q(
     `SELECT COUNT(*) AS hoje FROM carimbos

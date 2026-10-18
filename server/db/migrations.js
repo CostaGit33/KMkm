@@ -202,6 +202,11 @@ async function ensureGamificationSchema() {
 async function ensureColecaoEdicaoSchema() {
   await ensureColumn('tags', 'criatura', 'VARCHAR(60) NULL');
   await ensureColumn('tags', 'raridade', 'VARCHAR(12) NULL');
+  await ensureColumn('tags', 'categoria_carta', 'VARCHAR(12) NULL');
+  await ensureColumn('tags', 'frase', 'VARCHAR(160) NULL');
+  await ensureColumn('tags', 'historia', 'VARCHAR(400) NULL');
+  await ensureColumn('tags', 'arte', 'VARCHAR(80) NULL');
+  await ensureColumn('tags', 'carta', 'INT NULL');
   await ensureColumn('eventos', 'tiragem', 'INT UNSIGNED NULL');
   await ensureColumn('eventos', 'emitidos', 'INT UNSIGNED NOT NULL DEFAULT 0');
   await q(`CREATE TABLE IF NOT EXISTS edicao_numeros (
