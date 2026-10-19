@@ -77,8 +77,8 @@ export function secaoColecao(colecao) {
   itensAtuais = colecao.itens;
   const { total, capturadas, por_categoria: pc = {} } = colecao;
   const pct = total ? Math.round((capturadas / total) * 100) : 0;
-  const chips = [`<button type="button" class="carta-chip ativo" data-cat="todas">Todas <small>${capturadas}/${total}</small></button>`]
-    .concat(CATEGORIAS.filter((c) => (pc[c.id]?.total || 0) > 0).map((c) => `<button type="button" class="carta-chip" data-cat="${c.id}">${c.nome} <small>${pc[c.id].capturadas}/${pc[c.id].total}</small></button>`)).join('');
+  const chips = [`<button type="button" class="carta-chip ativo" aria-pressed="true" data-cat="todas">Todas <small>${capturadas}/${total}</small></button>`]
+    .concat(CATEGORIAS.filter((c) => (pc[c.id]?.total || 0) > 0).map((c) => `<button type="button" class="carta-chip" aria-pressed="false" data-cat="${c.id}">${c.nome} <small>${pc[c.id].capturadas}/${pc[c.id].total}</small></button>`)).join('');
   return `<section class="colecao-cartas" aria-labelledby="colecao-title"><div class="section-heading"><div><h2 id="colecao-title">${total} ${total === 1 ? 'ponto' : 'pontos'}. Uma só cidade.</h2><p>Cada ponto é uma carta com um personagem de Eunápolis. Encoste na tag para desbloquear.</p></div><strong class="route-count">${capturadas}/${total}</strong></div>`
     + `<div class="colecao-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${capturadas}" aria-label="Cartas desbloqueadas"><span style="width:${pct}%"></span></div>`
     + `<div class="carta-chips" role="group" aria-label="Filtrar por categoria">${chips}</div>`
@@ -92,7 +92,7 @@ if (typeof document !== 'undefined' && !window.__cartasOuvinte) {
     const chip = ev.target.closest?.('.carta-chip');
     if (chip) {
       const secao = chip.closest('.colecao-cartas');
-      secao.querySelectorAll('.carta-chip').forEach((c) => c.classList.toggle('ativo', c === chip));
+      secao.querySelectorAll('.carta-chip').forEach((c) => { c.classList.toggle('ativo', c === chip); c.setAttribute('aria-pressed', String(c === chip)); });
       secao.querySelectorAll('.carta-grid > li').forEach((li) => { li.hidden = chip.dataset.cat !== 'todas' && li.dataset.cat !== chip.dataset.cat; });
       return;
     }

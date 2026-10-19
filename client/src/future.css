@@ -43,11 +43,11 @@
   --ink: #14271e;
   --muted: #5a6155;
   --rule: #d3c7a8;
-  --red: #a97614;
-  --red-dark: #7a520b;
+  --red: #86590c;
+  --red-dark: #5f3f07;
   --blue: #1f5a43;
   --green: #1f7a52;
-  --ochre: #a97614;
+  --ochre: #86590c;
   --frame: #14271e;
   --line: rgba(0, 0, 0, .14);
   --line-strong: rgba(0, 0, 0, .34);
@@ -674,3 +674,8 @@ button.carta { cursor: pointer; }
 .mk-ring { border-color: #d9a84a; }
 .map-route { stroke: #d9a84a; }
 .real-map[data-engine="google"] { min-height: 420px; }
+
+/* Acessibilidade: alvos de toque de 44px nos filtros e chips */
+.carta-chip, .map-chip, .filter-chip { min-height: 44px; display: inline-flex; align-items: center; }
+.carta-chip:focus-visible, .carta:focus-visible, .carta-fechar:focus-visible { outline: 3px solid #f0d08c; outline-offset: 2px; }
+.carta-fechar { width: 44px; height: 44px; }

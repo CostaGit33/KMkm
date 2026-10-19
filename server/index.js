@@ -53,6 +53,7 @@ app.get('/api/map-tiles/:z/:x/:y.png', limit({ windowMs: 60 * 1000, max: 120, na
   }
   const upstream = await fetch(`https://tile.openstreetmap.de/${z}/${x}/${y}.png`, {
     headers: { 'user-agent': 'mais1km-map/1.0 (+1KM city map)' },
+    signal: AbortSignal.timeout(8000),
   });
   if (!upstream.ok) return res.status(upstream.status).end();
   res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/png');
