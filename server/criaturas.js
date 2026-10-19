@@ -7,14 +7,6 @@ export const RARIDADES = ['comum', 'raro', 'epico', 'lendario'];
 
 // Seis categorias da coleção (a carta), separadas das categorias do mapa: oculto vira Mistério, sabores vira Trabalho, praias vira Litoral.
 export const CATEGORIAS_CARTA = ['natureza', 'historia', 'cultura', 'trabalho', 'litoral', 'misterio'];
-// Evolução por tempo: dias entre o primeiro carimbo e o último no mesmo ponto.
-export const ESTAGIOS = [
-  { dias: 0, nome: 'Descoberta' },
-  { dias: 5, nome: 'Reconhecimento' },
-  { dias: 30, nome: 'Vínculo' },
-  { dias: 45, nome: 'Legado' },
-];
-export const estagioPorDias = (dias) => ESTAGIOS.reduce((acc, e, i) => (dias >= e.dias ? i : acc), 0);
 export function categoriaDaCarta(ponto) {
   if (ponto.oculto) return 'misterio';
   const cats = String(ponto.categorias || '').split(',').filter(Boolean);
@@ -97,17 +89,14 @@ export async function atribuirCriaturas(consulta = q) {
 export async function albumDaPessoa(usuarioId) {
   const linhas = await q(
     `SELECT t.codigo, t.nome AS ponto, t.criatura, t.raridade, t.ordem, t.carta, t.arte, t.frase, t.historia, t.oculto, t.categorias, t.categoria_carta,
-            r.cor, c.primeira, c.ultima
+            r.cor, c.primeira
      FROM tags t JOIN rotas r ON r.id = t.rota_id
-     LEFT JOIN (SELECT tag_id, MIN(criado_em) AS primeira, MAX(criado_em) AS ultima FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id) c ON c.tag_id = t.id
+     LEFT JOIN (SELECT tag_id, MIN(criado_em) AS primeira FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id) c ON c.tag_id = t.id
      WHERE t.status = 'publicado' AND r.status = 'publicado' ORDER BY t.carta, t.id`,
     [usuarioId],
   );
   const itens = linhas.map((l) => {
     const capturada = Boolean(l.primeira);
-    const dias = capturada ? Math.max(0, Math.floor((new Date(l.ultima) - new Date(l.primeira)) / 86400000)) : 0;
-    const estagio = capturada ? estagioPorDias(dias) : 0;
-    const proximo = ESTAGIOS[estagio + 1] || null;
     return {
       codigo: l.codigo,
       carta: l.carta,
@@ -121,10 +110,6 @@ export async function albumDaPessoa(usuarioId) {
       frase: capturada ? l.frase : null,
       historia: capturada ? l.historia : null,
       arte: capturada && l.arte ? l.arte : null,
-      estagio,
-      dias,
-      // Quantos dias faltam, a partir do primeiro carimbo, para a pessoa voltar e evoluir a carta.
-      proximo_estagio: capturada && proximo ? { nome: proximo.nome, em_dias: Math.max(0, proximo.dias - dias) } : null,
     };
   });
   const capturadas = itens.filter((i) => i.capturada).length;
@@ -133,5 +118,5 @@ export async function albumDaPessoa(usuarioId) {
     const doGrupo = itens.filter((i) => i.categoria === cat);
     porCategoria[cat] = { total: doGrupo.length, capturadas: doGrupo.filter((i) => i.capturada).length };
   }
-  return { total: itens.length, capturadas, por_categoria: porCategoria, estagios: ESTAGIOS, itens };
+  return { total: itens.length, capturadas, por_categoria: porCategoria, itens };
 }

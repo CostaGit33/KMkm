@@ -93,8 +93,8 @@ Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o ca
 - **Páginas públicas:** `/privacidade` e `/excluir-conta` (defina `CONTATO_EMAIL`). Guia da loja em `docs/PLAY-STORE.md`.
 - **Testes:** `npm --prefix server test`; `server/scripts/smoke.mjs` (contra qualquer `BASE_URL`, `--profundo` para a edição numerada); coleção `postman/mais1km.postman_collection.json`.
 
-## V8.8 · Coleção de cartas
-Cada ponto publicado é uma carta numerada (personagem, local, categoria, raridade). O primeiro carimbo de rota desbloqueia a carta; voltar ao ponto em 5, 30 e 45 dias evolui o estágio (Descoberta, Reconhecimento, Vínculo, Legado). Seis categorias: Natureza, História, Cultura, Trabalho, Litoral, Mistério. A ilustração final de cada carta vai em `client/public/cartas/` e o nome do arquivo é definido no painel admin (campo "Arte"); sem arquivo, usa-se um desenho gerado. Visual: verde profundo e dourado, fontes Cinzel, Montserrat e Yellowtail.
+## V8.10 · Cartas únicas, sem evolução por tempo
+Cada ponto publicado é uma carta única numerada (personagem, local, categoria, raridade). O primeiro carimbo de rota desbloqueia a carta definitivamente; não há estágios, contagem de dias nem exigência de retorno em datas diferentes. Eventos e patrocínios continuam sendo colecionáveis independentes, com janela de validade e, quando configurado, edição numerada limitada a uma por conta. Seis categorias: Natureza, História, Cultura, Trabalho, Litoral, Mistério. A ilustração final de cada carta vai em `client/public/cartas/` e o nome do arquivo é definido no painel admin (campo "Arte"); sem arquivo, usa-se um desenho gerado. Visual: verde profundo e dourado, fontes Cinzel, Montserrat e Yellowtail.
 
 ## V8.9 · Rodapé único e Google Maps
 - **Rodapé:** todas as opções ficam na barra inferior: Caderneta, Mapa, Rotas, Coleção, Pódio e **Mais** (folha com Guia, Certificados, Perfil, tema e instalar). O topo mostra só a marca. No desktop a barra lateral tem os mesmos itens.
