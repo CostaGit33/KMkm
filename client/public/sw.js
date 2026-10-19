@@ -1,5 +1,5 @@
 // Troque o nome do cache a cada versão publicada para renovar os aparelhos sem apagar o estado local.
-const CACHE_NAME = "mais1km-v22-mapa-rodape";
+const CACHE_NAME = "mais1km-v23-mapa-cheio";
 const APP_SHELL = [
   "/",
   "/index.html",

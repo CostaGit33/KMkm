@@ -80,7 +80,9 @@ export async function createGoogleEngine(element, { center, zoom }, { apiKey, ma
     colorScheme: theme === "light" ? "LIGHT" : "DARK",
     minZoom: 10, maxZoom: 20, clickableIcons: false, gestureHandling: "greedy",
     zoomControl: true, mapTypeControl: true, streetViewControl: true, fullscreenControl: false, rotateControl: false,
-    mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU },
+    mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU, position: google.maps.ControlPosition.LEFT_CENTER },
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+    streetViewControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
   });
   const markers = new globalThis.Map();
   let line = null; let dot = null; let ring = null;

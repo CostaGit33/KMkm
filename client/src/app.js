@@ -126,6 +126,8 @@ function render({ preserveFocus = false } = {}) {
     if (typeof active.selectionStart === "number") selection = [active.selectionStart, active.selectionEnd];
   }
   renderChrome(state, view, routeId, menuOpen);
+  document.body.classList.toggle("view-map", view === "map");
+  if (view === "map") document.documentElement.style.setProperty("--topbar-bottom", `${Math.ceil(document.getElementById("topbar").getBoundingClientRect().bottom)}px`);
   document.querySelector(".app-shell").inert = menuOpen;
   document.getElementById("bottom-nav").inert = menuOpen;
   activeMap?.remove();

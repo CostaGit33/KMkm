@@ -251,24 +251,11 @@ function pointRow(state, point, ordinal) {
 function mapCanvas(state, filters) {
   const points = getFilteredPoints(state, { ...filters, search: "" });
   const mapped = points.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-  const field = mapped.filter((point) => point.coordinateKind === "field").length;
-  return `<div class="map-stage"><div class="real-map" id="real-map" role="application" aria-label="Mapa de ${escapeHtml(CITY.name)} com ${mapped.length} pontos localizados"></div><div class="map-hud" id="map-hud"></div></div>
-    <div class="map-ui" id="map-ui"></div>
-    <div class="map-legend"><span class="legend-item"><i class="legend-dot green"></i> Conquistado</span><span class="legend-item"><i class="legend-dot"></i> Disponível</span><span class="legend-item"><i class="legend-dot ochre"></i> Mistério</span><span class="legend-item"><i class="legend-dot field"></i> Marcado em campo</span></div>
-    <p class="map-source">Mapa · ${mapped.length - field} do catálogo (a conferir) · ${field} marcados em campo · ${points.length - mapped.length} sem coordenada</p>`;
+  return `<div class="map-stage"><div class="real-map" id="real-map" role="application" aria-label="Mapa de ${escapeHtml(CITY.name)} com ${mapped.length} pontos localizados"></div><div class="map-hud" id="map-hud"></div><div class="map-ui" id="map-ui"></div></div>`;
 }
+// Página do mapa: só o mapa, em tela cheia; rota, ponto selecionado e atalhos aparecem sobre ele.
 function renderMap(state, filters) {
-  const filtered = getFilteredPoints(state, filters);
-  const categoryOptions = `<option value="all">Todas as páginas</option>${CATEGORIES.map((category) => `<option value="${category.id}" ${filters.categoryId === category.id ? "selected" : ""}>${escapeHtml(category.name)}</option>`).join("")}`;
-  const statusChips = [
-    ["all", "Todos"], ["discovered", "Descobertos"], ["available", "Disponíveis"], ["conquered", "Conquistados"], ["mystery", "Mistérios"],
-  ].map(([id, label]) => `<button class="filter-chip" type="button" data-action="set-point-filter" data-filter="${id}" aria-pressed="${filters.pointFilter === id}">${label}</button>`).join("");
-  return `${pageHead("Pontos", "Mapa", CITY.name)}
-    <article class="card map-card">${mapCanvas(state, filters)}</article>
-    <div class="section-heading"><div><h2>Pontos</h2><p>${filtered.length} ${filtered.length === 1 ? "resultado" : "resultados"}</p></div><label class="eyebrow" for="category-filter">Categoria</label></div>
-    <div class="filter-row" style="margin-bottom:10px"><select class="filter-select" id="category-filter" data-select="category" aria-label="Filtrar pontos por categoria">${categoryOptions}</select><input class="search-input" style="flex:1;min-width:170px" type="search" data-input="point-search" placeholder="Buscar um ponto ou código" value="${escapeHtml(filters.search)}" aria-label="Buscar ponto pelo nome ou código" /></div>
-    <div class="chip-row" role="group" aria-label="Filtrar pontos por estado">${statusChips}</div>
-    <div class="point-list">${filtered.length ? filtered.map((point) => pointRow(state, point, POINTS.indexOf(point) + 1)).join("") : `<div class="empty-state"><strong>Nenhum ponto nesta seleção</strong>Experimente outra categoria ou estado.</div>`}</div>`;
+  return `<h1 class="sr-only">Mapa de ${escapeHtml(CITY.name)}</h1>${mapCanvas(state, filters)}`;
 }
 
 function renderRoutes(state) {
