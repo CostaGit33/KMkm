@@ -1,7 +1,7 @@
 import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, getCategory, getPoint } from "./data.js";
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
-import { secaoColecao } from "./cartas.js";
+import { secaoColecao, cartaHtml } from "./cartas.js";
 
 const NAV_ITEMS = [
   { id: "home", label: "Caderneta", icon: "▤" },
@@ -18,7 +18,8 @@ export function escapeHtml(value) {
 export function progressFor(state, ids = null) {
   const isCity = ids === null;
   const uniqueIds = isCity ? POINTS.map((point) => point.id) : [...new Set(ids)];
-  const count = uniqueIds.filter((id) => state.conquered.includes(id)).length;
+  const servidor = Array.isArray(colecaoServidor?.itens) ? new Set(colecaoServidor.itens.filter((item) => item.capturada).map((item) => getPoint(item.codigo)?.id).filter(Boolean)) : null;
+  const count = uniqueIds.filter((id) => (servidor ? servidor.has(id) : state.conquered.includes(id))).length;
   const total = isCity ? CITY.totalPoints : uniqueIds.length;
   return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
 }
@@ -32,7 +33,8 @@ export function certificateRoutes(state) {
 }
 
 export function pointStatus(state, point) {
-  if (state.conquered.includes(point.id)) return "conquered";
+  const servidor = colecaoServidor?.itens?.find((item) => getPoint(item.codigo)?.id === point.id);
+  if (servidor ? servidor.capturada : state.conquered.includes(point.id)) return "conquered";
   if (point.hidden && !state.discovered.includes(point.id)) return "mystery";
   if (state.discovered.includes(point.id)) return "discovered";
   return "available";
@@ -137,12 +139,14 @@ function stamp(point, ordinal, date = "", ctx = {}) {
 }
 
 function historyRows(state, count = 4) {
-  const rows = [...state.history].reverse().slice(0, count);
-  if (!rows.length) return `<div class="empty-state"><strong>Uma página em branco</strong>Seu próximo carimbo começa com uma descoberta.</div>`;
+  const rows = (Array.isArray(colecaoServidor?.itens)
+    ? colecaoServidor.itens.filter((item) => item.capturada && item.capturada_em).map((item) => ({ pointId: getPoint(item.codigo)?.id, at: item.capturada_em })).filter((item) => item.pointId).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    : [...state.history].reverse()).slice(0, count);
+  if (!rows.length) return `<div class="empty-state"><strong>Uma página em branco</strong>Sua primeira carta começa com uma descoberta.</div>`;
   return rows.map((entry) => {
     const point = getPoint(entry.pointId);
     if (!point) return "";
-    return `<div class="history-row"><span class="history-stamp" aria-hidden="true">${point.id.slice(-2)}</span><span class="history-copy"><strong>${escapeHtml(point.name)}</strong><small>Carimbado em ${formatDate(entry.at)}</small></span><span class="status-pill conquered">Conquistado</span></div>`;
+    return `<div class="history-row"><span class="history-stamp" aria-hidden="true">${point.id.slice(-2)}</span><span class="history-copy"><strong>${escapeHtml(point.name)}</strong><small>Carta conquistada em ${formatDate(entry.at)}</small></span><span class="status-pill conquered">Na coleção</span></div>`;
   }).join("");
 }
 
@@ -176,11 +180,11 @@ function renderCartoes(state) {
   return `<section aria-labelledby="eventos-title"><div class="section-heading"><div><h2 id="eventos-title">Eventos e patrocínios</h2><p>Cards com data. Não mudam sua rota nem seus certificados.</p></div></div><div class="evento-lista">${itens}</div></section>`;
 }
 
-// Carimbos conquistados em miniatura (atalho para cada ponto) e mapa reduzido (atalho para os pontos e para o mapa completo).
-function homeStamps(state) {
-  const conquered = POINTS.filter((point) => state.conquered.includes(point.id));
-  if (!conquered.length) return `<p class="home-empty">Seus carimbos aparecem aqui. Encoste num ponto para ganhar o primeiro.</p>`;
-  return `<div class="home-stamps" role="list" aria-label="Carimbos conquistados">${conquered.map((point) => `<button class="home-stamp" role="listitem" type="button" data-action="open-point" data-id="${point.id}" aria-label="Abrir carimbo de ${escapeHtml(point.name)}" title="${escapeHtml(point.name)}">${stampHtml(point, POINTS.indexOf(point) + 1, { state })}</button>`).join("")}</div>`;
+// Cartas conquistadas em miniatura e mapa reduzido. A carta é a única coleção do usuário.
+function homeCards(state) {
+  const cards = Array.isArray(colecaoServidor?.itens) ? colecaoServidor.itens.filter((item) => item.capturada) : POINTS.filter((point) => state.conquered.includes(point.id)).map((point) => ({ codigo: point.id, ponto: point.name, carta: POINTS.indexOf(point) + 1, categoria: "cultura", raridade: "comum", capturada: true, criatura: point.name }));
+  if (!cards.length) return `<p class="home-empty">Sua coleção está em branco. Encoste em uma tag para conquistar a primeira carta.</p>`;
+  return `<div class="home-stamps home-cards" role="list" aria-label="Cartas conquistadas">${cards.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96 })}</button>`; }).join("")}</div>`;
 }
 
 function miniMap(state) {
@@ -214,12 +218,12 @@ function renderHome(state) {
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
   return `${pageHead("Caderneta", CITY.name)}
     <section class="hero-card" aria-labelledby="hero-title">
-      <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Seus carimbos.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} pontos</span></div></div>
+      <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Sua coleção.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} cartas</span></div></div>
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
-    <div class="stats-strip" aria-label="Resumo da caderneta"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">pontos da cidade</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">carimbos guardados</span></div></div>
+    <div class="stats-strip" aria-label="Resumo da coleção"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">cartas conquistadas</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">cartas na coleção</span></div></div>
     <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
-      <article class="card home-city-card"><h3 class="home-sub">Carimbos conquistados <span>${city.count}</span></h3>${homeStamps(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
+      <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
       <div class="category-grid">${categoryTotals}</div>
       <article class="card"><div class="progress-meta"><span>${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "red", `Pontos conquistados em ${CITY.name}`)}</article>
     </section>

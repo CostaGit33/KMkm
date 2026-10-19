@@ -1,7 +1,6 @@
 import { CITY, POINTS, ROUTES, getPoint } from "./data.js";
-import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount } from "./store.js";
+import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount, syncServerCollection } from "./store.js";
 import { renderAuth, validarNome, validarEmail, validarSenha, gerarSenha, senhaConfere } from "./auth.js";
-import { importServerStamps } from "./store.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
 import { applyFieldMarks } from "./geo.js";
 import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
@@ -521,22 +520,21 @@ async function sincronizarComServidor() {
     const caderneta = await lerCaderneta();
     ultimaSincronizacao = Date.now();
     if (!caderneta || !isSignedIn(state)) return;
-    const itens = caderneta.itens;
     const anteriores = JSON.stringify(cartoesAtuais);
     cartoesAtuais = caderneta.eventos;
     setEventos(cartoesAtuais);
     const colecaoAntes = JSON.stringify(colecaoAtual);
+    const cartasAntes = new Set((colecaoAtual?.itens || []).filter((item) => item.capturada).map((item) => item.codigo));
     colecaoAtual = caderneta.colecao;
     setColecao(colecaoAtual);
-    if (JSON.stringify(cartoesAtuais) !== anteriores || JSON.stringify(colecaoAtual) !== colecaoAntes) render();
-    const jaConquistados = new Set(state.conquered);
-    const resultado = importServerStamps(state, itens);
-    if (resultado.imported > 0) {
+    const resultado = syncServerCollection(state, colecaoAtual);
+    if (JSON.stringify(cartoesAtuais) !== anteriores || JSON.stringify(colecaoAtual) !== colecaoAntes || resultado.changed) render();
+    if (resultado.changed) {
       state = resultado.state;
-      const novos = state.conquered.filter((id) => !jaConquistados.has(id));
+      const novas = (colecaoAtual?.itens || []).filter((item) => item.capturada && !cartasAntes.has(item.codigo));
       render();
-      if (novos.length === 1 && getPoint(novos[0])) playStampMoment(getPoint(novos[0]), state);
-      showToast(resultado.imported === 1 ? "1 carimbo de tag chegou na sua caderneta." : `${resultado.imported} carimbos de tags chegaram na sua caderneta.`);
+      if (novas.length === 1 && getPoint(novas[0].codigo)) playStampMoment(getPoint(novas[0].codigo), state);
+      if (novas.length) showToast(novas.length === 1 ? "1 nova carta entrou na sua coleção." : `${novas.length} novas cartas entraram na sua coleção.`);
     }
   } finally {
     sincronizando = false;

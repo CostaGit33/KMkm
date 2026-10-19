@@ -147,25 +147,18 @@ export function updateAccount(state, patch) {
   return save({ ...state, account, user: { ...state.user, name: account.nome } });
 }
 
-// Carimbos feitos em tags físicas (guardados no servidor) entram na caderneta do aparelho.
-// Cada item: { codigo: "eu-001", at: "2026-10-08T12:00:00.000Z" }. Não duplica carimbos já guardados.
-export function importServerStamps(state, items) {
-  let next = state;
-  let imported = 0;
-  for (const { codigo, at } of items) {
-    const point = findPointByCode(codigo);
-    const ms = Date.parse(at);
-    if (!point || !Number.isFinite(ms) || next.conquered.includes(point.id)) continue;
-    const id = point.id;
-    next = {
-      ...next,
-      conquered: [...next.conquered, id],
-      discovered: [...new Set([...next.discovered, id])],
-      history: [...next.history, { pointId: id, at: new Date(ms).toISOString(), kind: "point" }]
-        .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-        .slice(-100),
-    };
-    imported += 1;
-  }
-  return imported ? { state: save(next), imported } : { state, imported: 0 };
+// A coleção do servidor é a fonte de verdade. O estado local abaixo é apenas uma
+// projeção para mapa, rotas e uso offline; não cria nem confirma conquistas.
+export function syncServerCollection(state, collection) {
+  const itens = Array.isArray(collection?.itens) ? collection.itens : [];
+  const conquistados = itens.filter((item) => item?.capturada === true && findPointByCode(item.codigo));
+  const conquered = onlyKnownPoints(conquistados.map((item) => item.codigo));
+  const discovered = onlyKnownPoints([...state.discovered, ...conquered]);
+  const history = conquistados
+    .filter((item) => typeof item.capturada_em === "string" && Number.isFinite(Date.parse(item.capturada_em)))
+    .map((item) => ({ pointId: findPointByCode(item.codigo).id, at: new Date(item.capturada_em).toISOString(), kind: "point" }))
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+    .slice(-100);
+  const changed = JSON.stringify([state.conquered, state.discovered, state.history]) !== JSON.stringify([conquered, discovered, history]);
+  return changed ? { state: save({ ...state, conquered, discovered, history }), changed: true } : { state, changed: false };
 }
