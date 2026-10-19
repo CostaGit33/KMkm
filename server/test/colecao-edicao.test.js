@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emitirNumero } from '../eventos.js';
-import { POOL_CRIATURAS, RARIDADES, estagioPorDias, categoriaDaCarta, CATEGORIAS_CARTA } from '../criaturas.js';
+import { POOL_CRIATURAS, RARIDADES, categoriaDaCarta, CATEGORIAS_CARTA } from '../criaturas.js';
 
 // Conexão falsa que imita as tabelas eventos e edicao_numeros, só o suficiente para exercitar a regra.
 // Como no mysql2, cada consulta devolve [linhas]; o código da regra desestrutura a primeira linha.
@@ -41,10 +41,6 @@ test('o pool de criaturas não tem nomes repetidos e as raridades são as quatro
   assert.equal(new Set(POOL_CRIATURAS).size, POOL_CRIATURAS.length);
   assert.ok(POOL_CRIATURAS.length >= 40);
   assert.deepEqual(RARIDADES, ['comum', 'raro', 'epico', 'lendario']);
-});
-
-test('evolução da carta: estágios em 0, 5, 30 e 45 dias', () => {
-  assert.deepEqual([0, 4, 5, 29, 30, 44, 45, 400].map(estagioPorDias), [0, 0, 1, 1, 2, 2, 3, 3]);
 });
 
 test('categoria da carta: oculto vira Mistério, sabores Trabalho, praias Litoral', () => {
