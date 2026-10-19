@@ -553,6 +553,22 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .home-stamp:hover, .home-stamp:focus-visible { transform: translateY(-2px); box-shadow: 0 6px 14px -8px var(--glow, rgba(0,0,0,.4)); }
 .home-stamp .stamp-wrap { width: 100%; height: 100%; display: block; }
 .home-stamp .stamp-svg { width: 100%; height: 100%; }
+.collection-spotlight { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 16px; padding: 18px 20px; border: 1px solid color-mix(in srgb, var(--red) 65%, var(--line)); border-radius: 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--card-strong) 92%, transparent), color-mix(in srgb, var(--red) 12%, var(--card))); box-shadow: 0 12px 30px -18px var(--glow-red); position: relative; overflow: hidden; }
+.collection-spotlight::after { content: "✳"; position: absolute; right: 16px; top: -18px; color: color-mix(in srgb, var(--red) 22%, transparent); font-size: 100px; line-height: 1; transform: rotate(15deg); pointer-events: none; }
+.collection-spotlight > div { position: relative; z-index: 1; min-width: 0; }
+.collection-spotlight .eyebrow { margin: 0 0 5px; }
+.collection-spotlight h2 { margin: 0; max-width: 520px; font: 19px/1.2 var(--display); letter-spacing: .01em; }
+.collection-spotlight p:not(.eyebrow) { max-width: 560px; margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.spotlight-action { position: relative; z-index: 1; flex: 0 0 auto; min-height: 44px; padding: 10px 14px; border: 1px solid var(--red); border-radius: 999px; background: var(--red); color: var(--on-accent); font-weight: 800; cursor: pointer; box-shadow: 0 6px 18px -10px var(--glow-red); transition: transform .18s ease, box-shadow .18s ease; }
+.spotlight-action:hover, .spotlight-action:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 22px -10px var(--glow-red); }
+.home-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.home-card { width: auto; height: auto; min-height: 126px; padding: 0; border-color: color-mix(in srgb, var(--red) 55%, var(--rule)); background: var(--card); overflow: hidden; }
+.home-card .carta { width: 100%; min-height: 124px; border: 0; border-radius: 0; box-shadow: none; }
+.home-card .carta-arte { width: 100%; height: 76px; }
+.home-card .carta-nome { font-size: 10px; }
+.home-card .carta-local { font-size: 9px; }
+.home-card .carta-selo { font-size: 8px; margin-top: 3px; }
+@media (max-width: 560px) { .collection-spotlight { display: block; padding: 16px; } .spotlight-action { width: 100%; margin-top: 13px; } .collection-spotlight::after { right: -6px; top: -22px; } }
 .mini-map-wrap { display: grid; gap: 8px; }
 .mini-map { position: relative; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--rule); border-radius: 14px; overflow: hidden;
   background-color: var(--card-strong, var(--card)); background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px); background-size: 28px 28px; }

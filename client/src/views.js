@@ -187,6 +187,12 @@ function homeCards(state) {
   return `<div class="home-stamps home-cards" role="list" aria-label="Cartas conquistadas">${cards.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96 })}</button>`; }).join("")}</div>`;
 }
 
+function collectionSpotlight(state, city) {
+  if (!(state.account && state.session)) return "";
+  const restante = Math.max(0, city.total - city.count);
+  return `<section class="collection-spotlight" aria-labelledby="collection-spotlight-title"><div><p class="eyebrow">Coleção em andamento</p><h2 id="collection-spotlight-title">${city.count === 0 ? "Sua primeira carta começa na rua" : restante ? `Faltam ${restante} cartas para completar a cidade` : "Coleção de Eunápolis completa"}</h2><p>${city.count === 0 ? "Aproxime-se de uma tag publicada para desbloquear uma carta única." : "Cada visita confirmada revela uma carta; não há uma segunda coleção de carimbos."}</p></div><button class="spotlight-action" type="button" data-action="switch-view" data-view="collection">Ver coleção <span aria-hidden="true">→</span></button></section>`;
+}
+
 function miniMap(state) {
   const placed = POINTS.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
   if (!placed.length) return "";
@@ -221,6 +227,7 @@ function renderHome(state) {
       <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Sua coleção.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} cartas</span></div></div>
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
+    ${collectionSpotlight(state, city)}
     <div class="stats-strip" aria-label="Resumo da coleção"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">cartas conquistadas</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">cartas na coleção</span></div></div>
     <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
