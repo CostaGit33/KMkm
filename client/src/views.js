@@ -127,10 +127,19 @@ function categoryCard(state, category) {
 function routeCard(state, route) {
   const progress = routeProgress(state, route);
   const complete = progress.percent === 100;
-  return `<article class="route-card">
+  const inProgress = progress.count > 0 && !complete;
+  const missingPoints = route.pointIds.map(getPoint).filter((point) => point && pointStatus(state, point) !== "conquered");
+  const missingPreview = missingPoints.slice(0, 2).map((point) => getVisibleName(state, point));
+  const statusLabel = complete ? "Concluída" : inProgress ? "Em andamento" : "Não iniciada";
+  const pendingText = missingPoints.length
+    ? `Falta: ${missingPreview.map(escapeHtml).join(" · ")}${missingPoints.length > missingPreview.length ? ` · +${missingPoints.length - missingPreview.length}` : ""}`
+    : "Todos os pontos carimbados";
+  return `<article class="route-card ${inProgress ? "is-in-progress" : ""} ${complete ? "is-complete" : ""}" data-route-state="${complete ? "complete" : inProgress ? "progress" : "new"}">
     <div class="route-card-top"><span class="route-icon ${route.color}" aria-hidden="true">${route.icon}</span><div class="route-info"><h3 class="route-name">${escapeHtml(route.name)}</h3><p class="route-subtitle">${escapeHtml(route.subtitle)}</p></div><span class="route-count">${progress.count}/${progress.total}</span></div>
+    <div class="route-state-row"><span class="route-state-pill ${complete ? "complete" : inProgress ? "progress" : "new"}">${statusLabel}</span><span class="route-state-detail">${complete ? "Certificado liberado" : `${progress.total - progress.count} ${progress.total - progress.count === 1 ? "ponto restante" : "pontos restantes"}`}</span></div>
     ${progressBar(progress, route.color, `Progresso da rota ${route.name}`)}
-    <div class="route-card-foot"><span>${complete ? "Concluída · certificado liberado" : `${progress.total - progress.count} ${progress.total - progress.count === 1 ? "ponto restante" : "pontos restantes"}`}</span><button class="route-card-button" type="button" data-action="open-route" data-id="${route.id}">Ver rota →</button></div>
+    ${!complete ? `<p class="route-pending">${pendingText}</p>` : ""}
+    <div class="route-card-foot"><span>${complete ? "Rota concluída" : inProgress ? "Continue de onde parou" : "Pronta para começar"}</span><button class="route-card-button" type="button" data-action="open-route" data-id="${route.id}">${complete ? "Rever rota →" : inProgress ? "Continuar →" : "Ver rota →"}</button></div>
   </article>`;
 }
 
@@ -274,8 +283,21 @@ function renderMap(state, filters) {
 }
 
 function renderRoutes(state) {
-  return `${pageHead("Rotas", CITY.name)}
-    <div class="route-list">${ROUTES.map((route) => routeCard(state, route)).join("")}</div>
+  const rank = (route) => {
+    const progress = routeProgress(state, route);
+    if (progress.percent > 0 && progress.percent < 100) return 0;
+    if (progress.percent === 100) return 1;
+    return 2;
+  };
+  const routes = ROUTES.map((route, index) => ({ route, index }))
+    .sort((a, b) => rank(a.route) - rank(b.route) || a.index - b.index)
+    .map(({ route }) => route);
+  const inProgress = routes.filter((route) => {
+    const percent = routeProgress(state, route).percent;
+    return percent > 0 && percent < 100;
+  }).length;
+  return `${pageHead("Rotas", CITY.name, inProgress ? `${inProgress} ${inProgress === 1 ? "rota em andamento" : "rotas em andamento"} · suas rotas ativas aparecem primeiro.` : "Escolha uma rota e acompanhe os pontos que faltam até a conquista.")}
+    <div class="route-list">${routes.map((route) => routeCard(state, route)).join("")}</div>
     `;
 }
 
