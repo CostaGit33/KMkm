@@ -19,7 +19,7 @@ const findPoint = (code, result) => findPointByCode(code) || {
 function shell(content) {
   document.documentElement.dataset.theme = temaLocal();
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaLocal() === 'light' ? '#f4f4f5' : '#0e0e0f');
-  document.body.innerHTML = `<main class="tag-page"><div class="tag-brand"><img src="/icons/stamp.svg" alt="" width="58" height="58"><strong>+1 KM</strong><span>carimbo de rota</span></div><div id="tag-content">${content}</div></main>`;
+  document.body.innerHTML = `<main class="tag-page"><div class="tag-brand"><img src="/icons/stamp.svg" alt="" width="58" height="58"><strong>+1 KM</strong><span>carimbo de rota</span></div><div id="tag-content" aria-live="polite" aria-atomic="true">${content}</div></main>`;
 }
 
 function form(error = '') {
@@ -51,7 +51,8 @@ function cartaoCriatura(result) {
 
 async function stamp(code) {
   const content = document.getElementById('tag-content');
-  content.innerHTML = `<div class="card tag-card"><p class="eyebrow">${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Carimbando…</h1><p class="page-subtitle">Guardando esta passagem na sua caderneta.</p></div>`;
+  content.setAttribute("aria-busy", "true");
+  content.innerHTML = `<div class="card tag-card tag-loading" role="status"><span class="tag-loading-mark" aria-hidden="true">✳</span><p class="eyebrow">${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Confirmando sua visita…</h1><p class="page-subtitle">Estamos validando a tag e guardando sua conquista. Não feche esta tela.</p><span class="tag-loading-track" aria-hidden="true"></span></div>`;
   try {
     const result = await api(`/tags/${encodeURIComponent(code)}/carimbar`, { method: 'POST' });
     const point = findPoint(code, result);
@@ -60,27 +61,42 @@ async function stamp(code) {
     const guardiao = result.guardiao ? `<article class="card tag-note"><strong>Guardião do ponto</strong><p>${escapeHtml(result.guardiao.apelido)} · ${result.guardiao.passagens} passagens</p></article>` : '';
     const carta = result.criatura?.carta;
     const conquista = carta ? `<div class="tag-criatura-arte">${cartaHtml(carta, { size: 190, tag: 'div' })}</div>` : `<div class="tag-stamp">${stamp}</div>`;
+    content.removeAttribute("aria-busy");
     content.innerHTML = `<article class="card tag-card tag-success"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${result.repetido ? 'Carta já está na coleção' : 'Carta desbloqueada!'}</h1><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visita confirmada hoje: ${result.hoje} passagem(ns) neste ponto.</p>${findPointByCode(code) ? '<p class="small muted">Esta carta já está disponível na sua coleção.</p>' : ''}<a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
   } catch (error) {
-    content.innerHTML = `<div class="card tag-card"><h1 class="page-title">${error.status === 404 ? 'Tag não encontrada' : 'Não foi possível carimbar'}</h1><p class="page-subtitle">${error.status === 404 ? 'Confira o código deste ponto.' : 'Tente novamente quando houver conexão.'}</p><button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button><a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
+    content.removeAttribute("aria-busy");
+    content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${error.status === 404 ? 'Tag não encontrada' : 'Não foi possível carimbar'}</h1><p class="page-subtitle">${error.status === 404 ? 'Confira o código deste ponto.' : 'Tente novamente quando houver conexão.'}</p><button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button><a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
     document.getElementById('tag-retry')?.addEventListener('click', () => stamp(code));
   }
 }
 
 export function bootTagPage(code) {
-  shell(token() ? '<div class="card tag-card"><p class="page-title">Preparando seu carimbo…</p></div>' : form());
+  shell(token() ? '<div class="card tag-card" role="status"><p class="page-title">Preparando seu carimbo…</p></div>' : form());
   installInk();
-  const entry = document.getElementById('tag-entry');
-  entry?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    try {
-      await entrar({ apelido: String(data.get('apelido') || ''), turma: String(data.get('turma') || '') });
-      await stamp(code);
-    } catch {
-      document.getElementById('tag-content').innerHTML = form('Não foi possível abrir a caderneta. Confira o apelido e tente novamente.');
-    }
-  });
+
+  const bindEntry = () => {
+    const entry = document.getElementById('tag-entry');
+    entry?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (entry.dataset.submitting === 'true') return;
+      const data = new FormData(entry);
+      const submit = entry.querySelector('button[type="submit"]');
+      entry.dataset.submitting = 'true';
+      entry.setAttribute('aria-busy', 'true');
+      if (submit) { submit.disabled = true; submit.textContent = 'Abrindo sua caderneta…'; }
+      try {
+        await entrar({ apelido: String(data.get('apelido') || ''), turma: String(data.get('turma') || '') });
+        await stamp(code);
+      } catch {
+        const content = document.getElementById('tag-content');
+        content.innerHTML = form('Não foi possível abrir a caderneta. Confira o apelido e a conexão e tente novamente.');
+        bindEntry();
+        content.querySelector('input[name="apelido"]')?.focus();
+      }
+    });
+  };
+  bindEntry();
+
   if (token()) stamp(code);
   else if (location.protocol === 'https:') api('/sessao').then(() => stamp(code)).catch(() => {});
 }
