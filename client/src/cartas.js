@@ -1,5 +1,5 @@
-// Coleção de cartas de Eunápolis: uma carta numerada por ponto, com personagem, categoria, raridade e evolução por tempo.
-// Tudo aqui é leitura: a carta é desbloqueada pelo primeiro carimbo de rota e não gera XP nem pode ser trocada.
+// Coleção de cartas de Eunápolis: uma carta única numerada por ponto, com personagem, categoria e raridade.
+// A carta é desbloqueada no primeiro carimbo de rota; não evolui com o tempo, não gera XP nem pode ser trocada.
 const RARIDADE = { comum: ['Comum', 1], raro: ['Rara', 2], epico: ['Épica', 3], lendario: ['Lendária', 4] };
 const rotuloRaridade = (r) => (RARIDADE[r] || RARIDADE.comum)[0];
 const estrelas = (r) => '★'.repeat((RARIDADE[r] || RARIDADE.comum)[1]);
@@ -28,8 +28,6 @@ export const CATEGORIAS = [
   { id: 'misterio', nome: 'Mistério' },
 ];
 export const rotuloCategoria = (id) => (CATEGORIAS.find((c) => c.id === id) || { nome: 'Cultura' }).nome;
-export const NOMES_ESTAGIO = ['Descoberta', 'Reconhecimento', 'Vínculo', 'Legado'];
-const DIAS_ESTAGIO = [0, 5, 30, 45];
 const num = (n) => String(n || 0).padStart(3, '0');
 
 // Arte: arquivo definido no admin (em /cartas/) ou, sem ele, o desenho gerado do nome.
@@ -51,24 +49,17 @@ export function cartaHtml(i, { size = 96, tag = 'button' } = {}) {
     + `</${tag}>`;
 }
 
-function estagiosHtml(i) {
-  return `<ol class="carta-estagios">${NOMES_ESTAGIO.map((nome, k) => {
-    const estado = !i.capturada ? 'trava' : k < i.estagio ? 'feito' : k === i.estagio ? 'atual' : 'trava';
-    return `<li class="${estado}"><b>${k + 1}</b><span>${nome}</span><small>${DIAS_ESTAGIO[k] === 0 ? 'Primeiro carimbo' : `${DIAS_ESTAGIO[k]} dias`}</small></li>`;
-  }).join('')}</ol>`;
-}
 
 export function detalheHtml(i) {
-  const prox = i.proximo_estagio;
-  const dica = !i.capturada ? 'Encoste na tag deste ponto para desbloquear o personagem.'
-    : prox ? (prox.em_dias > 0 ? `Volte a este ponto em ${prox.em_dias} dia(s) para chegar a ${prox.nome}.` : `Carimbe de novo neste ponto para chegar a ${prox.nome}.`)
-    : 'Esta carta chegou ao estágio máximo: Legado.';
+  const dica = !i.capturada
+    ? 'Encoste na tag deste ponto para desbloquear esta carta única.'
+    : 'Carta conquistada. Esta edição não evolui com o tempo nem exige retorno em outros dias.';
   return `<div class="carta-detalhe">${cartaHtml(i, { size: 140, tag: 'div' })}<div class="carta-info">`
     + `<dl><dt>Número</dt><dd>${num(i.carta)}</dd><dt>Personagem</dt><dd>${i.capturada ? esc(i.criatura) : '???'}</dd><dt>Local</dt><dd>${esc(i.ponto)}</dd>`
     + `<dt>Categoria</dt><dd>${esc(rotuloCategoria(i.categoria))}</dd><dt>Raridade</dt><dd>${estrelas(i.raridade)} ${esc(rotuloRaridade(i.raridade))}</dd></dl>`
     + (i.capturada && i.historia ? `<p class="carta-historia">${esc(i.historia)}</p>` : '')
     + (i.capturada && i.frase ? `<blockquote class="carta-frase">“${esc(i.frase)}”</blockquote>` : '')
-    + `</div>${estagiosHtml(i)}<p class="carta-dica">${esc(dica)}</p></div>`;
+    + `</div><p class="carta-dica">${esc(dica)}</p></div>`;
 }
 
 let itensAtuais = [];
