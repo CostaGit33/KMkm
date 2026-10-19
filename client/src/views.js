@@ -227,8 +227,12 @@ function renderHome(state) {
       <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Sua coleção.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} cartas</span></div></div>
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
+    <section class="home-actions" aria-label="Ações principais">
+      <button class="home-action-primary" type="button" data-action="switch-view" data-view="map"><span class="home-action-icon" aria-hidden="true">⌖</span><span><strong>Encontrar próximo ponto</strong><small>Explore o mapa e descubra onde ir</small></span><span class="home-action-arrow" aria-hidden="true">→</span></button>
+      <button class="home-action-secondary" type="button" data-action="switch-view" data-view="collection"><span aria-hidden="true">✳</span><span><strong>Minha coleção</strong><small>Veja as cartas que você conquistou</small></span><span aria-hidden="true">→</span></button>
+      <p class="home-action-hint">Ao chegar a um ponto publicado, aproxime o celular da tag NFC. Um carimbo válido desbloqueia a carta.</p>
+    </section>
     ${collectionSpotlight(state, city)}
-    <div class="stats-strip" aria-label="Resumo da coleção"><div class="stat-card"><span class="stat-value">${city.count}<span style="font-size:.65em">/${city.total}</span></span><span class="stat-label">cartas conquistadas</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas concluídas</span></div><div class="stat-card"><span class="stat-value">${state.history.length}</span><span class="stat-label">cartas na coleção</span></div></div>
     <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
       <div class="category-grid">${categoryTotals}</div>

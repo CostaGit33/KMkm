@@ -876,3 +876,18 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 .tag-evento { border: 2px solid var(--green); }
 .tag-evento .tag-stamp { margin: 10px 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+
+/* Usabilidade da home: duas ações prioritárias, alvos de toque amplos e foco visível. */
+.home-actions { display: grid; gap: 10px; margin: 18px 0 24px; }
+.home-action-primary, .home-action-secondary { width: 100%; min-height: 68px; display: flex; align-items: center; gap: 13px; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 10px; text-align: left; cursor: pointer; font: inherit; touch-action: manipulation; }
+.home-action-primary { color: var(--card); background: var(--green); box-shadow: 4px 4px 0 var(--ink); }
+.home-action-secondary { color: var(--ink); background: var(--card); }
+.home-action-primary > span:nth-child(2), .home-action-secondary > span:nth-child(2) { display: grid; flex: 1; gap: 4px; }
+.home-action-primary strong, .home-action-secondary strong { font: 700 14px/1.25 "Montserrat", sans-serif; }
+.home-action-primary small, .home-action-secondary small { font: 500 11px/1.4 "Montserrat", sans-serif; opacity: .88; }
+.home-action-icon { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 24px; }
+.home-action-arrow { font-size: 22px; }
+.home-action-hint { margin: 2px 2px 0; color: var(--muted); font: 500 11px/1.5 "Montserrat", sans-serif; }
+.home-action-primary:focus-visible, .home-action-secondary:focus-visible { outline: 3px solid var(--ochre); outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) { .home-action-primary, .home-action-secondary { transition: transform 120ms ease, box-shadow 120ms ease; } .home-action-primary:active, .home-action-secondary:active { transform: translateY(1px); } }
