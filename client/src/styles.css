@@ -891,3 +891,16 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 .home-action-hint { margin: 2px 2px 0; color: var(--muted); font: 500 11px/1.5 "Montserrat", sans-serif; }
 .home-action-primary:focus-visible, .home-action-secondary:focus-visible { outline: 3px solid var(--ochre); outline-offset: 4px; }
 @media (prefers-reduced-motion: no-preference) { .home-action-primary, .home-action-secondary { transition: transform 120ms ease, box-shadow 120ms ease; } .home-action-primary:active, .home-action-secondary:active { transform: translateY(1px); } }
+
+/* Feedback de leitura NFC: estados claros, acessíveis e sem sugerir sucesso antes da API confirmar. */
+.tag-page #tag-content[aria-busy="true"] { cursor: progress; }
+.tag-loading { overflow: hidden; }
+.tag-loading-mark { display: grid; width: 58px; height: 58px; place-items: center; margin: 10px auto 14px; border: 2px solid var(--rule); border-radius: 50%; color: var(--green); font-size: 30px; animation: tag-pulse 1.2s ease-in-out infinite; }
+.tag-loading-track { display: block; width: min(100%, 250px); height: 5px; margin: 20px auto 4px; overflow: hidden; border-radius: 9px; background: var(--rule); }
+.tag-loading-track::after { display: block; width: 38%; height: 100%; border-radius: inherit; background: var(--green); content: ""; animation: tag-progress 1.4s ease-in-out infinite; }
+.tag-error-mark { display: grid; width: 44px; height: 44px; place-items: center; margin: 0 auto 10px; border: 2px solid var(--red); border-radius: 50%; color: var(--red); font: 700 25px/1 var(--display); }
+#tag-entry button:disabled { cursor: wait; opacity: .72; }
+#tag-entry button:focus-visible, #tag-retry:focus-visible, .tag-page a:focus-visible { outline: 3px solid var(--ochre); outline-offset: 4px; }
+@keyframes tag-pulse { 0%, 100% { transform: scale(1); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes tag-progress { from { transform: translateX(-110%); } to { transform: translateX(270%); } }
+@media (prefers-reduced-motion: reduce) { .tag-loading-mark, .tag-loading-track::after { animation: none; } .tag-loading-track::after { width: 100%; } }
