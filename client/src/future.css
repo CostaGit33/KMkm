@@ -618,14 +618,7 @@ button.carta { cursor: pointer; }
 .carta-info dd { margin: 0; }
 .carta-historia { margin: 8px 0; font-size: 14px; line-height: 1.45; }
 .carta-frase { margin: 8px 0 0; padding-left: 12px; border-left: 3px solid #d9a21f; font-style: italic; font-size: 14px; }
-.carta-estagios { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.carta-estagios li { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 2px; border: 1px solid #4b5a4f; border-radius: 10px; font-size: 11px; opacity: .6; }
-.carta-estagios li b { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #26302b; font-size: 12px; }
-.carta-estagios li.feito, .carta-estagios li.atual { opacity: 1; border-color: #d9a21f; }
-.carta-estagios li.feito b, .carta-estagios li.atual b { background: #d9a21f; color: #12291f; }
-.carta-estagios li small { font-size: 10px; opacity: .8; }
 .carta-dica { margin: 0; font-size: 13px; text-align: center; opacity: .9; }
-.tag-evolucao { margin: 0 0 8px; font-weight: 600; color: #d9a21f; }
 .tag-criatura .carta { max-width: 180px; margin: 0 auto; }
 
 /* Cartas no estilo do pôster: arte grande, moldura dourada dupla, faixa verde com nome e selo da categoria */

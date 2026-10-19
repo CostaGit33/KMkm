@@ -1,7 +1,7 @@
 import { api, entrar, token } from './api.js';
 import { findPointByCode } from './data.js';
 import { installInk, stampHtml } from './stamp-kit.js';
-import { cartaHtml, NOMES_ESTAGIO } from './cartas.js';
+import { cartaHtml } from './cartas.js';
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 // Se o app já tem conta neste aparelho, o apelido vem preenchido (um toque para carimbar).
@@ -38,15 +38,14 @@ function cartaoEvento(result, code) {
   return `<article class="card tag-card tag-evento"><p class="eyebrow">${origem}</p><h2 class="page-title">${escapeHtml(ev.nome)}</h2><div class="tag-stamp">${marca}</div>${numero}<p class="page-subtitle">${ev.repetido ? 'Este ponto já está no seu card.' : 'Carimbo extra do card. Ele fica guardado na sua caderneta, separado da rota.'}</p></article>`;
 }
 
-// Desbloqueio da carta: o primeiro carimbo de rota revela o personagem do ponto; carimbos em dias diferentes evoluem a carta.
+// Desbloqueio da carta: o primeiro carimbo de rota revela o personagem do ponto; a carta é única e não evolui.
 function cartaoCriatura(result) {
   const c = result.criatura;
   if (!c) return '';
-  const item = c.carta || { codigo: '', carta: 0, ponto: '', categoria: 'cultura', raridade: c.raridade, capturada: true, criatura: c.nome, estagio: 0 };
+  const item = c.carta || { codigo: '', carta: 0, ponto: '', categoria: 'cultura', raridade: c.raridade, capturada: true, criatura: c.nome };
   const carta = cartaHtml(item, { size: 130, tag: 'div' });
   const progresso = `${c.capturadas} de ${c.total} cartas na sua coleção`;
-  const evolucao = c.evoluiu ? `<p class="tag-evolucao" role="status">Sua carta evoluiu! Estágio: ${escapeHtml(NOMES_ESTAGIO[item.estagio] || '')}.</p>` : '';
-  if (!c.nova) return `<article class="card tag-card tag-criatura">${evolucao}<div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">Carta já desbloqueada. ${progresso}.</p></article>`;
+  if (!c.nova) return `<article class="card tag-card tag-criatura"><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">Carta já desbloqueada. ${progresso}.</p></article>`;
   return `<article class="card tag-card tag-criatura nova" role="status"><p class="eyebrow">Ponto descoberto!</p><h2 class="page-title">Você desbloqueou o personagem deste local.</h2><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">${progresso}.</p><a class="outline-button button-full" href="/">Ver minha coleção</a></article>`;
 }
 

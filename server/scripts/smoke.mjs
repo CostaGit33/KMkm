@@ -108,7 +108,7 @@ async function basico() {
     ok('Segundo toque no mesmo ponto não desbloqueia de novo', r.status === 200 && r.json?.criatura?.nova === false && r.json?.repetido === true, `${r.status}`);
     r = await c.s.chamar('GET', '/api/caderneta');
     const item = r.json?.colecao?.itens?.find((i) => i.codigo === codigo);
-    ok('Carta traz número, categoria, estágio 0 e próximo estágio em 5 dias', Number.isInteger(item?.carta) && ['natureza','historia','cultura','trabalho','litoral','misterio'].includes(item?.categoria) && item?.estagio === 0 && item?.proximo_estagio?.em_dias === 5, JSON.stringify(item));
+    ok('Carta traz número e categoria, sem estágio de evolução', Number.isInteger(item?.carta) && ['natureza','historia','cultura','trabalho','litoral','misterio'].includes(item?.categoria) && item?.estagio === undefined && item?.proximo_estagio === undefined, JSON.stringify(item));
     ok('Coleção passa a mostrar o personagem desbloqueado', item?.capturada === true && item?.criatura === nome && r.json.colecao.capturadas === 1, JSON.stringify(item));
   } else {
     console.log('· Nenhum ponto publicado no servidor: pulei os testes de desbloqueio.');

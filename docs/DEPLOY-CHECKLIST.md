@@ -23,7 +23,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Mapa abre com Google; se não, aparece aviso e o mapa aberto assume.
 - [ ] Rodar `BASE_URL=https://seu-app node server/scripts/smoke.mjs` (e `--profundo` com `ADMIN_EMAIL`/`ADMIN_SENHA` de teste).
 - [ ] Postman: coleção em `postman/mais1km.postman_collection.json`.
-- [ ] Toque numa tag real: carimbo, carta desbloqueada e, nos dias 5, 30 e 45, evolução.
+- [ ] Toque numa tag real: carimbo, carta desbloqueada no primeiro toque (sem evolução por dias).
 
 ## 4. Google Play
 - [ ] Política de privacidade: `https://SEU-DOMINIO/privacidade`.
