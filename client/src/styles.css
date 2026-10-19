@@ -955,3 +955,17 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 @media (prefers-reduced-motion: no-preference) {
   .route-card.is-in-progress { transition: box-shadow .16s ease, border-color .16s ease; }
 }
+
+
+/* Certificados: reforçar a recompensa e deixar a navegação entre rotas concluídas evidente. */
+.certificate-counter { display:flex; align-items:center; gap:12px; max-width:720px; margin:0 auto 14px; padding:12px 14px; border:1px solid var(--ochre); background:var(--card-strong); color:var(--ink); }
+.certificate-counter > span { font-size:26px; }
+.certificate-counter div { display:grid; gap:2px; }
+.certificate-counter strong { font-size:13px; }
+.certificate-counter small { color:var(--muted); font-size:11px; line-height:1.45; }
+.certificate-route-choice { width:100%; text-align:left; }
+.certificate-route-choice.is-selected { border-color:var(--ochre); background:var(--card-strong); box-shadow:inset 4px 0 0 var(--ochre); }
+.certificate-route-choice.is-selected .point-name { color:var(--ink); }
+.certificate-actions { flex-wrap:wrap; }
+.certificate-actions button { min-height:46px; touch-action:manipulation; }
+@media print { .certificate-counter, .certificate-list, .certificate-actions, .section-heading { display:none !important; } .certificate { break-inside:avoid; } }
