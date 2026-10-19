@@ -183,7 +183,7 @@ function renderCartoes(state) {
 // Cartas conquistadas em miniatura e mapa reduzido. A carta é a única coleção do usuário.
 function homeCards(state) {
   const cards = Array.isArray(colecaoServidor?.itens) ? colecaoServidor.itens.filter((item) => item.capturada) : POINTS.filter((point) => state.conquered.includes(point.id)).map((point) => ({ codigo: point.id, ponto: point.name, carta: POINTS.indexOf(point) + 1, categoria: "cultura", raridade: "comum", capturada: true, criatura: point.name }));
-  if (!cards.length) return `<p class="home-empty">Sua coleção está em branco. Encoste em uma tag para conquistar a primeira carta.</p>`;
+  if (!cards.length) return `<div class="home-empty-state"><p class="home-empty">Sua coleção está começando. Visite um ponto publicado e encoste na tag NFC para desbloquear sua primeira carta.</p><button class="outline-button" type="button" data-action="switch-view" data-view="map">Encontrar um ponto →</button></div>`;
   return `<div class="home-stamps home-cards" role="list" aria-label="Cartas conquistadas">${cards.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96 })}</button>`; }).join("")}</div>`;
 }
 
@@ -236,7 +236,7 @@ function renderHome(state) {
     <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
       <div class="category-grid">${categoryTotals}</div>
-      <article class="card"><div class="progress-meta"><span>${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "red", `Pontos conquistados em ${CITY.name}`)}</article>
+      <article class="card home-progress-card"><div class="progress-meta"><span>Progresso de ${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "red", `Pontos conquistados em ${CITY.name}`)}<p class="progress-guidance" role="status">${city.percent === 100 ? `Você conquistou todos os ${city.total} pontos desta edição.` : city.count === 0 ? `Sua primeira conquista começa em um ponto publicado. ${city.total} pontos disponíveis nesta edição.` : `Você já conquistou ${city.count} de ${city.total} pontos. Faltam ${city.total - city.count} para completar a cidade.`}</p><button class="route-card-button" type="button" data-action="switch-view" data-view="map">Continuar explorando →</button></article>
     </section>
     ${renderCartoes(state)}`;
 }
@@ -314,19 +314,19 @@ function renderPoint(state, pointId) {
 function renderCollection(state) {
   const city = progressFor(state);
   const earnedBadges = [
-    { title: "Primeira marca", note: "Guarde seu primeiro carimbo", earned: state.conquered.length >= 1, icon: "✦" },
+    { title: "Primeira carta", note: "Desbloqueie sua primeira carta", earned: city.count >= 1, icon: "✦" },
     { title: "Explorador", note: "Conquiste 5 pontos da cidade", earned: city.count >= 5, icon: "⌖" },
     { title: "Uma rota inteira", note: "Complete uma rota temática", earned: certificateRoutes(state).length >= 1, icon: "⌁" },
     { title: `${CITY.name} completa`, note: "Conquiste todos os pontos desta edição", earned: city.percent === 100, icon: "★" },
   ];
   return `${pageHead("Coleção", "Carimbos", CITY.name)}
-    <div class="stats-strip"><div class="stat-card"><span class="stat-value">${state.conquered.length}</span><span class="stat-label">carimbos únicos</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas na coleção</span></div><div class="stat-card"><span class="stat-value">${city.percent}%</span><span class="stat-label">da cidade</span></div></div>
+    <div class="stats-strip"><div class="stat-card"><span class="stat-value">${city.count}</span><span class="stat-label">cartas conquistadas</span></div><div class="stat-card"><span class="stat-value">${certificateRoutes(state).length}</span><span class="stat-label">rotas na coleção</span></div><div class="stat-card"><span class="stat-value">${city.percent}%</span><span class="stat-label">da cidade</span></div></div>
     ${renderColecao(state)}
     <div class="collection-grid">${COLLECTIONS.map((collection) => {
       const progress = progressFor(state, collection.pointIds);
       const tiles = collection.pointIds.slice(0, 12).map((id, index) => {
         const point = getPoint(id);
-        const earned = state.conquered.includes(id);
+        const earned = pointStatus(state, point) === "conquered";
         return `<button class="stamp-slot ${earned ? "is-earned" : ""}" type="button" ${earned ? `data-action="open-point" data-id="${id}"` : `data-action="open-point" data-id="${id}"`} aria-label="${earned ? `Abrir carimbo de ${escapeHtml(point.name)}` : `Abrir ponto ${escapeHtml(getVisibleName(state, point))}`}" title="${escapeHtml(getVisibleName(state, point))}">${earned ? stamp(point, index + 1, "", { state, role: index === 0 ? "inicio" : index === collection.pointIds.length - 1 ? "chegada" : "" }) : `<span class="stamp-placeholder">·</span>`}</button>`;
       }).join("");
       return `<article class="card collection-card"><div class="collection-banner"><span class="route-icon ${collection.color}" aria-hidden="true">${collection.icon}</span><div class="collection-banner-copy"><h3>${escapeHtml(collection.name)}</h3><p>${escapeHtml(collection.subtitle)}</p></div><strong class="route-count">${progress.count}/${progress.total}</strong></div><div class="collection-content"><div class="stamp-grid">${tiles}</div><div style="margin-top:12px">${progressBar(progress, collection.color, `Progresso da coleção ${collection.name}`)}</div><div class="progress-meta"><span>Sem prazo para completar</span><strong>${progress.percent}%</strong></div></div></article>`;
