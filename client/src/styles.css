@@ -912,3 +912,46 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 .home-progress-card { display: grid; gap: 10px; }
 .progress-guidance { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
 .home-progress-card .route-card-button { justify-self: start; min-height: 44px; }
+
+
+/* Rotas: destaque de progresso e pendências, sem inferir proximidade geográfica. */
+.route-card.is-in-progress {
+  border-color: var(--red);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--red) 30%, var(--rule));
+}
+.route-card.is-complete { border-color: var(--green); }
+.route-state-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.route-state-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--card-strong);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .35px;
+  text-transform: uppercase;
+}
+.route-state-pill.progress { border-color: var(--red); color: var(--red); }
+.route-state-pill.complete { border-color: var(--green); color: var(--green); }
+.route-state-detail { color: var(--muted); font-size: 11px; }
+.route-pending {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.route-card.is-in-progress .route-card-foot { color: var(--ink); }
+.route-card .route-card-button { min-height: 36px; padding-inline: 8px; touch-action: manipulation; }
+@media (prefers-reduced-motion: no-preference) {
+  .route-card.is-in-progress { transition: box-shadow .16s ease, border-color .16s ease; }
+}
