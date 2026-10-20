@@ -7,7 +7,7 @@ import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChr
 import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
 import { startIntro } from "./intro.js";
-import { api, atualizarContaServidor, criarContaServidor, entrarContaServidor, sessaoContaServidor, sairContaServidor } from "./api.js";
+import { api, mensagemErro, atualizarContaServidor, criarContaServidor, entrarContaServidor, sessaoContaServidor, sairContaServidor } from "./api.js";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
@@ -63,7 +63,7 @@ function launchIntro() {
           const hash = await gerarSenha(senha);
           state = createAccount(state, { nome, email, serverId: servidor.usuario.id, criadoEm: new Date().toISOString(), ...hash });
         } catch (error) {
-          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : "Não foi possível criar sua conta no servidor.";
+          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
           showToast(authMessage);
           return;
         }
@@ -416,7 +416,7 @@ async function handleSubmit(event) {
       try {
         servidor = await criarContaServidor({ nome, email: v("email").trim().toLowerCase(), senha: v("senha") });
       } catch (error) {
-        authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : "Não foi possível criar a conta no servidor.";
+        authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar a conta no servidor.");
         return render();
       }
       const senha = await gerarSenha(v("senha"));
@@ -437,7 +437,7 @@ async function handleSubmit(event) {
       } catch (error) {
         const localOk = !!state.account && state.account.email === email && (await senhaConfere(state.account, v("senha")));
         if (!localOk || v("senha").length < 8) {
-          authMessage = "E-mail ou senha não conferem.";
+          authMessage = error.status === 429 ? mensagemErro(error, "") : "E-mail ou senha não conferem.";
           return render();
         }
         try {
@@ -467,7 +467,7 @@ async function handleSubmit(event) {
         state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email });
         profileMessage = { texto: "Dados salvos.", ok: true };
       } catch (error) {
-        profileMessage = { texto: error.code === "email_ja_cadastrado" ? "Este e-mail já está em uso." : "Não foi possível salvar no servidor.", ok: false };
+        profileMessage = { texto: error.code === "email_ja_cadastrado" ? "Este e-mail já está em uso." : mensagemErro(error, "Não foi possível salvar no servidor."), ok: false };
       }
       render();
       break;
@@ -487,7 +487,7 @@ async function handleSubmit(event) {
         state = updateAccount(state, await gerarSenha(v("nova")));
         profileMessage = { texto: "Senha trocada.", ok: true };
       } catch (error) {
-        profileMessage = { texto: error.code === "senha_atual_invalida" ? "A senha atual não confere." : "Não foi possível trocar a senha no servidor.", ok: false };
+        profileMessage = { texto: error.code === "senha_atual_invalida" ? "A senha atual não confere." : mensagemErro(error, "Não foi possível trocar a senha no servidor."), ok: false };
       }
       render();
       break;

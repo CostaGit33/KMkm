@@ -82,7 +82,7 @@ function renderSideDrawer(state, activeView, activeRouteId, open) {
   const personal = [
     drawerLink("Certificados", `${certificateRoutes(state).length} rotas concluídas`, "🎖", { action: "open-certificates", active: activeView === "certificates" }),
     drawerLink("Perfil", "Dados, progresso e conta", "◉", { view: "profile", active: activeView === "profile" }),
-  ].join("");
+  ].join("") + `<a class="drawer-link" href="/como-funciona"><span class="drawer-icon" aria-hidden="true">?</span><span class="drawer-link-copy"><strong>Como funciona</strong><small>Passo a passo e dúvidas comuns</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>`;
   const openClass = open ? "is-open" : "";
   return `<div class="drawer-backdrop ${openClass}" data-action="close-menu" aria-hidden="true"></div>
     <aside class="side-drawer ${openClass}" id="app-side-menu" role="dialog" aria-modal="${open ? "true" : "false"}" aria-labelledby="side-drawer-title" aria-hidden="${open ? "false" : "true"}" ${open ? "" : "inert"}>
@@ -164,7 +164,11 @@ let cartoes = [];
 export function setEventos(lista) { cartoes = Array.isArray(lista) ? lista : []; }
 // Coleção de cartas da conta (vem do servidor): personagens desbloqueados e cartas ainda bloqueadas.
 let colecaoServidor = null;
-export function setColecao(colecao) { colecaoServidor = colecao && Array.isArray(colecao.itens) ? colecao : null; }
+export function setColecao(colecao) {
+  colecaoServidor = colecao && Array.isArray(colecao.itens) ? colecao : null;
+  // Uma única fonte para o total: o que o servidor diz que existe como carta publicada (Caderneta, Coleção e certificados mostram o mesmo número).
+  if (colecaoServidor && Number.isFinite(colecaoServidor.total) && colecaoServidor.total > 0) CITY.totalPoints = colecaoServidor.total;
+}
 function renderColecao(state) {
   if (!(state.account && state.session)) return "";
   return secaoColecao(colecaoServidor);
@@ -228,16 +232,26 @@ function miniMap(state) {
     ${semCoordenada ? `<p class="small muted mini-map-note">${semCoordenada} ${semCoordenada === 1 ? "ponto ainda sem coordenada" : "pontos ainda sem coordenada"}; ${semCoordenada === 1 ? "aparece" : "aparecem"} só na lista.</p>` : ""}</div>`;
 }
 
+// Próximo passo (Pareto, Zeigarnik, Fitts): a ação principal da caderneta fica logo no topo, em botão grande.
+function nextStepCard(state, city) {
+  const next = POINTS.find((p) => pointStatus(state, p) !== "conquered" && pointStatus(state, p) !== "mystery");
+  if (!next) return city.total && city.count >= city.total ? `<article class="card next-step is-done" role="status"><strong>Caderneta completa!</strong><span>Você carimbou todos os pontos disponíveis.</span></article>` : "";
+  const falta = city.total - city.count;
+  return `<article class="card next-step" aria-label="Próximo passo"><div class="next-step-copy"><span class="eyebrow">Próximo ponto · faltam ${falta}</span><strong>${escapeHtml(next.name)}</strong></div><button class="primary-button" type="button" data-action="switch-view" data-view="map">Ver no mapa</button></article>`;
+}
+
 function renderHome(state) {
   const city = progressFor(state);
+  const nextStep = nextStepCard(state, city);
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
   return `${pageHead("Caderneta", CITY.name)}
+    ${nextStep}
     <section class="hero-card" aria-labelledby="hero-title">
       <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Sua coleção.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} cartas</span></div></div>
       <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
     </section>
     <section class="home-actions" aria-label="Ações principais">
-      <button class="home-action-primary" type="button" data-action="switch-view" data-view="map"><span class="home-action-icon" aria-hidden="true">⌖</span><span><strong>Encontrar próximo ponto</strong><small>Explore o mapa e descubra onde ir</small></span><span class="home-action-arrow" aria-hidden="true">→</span></button>
+      ${nextStep ? "" : `<button class="home-action-primary" type="button" data-action="switch-view" data-view="map"><span class="home-action-icon" aria-hidden="true">⌖</span><span><strong>Encontrar próximo ponto</strong><small>Explore o mapa e descubra onde ir</small></span><span class="home-action-arrow" aria-hidden="true">→</span></button>`}
       <button class="home-action-secondary" type="button" data-action="switch-view" data-view="collection"><span aria-hidden="true">✳</span><span><strong>Minha coleção</strong><small>Veja as cartas que você conquistou</small></span><span aria-hidden="true">→</span></button>
       <p class="home-action-hint">Ao chegar a um ponto publicado, aproxime o celular da tag NFC. Um carimbo válido desbloqueia a carta.</p>
     </section>

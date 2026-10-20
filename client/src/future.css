@@ -721,3 +721,11 @@ body.view-map .leaflet-control-attribution { margin-bottom: var(--nav-clear); }
   body.view-map .map-stage { position: relative; inset: auto; height: calc(100dvh - var(--topbar-bottom, 88px) - 20px); min-height: 480px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
   body.view-map .real-map { border-radius: 16px; }
 }
+
+/* Próximo passo na Home (Zeigarnik / Fitts): um único alvo grande, sempre no mesmo lugar */
+.next-step { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-color: var(--line-strong, rgba(217,168,74,.45)); }
+.next-step-copy { display: grid; gap: 2px; min-width: 0; }
+.next-step-copy strong { font-family: Cinzel, serif; font-size: 1.05rem; overflow-wrap: anywhere; }
+.next-step .primary-button { flex: 0 0 auto; min-height: 44px; padding-inline: 16px; }
+.next-step.is-done { display: grid; text-align: center; }
+@media (max-width: 380px) { .next-step { flex-direction: column; align-items: stretch; } }

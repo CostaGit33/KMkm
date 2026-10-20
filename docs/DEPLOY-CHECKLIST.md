@@ -31,3 +31,9 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Ícone 512×512, imagem de destaque 1024×500, 4 a 8 capturas de tela.
 - [ ] Declaração de dados: e-mail, nome, localização aproximada (só com o botão "Estou aqui"), carimbos.
 - [ ] Classificação etária e público-alvo: conferir com `docs/PLAY-STORE.md`.
+
+## Pendências de infraestrutura (Easypanel)
+- [ ] `CONTATO_EMAIL`: criar a variável em *Environment* (aparece em /privacidade e /excluir-conta). Sem ela a página mostra um aviso genérico.
+- [ ] `DATABASE_URL` e demais segredos: manter só como variável de ambiente de execução. No Easypanel, desmarque-os de *Build Args* (o Dockerfile não precisa deles; o build do cliente não lê o banco).
+- [ ] Trocar a senha do MySQL: altere no serviço MySQL e atualize `DATABASE_URL` no app; reimplante. Como já há usuários reais, faça fora de horário de pico e teste o login depois.
+- [ ] Limpeza do pódio de teste: rode primeiro `node server/scripts/teste-podio.js status`. O comando `limpar` só remove contas `@teste.invalid` e carimbos marcados `teste-podio`; contas de usuários reais não são tocadas (a sua própria conta perde apenas os 2 carimbos de teste, se você os criou).

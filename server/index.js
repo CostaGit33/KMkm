@@ -519,6 +519,7 @@ function paginaPublica(arquivo) {
 }
 app.get(['/privacidade', '/privacidade/'], paginaPublica('privacidade.html'));
 app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
+app.get(['/como-funciona', '/como-funciona/'], paginaPublica('como-funciona.html'));
 
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {
@@ -527,11 +528,11 @@ if (fs.existsSync(dist)) {
   app.get(['/admin', '/admin/'], (_req, res, next) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Cache-Control', 'no-store');
-    return res.sendFile(path.join(dist, 'admin.html'), next);
+    return res.sendFile(path.join(dist, 'admin.html'), (err) => { if (err) next(err); });
   });
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'rota_api_inexistente' });
-    return res.sendFile(path.join(dist, 'index.html'), next);
+    return res.sendFile(path.join(dist, 'index.html'), (err) => { if (err) next(err); });
   });
 }
 

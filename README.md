@@ -96,6 +96,14 @@ Sem conteúdo demonstrativo: removidos o botão "Reiniciar demonstração", o ca
 ## V8.10 · Cartas únicas, sem evolução por tempo
 Cada ponto publicado é uma carta única numerada (personagem, local, categoria, raridade). O primeiro carimbo de rota desbloqueia a carta definitivamente; não há estágios, contagem de dias nem exigência de retorno em datas diferentes. Eventos e patrocínios continuam sendo colecionáveis independentes, com janela de validade e, quando configurado, edição numerada limitada a uma por conta. Seis categorias: Natureza, História, Cultura, Trabalho, Litoral, Mistério. A ilustração final de cada carta vai em `client/public/cartas/` e o nome do arquivo é definido no painel admin (campo "Arte"); sem arquivo, usa-se um desenho gerado. Visual: verde profundo e dourado, fontes Cinzel, Montserrat e Yellowtail.
 
+## V8.12 · Usabilidade e consistência
+- **Próximo passo** no topo da Caderneta (um único botão grande para o mapa); some quando a coleção está completa.
+- **Um só total**: Caderneta, Coleção e certificados usam o total de cartas publicadas informado pelo servidor.
+- **Página `/como-funciona`** (3 passos), ligada no menu "Mais"; páginas públicas no mesmo tema verde e dourado.
+- **Mensagens de erro claras** (muitas tentativas, sem internet, falha do servidor) em login, cadastro e perfil.
+- Correção no servidor: `/admin` e o `index.html` não chamam mais `next()` após enviar o arquivo (fim dos `ERR_HTTP_HEADERS_SENT` nos logs).
+- Checklist de infraestrutura atualizado em `docs/DEPLOY-CHECKLIST.md`.
+
 ## V8.11 · Carimbo que desbloqueia carta
 O carimbo continua sendo o registro técnico da visita no banco, mas não existe mais uma coleção paralela de carimbos no cliente. `GET /api/caderneta` devolve a coleção de cartas como fonte de verdade; cada ponto publicado aparece como uma carta bloqueada ou conquistada, e o primeiro carimbo de rota apenas desbloqueia essa carta. A home, o histórico, os atalhos e a sincronização usam a mesma coleção. Eventos e patrocínios continuam registros complementares da visita e não criam uma segunda coleção de pontos.
 

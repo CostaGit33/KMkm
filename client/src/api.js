@@ -26,3 +26,11 @@ export const entrarContaServidor = (dados) => api('/conta/entrar', { method: 'PO
 export const sessaoContaServidor = () => api('/conta/sessao');
 export const atualizarContaServidor = (dados) => api('/conta', { method: 'PUT', body: dados });
 export const sairContaServidor = () => api('/conta/sair', { method: 'POST' });
+
+// Mensagem clara para quem usa o app (heurística 9 de Nielsen): diz o que houve e o que fazer.
+export function mensagemErro(error, padrao) {
+  if (error?.status === 429) return "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.";
+  if (!error?.status) return "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+  if (error.status >= 500) return "O servidor está com problema agora. Tente de novo em instantes.";
+  return padrao;
+}
