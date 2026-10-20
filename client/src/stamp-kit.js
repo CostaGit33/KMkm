@@ -17,7 +17,7 @@ export function installInk() {
     const T = [3.7, 3.0, 2.4][p - 1], D = [1.9, 1.5, 1.1][p - 1];
     d += `<filter id="ink${p}${s}" color-interpolation-filters="sRGB" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="${s + 3}" result="w"/><feDisplacementMap in="SourceGraphic" in2="w" scale="${D}" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="${s * 7 + 11}" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 12 0 0 0 -${T}" result="h"/><feComposite in="d" in2="h" operator="in"/></filter>`;
   }
-  d += `<linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38e1ff"/><stop offset=".35" stop-color="#a78bff"/><stop offset=".7" stop-color="#ff4d3f"/><stop offset="1" stop-color="#ffc53d"/></linearGradient>`;
+  d += `<linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9a84a"/><stop offset=".35" stop-color="#3dffb0"/><stop offset=".7" stop-color="#3fae7a"/><stop offset="1" stop-color="#ffe08a"/></linearGradient>`;
   document.body.insertAdjacentHTML("afterbegin", `<svg id="ink-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>${d}</defs></svg>`);
 }
 

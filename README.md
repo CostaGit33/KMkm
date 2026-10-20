@@ -103,6 +103,8 @@ Cada ponto publicado é uma carta única numerada (personagem, local, categoria,
 - **Mensagens de erro claras** (muitas tentativas, sem internet, falha do servidor) em login, cadastro e perfil.
 - Correção no servidor: `/admin` e o `index.html` não chamam mais `next()` após enviar o arquivo (fim dos `ERR_HTTP_HEADERS_SENT` nos logs).
 - **Login para conta existente**: "Já tenho conta · Entrar" na abertura e na tela de cadastro (aparelho novo ou app reinstalado), com alternância entre entrar e criar; o e-mail digitado é mantido após um erro.
+- **Identidade verde e dourado também no ícone e na abertura**: ícone do app (SVG e PNGs 192/512/maskable), `stamp.svg`, animação de abertura, selo holográfico e cores do manifesto/tema; erro de campo continua em vermelho.
+- **Textos do cadastro alinhados ao comportamento real** (senha de 8+ caracteres; conta e carimbos ficam no servidor) e checklist sem a evolução por tempo.
 - Checklist de infraestrutura atualizado em `docs/DEPLOY-CHECKLIST.md`.
 
 ## V8.11 · Carimbo que desbloqueia carta

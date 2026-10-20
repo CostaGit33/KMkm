@@ -104,7 +104,7 @@ function engine(canvas) {
       const x = cx + (s.x / s.z) * k, y = cy + (s.y / s.z) * k, px = cx + (s.x / pz) * k, py = cy + (s.y / pz) * k;
       if (x < -50 || x > w + 50 || y < -50 || y > h + 50) { s.z = 1; s.x = R() * 2 - 1; s.y = R() * 2 - 1; continue; }
       const a = clamp((1 - s.z) * 1.4) * alpha;
-      ctx.strokeStyle = s.hot ? `rgba(255,120,104,${a})` : `rgba(160, 204, 255,${a})`;
+      ctx.strokeStyle = s.hot ? `rgba(95,207,154,${a})` : `rgba(233, 214, 160,${a})`;
       ctx.lineWidth = clamp(0.5 + (1 - s.z) * 1.7, 0.5, 2.3);
       ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
     }
@@ -128,10 +128,10 @@ function engine(canvas) {
     if (a <= 0.01) return;
     ctx.save(); ctx.globalAlpha = a;
     const g = ctx.createRadialGradient(cx, cy, Rr * 0.92, cx, cy, Rr * 1.28);
-    g.addColorStop(0, "rgba(56, 149, 255,.38)"); g.addColorStop(1, "rgba(56, 149, 255,0)");
+    g.addColorStop(0, "rgba(217, 168, 74,.38)"); g.addColorStop(1, "rgba(217, 168, 74,0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, Rr * 1.28, 0, TAU); ctx.fill();
     const body = ctx.createRadialGradient(cx - Rr * 0.3, cy - Rr * 0.35, Rr * 0.1, cx, cy, Rr);
-    body.addColorStop(0, "#323538"); body.addColorStop(0.7, "#1b1c1e"); body.addColorStop(1, "#0e0f10");
+    body.addColorStop(0, "#1d3a2c"); body.addColorStop(0.7, "#12281e"); body.addColorStop(1, "#0b1a14");
     ctx.fillStyle = body; ctx.beginPath(); ctx.arc(cx, cy, Rr, 0, TAU); ctx.fill();
     ctx.lineWidth = 1;
     // linhas de grade (paralelos e meridianos)
@@ -142,29 +142,29 @@ function engine(canvas) {
     };
     for (let la = -80; la <= 80; la += 20) {
       const pts = []; for (let lo = -180; lo <= 180; lo += 6) pts.push(proj(la * Math.PI / 180, lo * Math.PI / 180, lon0, th, Rr, cx, cy));
-      line(pts, la === 0 ? "rgba(255,120,104,.75)" : "rgba(56, 149, 255,.38)");
+      line(pts, la === 0 ? "rgba(95,207,154,.75)" : "rgba(217, 168, 74,.38)");
     }
     for (let lo = -180; lo < 180; lo += 20) {
       const pts = []; for (let la = -90; la <= 90; la += 6) pts.push(proj(la * Math.PI / 180, lo * Math.PI / 180, lon0, th, Rr, cx, cy));
-      line(pts, "rgba(56, 149, 255,.3)");
+      line(pts, "rgba(217, 168, 74,.3)");
     }
     // pontos de dados + cluster do destino
-    for (const d of dots) { const [x, y, z] = proj(d.lat, d.lon, lon0, th, Rr, cx, cy); if (z > 0.02) { ctx.fillStyle = `rgba(150, 199, 255,${0.16 + d.s * 0.45 * z})`; ctx.fillRect(x, y, 1.5, 1.5); } }
+    for (const d of dots) { const [x, y, z] = proj(d.lat, d.lon, lon0, th, Rr, cx, cy); if (z > 0.02) { ctx.fillStyle = `rgba(233, 214, 160,${0.16 + d.s * 0.45 * z})`; ctx.fillRect(x, y, 1.5, 1.5); } }
     const pulse = 0.5 + 0.5 * Math.sin(t * 5);
-    for (const d of cluster) { const [x, y, z] = proj(d.lat, d.lon, lon0, th, Rr, cx, cy); if (z > 0.02) { ctx.fillStyle = `rgba(255,120,104,${0.45 + 0.5 * pulse * d.s})`; ctx.fillRect(x - 1, y - 1, 2.6, 2.6); } }
+    for (const d of cluster) { const [x, y, z] = proj(d.lat, d.lon, lon0, th, Rr, cx, cy); if (z > 0.02) { ctx.fillStyle = `rgba(95,207,154,${0.45 + 0.5 * pulse * d.s})`; ctx.fillRect(x - 1, y - 1, 2.6, 2.6); } }
     // alfinete em Eunápolis
     const [px, py, pz] = proj(PIN.lat * Math.PI / 180, PIN.lon * Math.PI / 180, lon0, th, Rr, cx, cy);
     if (pz > 0.05 && t > 3.4) {
       const pa = clamp((t - 3.4) / 0.5) * clamp(1 - zoom * 1.3);
       ctx.globalAlpha = a * pa;
-      for (let i = 0; i < 3; i++) { const p = ((t * 0.9 + i / 3) % 1); ctx.strokeStyle = `rgba(255,77,63,${(1 - p) * 0.9})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(px, py, 4 + p * 36, (4 + p * 36) * 0.9, 0, 0, TAU); ctx.stroke(); }
-      ctx.fillStyle = "#ff4d3f"; ctx.shadowColor = "#ff4d3f"; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(px, py, 5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+      for (let i = 0; i < 3; i++) { const p = ((t * 0.9 + i / 3) % 1); ctx.strokeStyle = `rgba(63,174,122,${(1 - p) * 0.9})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(px, py, 4 + p * 36, (4 + p * 36) * 0.9, 0, 0, TAU); ctx.stroke(); }
+      ctx.fillStyle = "#3fae7a"; ctx.shadowColor = "#3fae7a"; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(px, py, 5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
       const lx = px + (px > cx ? -1 : 1) * Math.min(w, h) * 0.2, ly = py - Math.min(w, h) * 0.2;
-      ctx.strokeStyle = "rgba(56, 149, 255,.9)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(lx, ly); ctx.lineTo(lx + (lx > px ? 70 : -70), ly); ctx.stroke();
-      ctx.fillStyle = "#f2f2f3"; ctx.font = "700 12px Rajdhani, sans-serif"; ctx.textAlign = lx > px ? "left" : "right";
+      ctx.strokeStyle = "rgba(217, 168, 74,.9)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(lx, ly); ctx.lineTo(lx + (lx > px ? 70 : -70), ly); ctx.stroke();
+      ctx.fillStyle = "#f3ead7"; ctx.font = "700 12px Rajdhani, sans-serif"; ctx.textAlign = lx > px ? "left" : "right";
       if ("letterSpacing" in ctx) ctx.letterSpacing = "2px";
       ctx.fillText("COSTA DO DESCOBRIMENTO · BA", lx + (lx > px ? 4 : -4), ly - 6);
-      ctx.fillStyle = "rgba(56, 149, 255,.9)"; ctx.font = "600 10px Rajdhani, sans-serif"; ctx.fillText("PONTO ZERO", lx + (lx > px ? 4 : -4), ly + 13);
+      ctx.fillStyle = "rgba(217, 168, 74,.9)"; ctx.font = "600 10px Rajdhani, sans-serif"; ctx.fillText("PONTO ZERO", lx + (lx > px ? 4 : -4), ly + 13);
       if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
     }
     ctx.restore();
@@ -176,21 +176,21 @@ function engine(canvas) {
     const yh = h * 0.34, yb = h * 1.04;
     ctx.save(); ctx.globalAlpha = alpha;
     const sky = ctx.createLinearGradient(0, yh - h * 0.18, 0, yh + h * 0.12);
-    sky.addColorStop(0, "rgba(56, 149, 255,0)"); sky.addColorStop(0.55, "rgba(56, 149, 255,.2)"); sky.addColorStop(1, "rgba(255,77,63,.07)");
+    sky.addColorStop(0, "rgba(217, 168, 74,0)"); sky.addColorStop(0.55, "rgba(217, 168, 74,.2)"); sky.addColorStop(1, "rgba(63,174,122,.07)");
     ctx.fillStyle = sky; ctx.fillRect(0, yh - h * 0.18, w, h * 0.3);
     ctx.lineWidth = 1;
     const off = (t * (calm ? 0.04 : 0.16)) % 1, N = 18;
     for (let k = 0; k < N; k++) {
       const d = 1 - (k + off) / N, s = Math.pow(1 - d, 1.7), y = yh + (yb - yh) * s;
-      ctx.strokeStyle = `rgba(56, 149, 255,${0.07 + 0.3 * s})`; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.strokeStyle = `rgba(217, 168, 74,${0.07 + 0.3 * s})`; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
-    for (let u = -4; u <= 4; u += 0.25) { const [x] = proj2(u, 0); ctx.strokeStyle = "rgba(56, 149, 255,.2)"; ctx.beginPath(); ctx.moveTo(w / 2, yh); ctx.lineTo(x, yb); ctx.stroke(); }
+    for (let u = -4; u <= 4; u += 0.25) { const [x] = proj2(u, 0); ctx.strokeStyle = "rgba(217, 168, 74,.2)"; ctx.beginPath(); ctx.moveTo(w / 2, yh); ctx.lineTo(x, yb); ctx.stroke(); }
     // quarteirões em relevo
     for (const b of blocks) {
       const [x, y, s] = proj2(b.u, b.d), bw = b.bw * w * 0.75 * s, bh = b.hgt * h * 3.2 * s;
-      ctx.fillStyle = "rgba(32, 34, 36,.55)"; ctx.fillRect(x - bw / 2, y - bh, bw, bh);
-      ctx.strokeStyle = `rgba(56, 149, 255,${0.2 + 0.4 * s})`; ctx.strokeRect(x - bw / 2, y - bh, bw, bh);
-      ctx.fillStyle = `rgba(56, 149, 255,${0.08 + 0.12 * s})`; ctx.fillRect(x - bw / 2, y - bh, bw, 2);
+      ctx.fillStyle = "rgba(18, 40, 30,.55)"; ctx.fillRect(x - bw / 2, y - bh, bw, bh);
+      ctx.strokeStyle = `rgba(217, 168, 74,${0.2 + 0.4 * s})`; ctx.strokeRect(x - bw / 2, y - bh, bw, bh);
+      ctx.fillStyle = `rgba(217, 168, 74,${0.08 + 0.12 * s})`; ctx.fillRect(x - bw / 2, y - bh, bw, 2);
     }
     // rota
     const p = calm ? 1 : clamp((t - 6.15) / 2.1);
@@ -198,10 +198,10 @@ function engine(canvas) {
     if (upto > 1) {
       const pts = route.slice(0, upto + 1).map(([u, d]) => proj2(u, d));
       ctx.lineJoin = "round"; ctx.lineCap = "round";
-      ctx.strokeStyle = `rgba(255,77,63,${calm ? 0.35 : 0.28})`; ctx.lineWidth = 14; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
-      ctx.strokeStyle = calm ? "rgba(255,120,104,.7)" : "#ff6f62"; ctx.shadowColor = "#ff4d3f"; ctx.shadowBlur = 14; ctx.lineWidth = 3.2; ctx.stroke(); ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(63,174,122,${calm ? 0.35 : 0.28})`; ctx.lineWidth = 14; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      ctx.strokeStyle = calm ? "rgba(95,207,154,.7)" : "#5fcf9a"; ctx.shadowColor = "#3fae7a"; ctx.shadowBlur = 14; ctx.lineWidth = 3.2; ctx.stroke(); ctx.shadowBlur = 0;
       ctx.setLineDash([2, 7]); ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
-      if (!calm) { const [hx, hy] = pts[pts.length - 1]; ctx.fillStyle = "#fff"; ctx.shadowColor = "#3895ff"; ctx.shadowBlur = 22; ctx.beginPath(); ctx.arc(hx, hy, 5.5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
+      if (!calm) { const [hx, hy] = pts[pts.length - 1]; ctx.fillStyle = "#fff"; ctx.shadowColor = "#d9a84a"; ctx.shadowBlur = 22; ctx.beginPath(); ctx.arc(hx, hy, 5.5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
     }
     // marcos
     ROUTE.forEach(([u, d], i) => {
@@ -209,11 +209,11 @@ function engine(canvas) {
       if (p + 0.0001 < at) return;
       if (hits[i] < 0) { hits[i] = t; reached = Math.max(reached, i + 1); if (!calm) sfx.tap(); }
       const [x, y, s] = proj2(u, d), age = t - hits[i], sc = 0.55 + 0.9 * s;
-      for (let r = 0; r < 2; r++) { const q = clamp((age - r * 0.25) / 1.1); if (q > 0 && q < 1 && !calm) { ctx.strokeStyle = `rgba(56, 149, 255,${(1 - q) * 0.9})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, (6 + q * 54) * sc, (6 + q * 54) * sc * 0.38, 0, 0, TAU); ctx.stroke(); } }
+      for (let r = 0; r < 2; r++) { const q = clamp((age - r * 0.25) / 1.1); if (q > 0 && q < 1 && !calm) { ctx.strokeStyle = `rgba(217, 168, 74,${(1 - q) * 0.9})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, (6 + q * 54) * sc, (6 + q * 54) * sc * 0.38, 0, 0, TAU); ctx.stroke(); } }
       const rise = calm ? 1 : easeOut(age / 0.45), top = y - 38 * sc * rise;
       ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, top); ctx.stroke();
       ctx.save(); ctx.translate(x, top); ctx.rotate(Math.PI / 4); const q = 8 * sc;
-      ctx.fillStyle = i === ROUTE.length - 1 ? "#ff4d3f" : "#1c1c1e"; ctx.strokeStyle = i === ROUTE.length - 1 ? "#ffd0ca" : "#3895ff"; ctx.lineWidth = 2; ctx.shadowColor = i === ROUTE.length - 1 ? "#ff4d3f" : "#3895ff"; ctx.shadowBlur = 12;
+      ctx.fillStyle = i === ROUTE.length - 1 ? "#3fae7a" : "#12281e"; ctx.strokeStyle = i === ROUTE.length - 1 ? "#d7f5e6" : "#d9a84a"; ctx.lineWidth = 2; ctx.shadowColor = i === ROUTE.length - 1 ? "#3fae7a" : "#d9a84a"; ctx.shadowBlur = 12;
       ctx.fillRect(-q, -q, 2 * q, 2 * q); ctx.strokeRect(-q, -q, 2 * q, 2 * q); ctx.restore(); ctx.shadowBlur = 0;
       ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(9 + 3 * sc)}px Orbitron, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(i + 1), x, top + 0.5);
     });
@@ -226,7 +226,7 @@ function engine(canvas) {
   return {
     resize, reached: () => reached,
     frame(t, dt, mode) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#050505"; ctx.fillRect(0, 0, w, h);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#08130e"; ctx.fillRect(0, 0, w, h);
       if (mode === "cine") {
         const calmStars = clamp(1 - (t - 3.2) / 1.6) * 0.6 + 0.4;
         drawStars(t, dt, t < 5.9 ? 1 : 0.5 * calmStars + 0.2);
@@ -254,8 +254,8 @@ function passportHtml() {
 
 const STEPS = [
   { key: "nome", kicker: "ETAPA 01 · IDENTIDADE", q: "Como devemos te chamar, explorador?", ph: "Seu nome", type: "text", ac: "name", hint: "Aparece no seu passaporte e nos certificados.", check: validarNome, attrs: 'maxlength="36" autocapitalize="words"' },
-  { key: "email", kicker: "ETAPA 02 · CANAL", q: "Qual e-mail abre o seu acesso?", ph: "voce@exemplo.com", type: "email", ac: "email", hint: "Fica salvo só neste aparelho.", check: validarEmail, attrs: 'inputmode="email" autocapitalize="none" spellcheck="false" maxlength="120"' },
-  { key: "senha", kicker: "ETAPA 03 · CHAVE", q: "Crie a sua chave de acesso.", ph: "Mínimo de 6 caracteres", type: "password", ac: "new-password", hint: "Use letras, números e um símbolo para uma chave blindada.", check: validarSenha, meter: true, attrs: 'maxlength="100"' },
+  { key: "email", kicker: "ETAPA 02 · CANAL", q: "Qual e-mail abre o seu acesso?", ph: "voce@exemplo.com", type: "email", ac: "email", hint: "Usado para entrar e guardar seus carimbos na sua conta.", check: validarEmail, attrs: 'inputmode="email" autocapitalize="none" spellcheck="false" maxlength="120"' },
+  { key: "senha", kicker: "ETAPA 03 · CHAVE", q: "Crie a sua chave de acesso.", ph: "Mínimo de 8 caracteres", type: "password", ac: "new-password", hint: "Mínimo de 8 caracteres. Misture letras, números e símbolos.", check: validarSenha, meter: true, attrs: 'maxlength="100"' },
   { key: "confirma", kicker: "ETAPA 04 · CONFIRMAÇÃO", q: "Digite a chave mais uma vez.", ph: "Repita a senha", type: "password", ac: "new-password", hint: "Quase lá. Falta só selar o seu passaporte.", live: true, attrs: 'maxlength="100"' },
 ];
 const strength = (s) => {
@@ -281,7 +281,7 @@ export function startIntro({ mode = "full", onCreate, onEnter, onFinish } = {}) 
       <p class="in-sub">Descubra a cidade.<br />Colecione cada quilômetro.</p>
       <button class="primary-button in-cta" type="button">${mode === "login" ? "ENTRAR" : "COMEÇAR A DESCOBRIR"} <span aria-hidden="true">→</span></button>
       ${mode === "login" ? "" : `<button class="in-login" type="button">Já tenho conta · Entrar</button>`}
-      <small class="in-legal">${mode === "login" ? "Sua caderneta está guardada neste aparelho." : "Seu passaporte fica salvo neste aparelho."}</small>
+      <small class="in-legal">${mode === "login" ? "Sua caderneta está guardada na sua conta." : "Seus carimbos ficam salvos na sua conta."}</small>
     </section>
     <section class="wz" hidden></section><section class="iris-ring" aria-hidden="true"></section>`;
   document.body.append(el);
@@ -426,7 +426,7 @@ export function startIntro({ mode = "full", onCreate, onEnter, onFinish } = {}) 
     const box = document.createElement("div"); box.className = "iss";
     box.innerHTML = `<div class="iss-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" class="bg"/><circle cx="50" cy="50" r="44" class="fg" pathLength="100"/></svg><b>0%</b></div><ul class="iss-log" aria-live="polite"></ul>`;
     wz.append(box);
-    const logs = ["Verificando identidade do explorador", "Selando a chave neste aparelho (SHA-256)", "Mapeando os pontos da cidade", "Gravando o carimbo zero da sua caderneta"];
+    const logs = ["Verificando identidade do explorador", "Protegendo a sua chave de acesso", "Mapeando os pontos da cidade", "Gravando o carimbo zero da sua caderneta"];
     const ul = box.querySelector(".iss-log"), fg = box.querySelector(".fg"), pct = box.querySelector(".iss-ring b");
     const DUR = reduce ? 600 : 3900, t0 = performance.now(); let shown = 0, done = false;
     const tick = (now) => {

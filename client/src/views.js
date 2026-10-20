@@ -416,7 +416,7 @@ export function renderProfile(state, mensagem = null) {
   const rotas = certificateRoutes(state).length;
   const desde = conta.criadoEm ? formatDate(conta.criadoEm, { day: "2-digit", month: "long", year: "numeric" }) : "";
   const aviso = mensagem?.texto ? `<p class="auth-error${mensagem.ok ? " ok" : ""}" role="status">${escapeHtml(mensagem.texto)}</p>` : "";
-  return `${pageHead("Sua conta", "Meu perfil", "Tudo o que fica guardado neste aparelho.")}
+  return `${pageHead("Sua conta", "Meu perfil", "Seus dados de acesso e preferências.")}
     <article class="card profile-card">
       <div class="profile-avatar" aria-hidden="true">${escapeHtml(iniciais(conta.nome))}</div>
       <div>
@@ -450,7 +450,7 @@ export function renderProfile(state, mensagem = null) {
     </article>
     <article class="card">
       <h2 class="card-title">Sessão</h2>
-      <p class="small muted">Sair mantém a conta e os carimbos neste aparelho.</p>
+      <p class="small muted">Sair encerra a sessão. Seus carimbos continuam salvos na sua conta.</p>
       <button class="outline-button button-full" type="button" data-action="logout">Sair da conta</button>
     </article>
     <article class="card danger-zone">

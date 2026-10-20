@@ -23,7 +23,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Mapa abre com Google; se não, aparece aviso e o mapa aberto assume.
 - [ ] Rodar `BASE_URL=https://seu-app node server/scripts/smoke.mjs` (e `--profundo` com `ADMIN_EMAIL`/`ADMIN_SENHA` de teste).
 - [ ] Postman: coleção em `postman/mais1km.postman_collection.json`.
-- [ ] Toque numa tag real: carimbo, carta desbloqueada e, nos dias 5, 30 e 45, evolução.
+- [ ] Toque numa tag real: carimbo e carta desbloqueada. Tocar de novo na mesma tag não duplica o carimbo (a carta é única, sem evolução por tempo).
 
 ## 4. Google Play
 - [ ] Política de privacidade: `https://SEU-DOMINIO/privacidade`.
@@ -37,3 +37,4 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] `DATABASE_URL` e demais segredos: manter só como variável de ambiente de execução. No Easypanel, desmarque-os de *Build Args* (o Dockerfile não precisa deles; o build do cliente não lê o banco).
 - [ ] Trocar a senha do MySQL: altere no serviço MySQL e atualize `DATABASE_URL` no app; reimplante. Como já há usuários reais, faça fora de horário de pico e teste o login depois.
 - [ ] Limpeza do pódio de teste: rode primeiro `node server/scripts/teste-podio.js status`. O comando `limpar` só remove contas `@teste.invalid` e carimbos marcados `teste-podio`; contas de usuários reais não são tocadas (a sua própria conta perde apenas os 2 carimbos de teste, se você os criou).
+- [ ] Login: em janela anônima, criar conta, sair e entrar de novo; depois entrar com a mesma conta em outro aparelho ("Já tenho conta · Entrar").
