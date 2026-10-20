@@ -21,11 +21,19 @@ const rateBuckets = new Map();
 const app = express();
 app.set('trust proxy', 1);
 app.use((req, res, next) => {
+  const requestId = String(req.headers['x-request-id'] || '').match(/^[a-zA-Z0-9._-]{8,100}$/)?.[0] || crypto.randomUUID();
+  req.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  const startedAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    if (req.path.startsWith('/api/')) console.log(JSON.stringify({ type: 'http_request', request_id: requestId, method: req.method, path: req.path, status: res.statusCode, duration_ms: Math.round(durationMs * 100) / 100 }));
+  });
   res.setHeader('X-Content-Type-Options', 'nosniff');
   if (req.headers['x-forwarded-proto'] === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.ggpht.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://maps.googleapis.com; connect-src 'self' https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; worker-src 'self' blob:; child-src blob:; manifest-src 'self'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.ggpht.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://maps.googleapis.com https://www.googletagmanager.com; connect-src 'self' https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://www.google-analytics.com; worker-src 'self' blob:; child-src blob:; manifest-src 'self'");
   next();
 });
 app.use(express.json());
@@ -501,7 +509,7 @@ app.use('/api/admin', auth, adminRouter({ limit, wrap }));
 app.get('/api/saude', wrap(async (_req, res) => {
   // A saúde só é positiva se o banco também responder, não apenas se o processo Node estiver vivo.
   await q('SELECT 1 AS ok');
-  res.json({ ok: true, banco: 'ok' });
+  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'desconhecida' });
 }));
 
 // Páginas públicas exigidas pela Google Play: política de privacidade e instruções de exclusão de conta.
@@ -536,9 +544,9 @@ if (fs.existsSync(dist)) {
   });
 }
 
-app.use((error, _req, res, _next) => {
-  console.error(error);
-  res.status(500).json({ erro: 'interno' });
+app.use((error, req, res, _next) => {
+  console.error(JSON.stringify({ type: 'http_error', request_id: req.requestId, method: req.method, path: req.path, error: error?.message || String(error) }));
+  res.status(500).json({ erro: 'interno', request_id: req.requestId });
 });
 
 const port = Number(process.env.PORT || 3000);
