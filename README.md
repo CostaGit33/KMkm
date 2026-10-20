@@ -102,6 +102,7 @@ Cada ponto publicado é uma carta única numerada (personagem, local, categoria,
 - **Página `/como-funciona`** (3 passos), ligada no menu "Mais"; páginas públicas no mesmo tema verde e dourado.
 - **Mensagens de erro claras** (muitas tentativas, sem internet, falha do servidor) em login, cadastro e perfil.
 - Correção no servidor: `/admin` e o `index.html` não chamam mais `next()` após enviar o arquivo (fim dos `ERR_HTTP_HEADERS_SENT` nos logs).
+- **Login para conta existente**: "Já tenho conta · Entrar" na abertura e na tela de cadastro (aparelho novo ou app reinstalado), com alternância entre entrar e criar; o e-mail digitado é mantido após um erro.
 - Checklist de infraestrutura atualizado em `docs/DEPLOY-CHECKLIST.md`.
 
 ## V8.11 · Carimbo que desbloqueia carta

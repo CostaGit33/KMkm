@@ -280,6 +280,7 @@ export function startIntro({ mode = "full", onCreate, onEnter, onFinish } = {}) 
       <h1 class="in-title"><span>+1</span> <span>KM</span></h1>
       <p class="in-sub">Descubra a cidade.<br />Colecione cada quilômetro.</p>
       <button class="primary-button in-cta" type="button">${mode === "login" ? "ENTRAR" : "COMEÇAR A DESCOBRIR"} <span aria-hidden="true">→</span></button>
+      ${mode === "login" ? "" : `<button class="in-login" type="button">Já tenho conta · Entrar</button>`}
       <small class="in-legal">${mode === "login" ? "Sua caderneta está guardada neste aparelho." : "Seu passaporte fica salvo neste aparelho."}</small>
     </section>
     <section class="wz" hidden></section><section class="iris-ring" aria-hidden="true"></section>`;
@@ -333,6 +334,7 @@ export function startIntro({ mode = "full", onCreate, onEnter, onFinish } = {}) 
   $(".in-skip").addEventListener("click", () => { audio(); sfx.tap(); t = FINALE_AT; showFinale(); });
   el.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && stage === "cine") { t = FINALE_AT; showFinale(); } });
 
+  $(".in-login")?.addEventListener("click", () => { audio(); leave(() => onEnter?.({ entrar: true }), { quick: true }); });
   /* --- do final ao cadastro --- */
   $(".in-cta").addEventListener("click", () => {
     audio(); sfx.next();

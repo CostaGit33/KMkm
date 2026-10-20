@@ -23,6 +23,7 @@ let searchTimer;
 let installPrompt = null;
 let authMessage = "";
 let authDraft = {};
+let authModo = "";
 let profileMessage = null;
 let menuOpen = false;
 // Botão "Mais" do rodapé (ou da lateral no desktop): o que estiver visível recebe o foco ao fechar a folha.
@@ -73,7 +74,8 @@ function launchIntro() {
         introCreated = true;
         render();
       },
-      onEnter: () => {
+      onEnter: (opcoes) => {
+        if (opcoes?.entrar) authModo = "entrar";
         introDone = true;
         introHandle = null;
         render();
@@ -112,7 +114,7 @@ function render({ preserveFocus = false } = {}) {
       document.title = "+1 KM";
       return;
     }
-    app.innerHTML = renderAuth({ temConta: !!state.account, mensagem: authMessage, emailSugerido: state.account?.email || "", rascunho: authDraft });
+    app.innerHTML = renderAuth({ temConta: !!state.account, mensagem: authMessage, emailSugerido: state.account?.email || "", rascunho: authDraft, modo: authModo });
     document.title = "Entrar · +1 KM";
     return;
   }
@@ -192,6 +194,7 @@ function handleClick(event) {
   const action = target.dataset.action;
   const id = target.dataset.id || "";
   const destination = target.dataset.view || "";
+  const button = target;
   event.preventDefault();
 
   switch (action) {
@@ -241,6 +244,12 @@ function handleClick(event) {
       authDraft = {};
       render();
       showToast("Você saiu. Seus carimbos continuam vinculados à conta.");
+      break;
+    case "auth-modo":
+      authModo = button.dataset.modo === "entrar" ? "entrar" : "criar";
+      authMessage = "";
+      render();
+      document.querySelector(".auth-card input")?.focus();
       break;
     case "delete-account":
       if (window.confirm("Excluir a conta e todos os carimbos? Isso apaga os dados deste aparelho e também os carimbos de tags guardados no servidor. Não tem como desfazer.")) {
@@ -423,6 +432,7 @@ async function handleSubmit(event) {
       state = createAccount(state, { nome, email: v("email").trim().toLowerCase(), serverId: servidor.usuario.id, criadoEm: new Date().toISOString(), ...senha });
       authMessage = "";
       authDraft = {};
+      authModo = "";
       view = "home";
       render();
       showToast(`Bem-vindo ao +1 KM, ${nome}!`);
@@ -431,6 +441,7 @@ async function handleSubmit(event) {
     }
     case "entrar": {
       const email = v("email").trim().toLowerCase();
+      authDraft = { ...authDraft, email };
       let servidor;
       try {
         servidor = await entrarContaServidor({ email, senha: v("senha") });
@@ -447,8 +458,11 @@ async function handleSubmit(event) {
           return render();
         }
       }
-      state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email, serverId: servidor.usuario.id });
+      // Aparelho novo (ou app reinstalado): não há conta local, então guarda a senha em hash para o uso offline.
+      const hashLocal = state.account?.hash ? {} : await gerarSenha(v("senha"));
+      state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email, serverId: servidor.usuario.id, ...hashLocal });
       state = signIn(state);
+      authModo = "";
       authMessage = "";
       view = "home";
       render();

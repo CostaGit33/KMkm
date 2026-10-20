@@ -211,3 +211,6 @@ body.just-arrived .main-content > *:nth-child(n+5) { animation-delay: .32s; }
   .intro *, .intro *::before, .intro *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
   .in-title, .in-logo, .in-sub, .in-cta, .in-legal { opacity: 1; }
 }
+.in-login { margin-top: 14px; min-height: 44px; padding: 0 18px; background: none; border: 1px solid rgba(217,168,74,.55); border-radius: 999px; color: #f0e3c4; font: 600 14px Montserrat, system-ui, sans-serif; letter-spacing: .04em; cursor: pointer; opacity: 0; }
+.intro.is-finale .in-login { animation: fadeUp .8s ease 1.3s both; }
+.in-login:focus-visible { outline: 2px solid #d9a84a; outline-offset: 3px; }
