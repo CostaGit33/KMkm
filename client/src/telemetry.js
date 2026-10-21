@@ -96,7 +96,7 @@ export function mountConsentBanner() {
   box.className = 'consent-banner';
   box.setAttribute('role', 'region');
   box.setAttribute('aria-label', 'Estatísticas de uso');
-  box.innerHTML = '<p><strong>Estatísticas de uso.</strong> Com o seu aceite, medimos com o Google Analytics quantas vezes o app abre e se há erros. Não enviamos seu nome nem e-mail. <a href="/privacidade">Saiba mais</a></p>'
+  box.innerHTML = '<p><strong>Estatísticas de uso.</strong> Com o seu aceite, medimos com o Google Analytics quantas vezes o app abre e se há erros. Não enviamos seu nome nem e-mail. <a href="/cookies">Política de cookies</a> · <a href="/privacidade">Privacidade</a></p>'
     + '<div class="consent-actions"><button type="button" class="consent-btn" data-consent="denied">Recusar</button><button type="button" class="consent-btn" data-consent="granted">Aceitar</button></div>';
   box.addEventListener('click', (event) => {
     const button = event.target instanceof Element ? event.target.closest('[data-consent]') : null;
