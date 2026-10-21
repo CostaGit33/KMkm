@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="Política de Cookies e tecnologias semelhantes do +1 KM.">
+<title>Política de Cookies · +1 KM</title>
+<style>
+:root{color-scheme:dark light;--bg:#0b1a14;--fg:#f4ecd6;--muted:#b4b9a6;--rule:#3b5242;--link:#e5bd52}
+@media(prefers-color-scheme:light){:root{--bg:#f3ead7;--fg:#14271e;--muted:#5a6155;--rule:#d3c7a8;--link:#7f540a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 56px}h1{font-size:clamp(26px,5vw,34px);line-height:1.2;margin:0 0 6px}h2{font-size:20px;margin:30px 0 8px;padding-top:12px;border-top:1px solid var(--rule)}p,li{margin:8px 0}ul{padding-left:24px}.muted{color:var(--muted);font-size:14px}a{color:var(--link);text-underline-offset:3px}a:focus-visible{outline:3px solid var(--link);outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">Voltar ao aplicativo +1 KM</a></p>
+<h1>Política de Cookies e Tecnologias Semelhantes</h1>
+<p class="muted">+1 KM · Versão de 21 de outubro de 2026</p>
+<p>Esta página explica, com base na implementação identificada no código, como o +1 KM pode utilizar cookies, armazenamento local do navegador e tecnologias semelhantes. A configuração de produção e os serviços efetivamente ativados ainda precisam ser verificados.</p>
+<h2>1. O que são essas tecnologias?</h2>
+<p>Cookies são pequenos dados gravados pelo navegador. O armazenamento local (localStorage) é outro mecanismo que permite guardar informações no dispositivo. A plataforma pode usar tecnologias diferentes para manter a sessão, lembrar uma escolha ou guardar estado local do aplicativo.</p>
+<h2>2. Recursos necessários ao funcionamento</h2>
+<p>O sistema utiliza um cookie de sessão para autenticação em determinadas funções. O aplicativo também pode guardar dados e preferências localmente no navegador. A lista completa, os nomes, a duração e a finalidade de cada item precisam ser confirmados em uma inspeção do site publicado e de suas respostas HTTP.</p>
+<h2>3. Estatísticas opcionais de uso (Google Analytics 4)</h2>
+<p>O código prevê Google Analytics 4 opcional, ativado somente quando as variáveis de build <code>VITE_ANALYTICS_ENABLED=true</code> e <code>VITE_GA4_ID</code> estão configuradas. Quando habilitado, o código espera uma escolha afirmativa antes de carregar o script do Google Analytics. Sem essa configuração, o recurso de estatísticas não é disponibilizado por esse módulo.</p>
+<p>Se as estatísticas estiverem habilitadas, a pessoa pode aceitar ou recusar no aviso apresentado pelo aplicativo. A escolha fica registrada no armazenamento local do navegador. O aviso não deve bloquear o uso principal do aplicativo. A configuração real de produção, a presença de cookies antes da escolha e os dados transmitidos devem ser testados tecnicamente antes da aprovação final.</p>
+<h2>4. Como alterar sua escolha</h2>
+<p>Para alterar sua escolha, use as configurações de armazenamento do navegador para apagar os dados do site e, em seguida, abra novamente o aplicativo. Se as estatísticas estiverem habilitadas, o aviso de escolha deverá aparecer novamente. Essa solução também pode encerrar a sessão e apagar dados locais do aplicativo. Uma opção dedicada para reabrir o aviso sem apagar outros dados ainda precisa ser implementada.</p>
+<h2>5. Serviços de terceiros</h2>
+<p>O mapa pode carregar recursos do Google Maps ou tiles do OpenStreetMap; a interface também referencia fontes hospedadas pelo Google Fonts. Dependendo da integração e de quando os recursos são carregados, os fornecedores podem receber dados técnicos como endereço IP, informações do navegador e recurso solicitado. A lista final deve refletir os fornecedores e as configurações realmente usados em produção.</p>
+<h2>6. Controle pelo navegador</h2>
+<p>O navegador permite bloquear ou apagar cookies e dados de sites. Isso pode encerrar sessões ou prejudicar funções que dependam do armazenamento local. Apagar dados do navegador não substitui um pedido de exclusão da conta e dos dados mantidos no servidor; para isso, consulte <a href="/excluir-conta">Excluir conta e dados</a>.</p>
+<h2>7. Privacidade e contato</h2>
+<p>Consulte também a <a href="/privacidade">Política de Privacidade</a> e os <a href="/termos-de-uso">Termos de Uso</a>. Para dúvidas ou para exercer direitos relacionados a dados pessoais, entre em contato pelo e-mail <a href="mailto:silvaromulo33@gmail.com">silvaromulo33@gmail.com</a>.</p>
+<p class="muted">Pendências antes da aprovação final: inspecionar cookies e armazenamento em produção antes e depois da escolha; confirmar se o Analytics está ativado no build implantado; verificar carregamento de mapas/fontes e seus fornecedores; confirmar duração e escopo dos cookies de sessão; implementar e testar uma opção dedicada para alterar ou revogar o consentimento.</p>
+</main>
+</body>
+</html>
