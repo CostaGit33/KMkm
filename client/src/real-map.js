@@ -160,7 +160,6 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
     const name = status === "mystery" ? "Ponto misterioso" : point.name;
     const dist = user && hasCoords(point) ? distanceMeters(user, point) : null;
     const arrived = dist != null && dist <= ARRIVAL_M;
-    const marking = markingId === point.id;
     const mapped = hasCoords(point);
     return `<div class="map-sheet ${arrived ? "is-arrived" : ""}">
       <div class="map-sheet-top"><span class="map-sheet-num">${ordinal(point)}</span><div><strong>${esc(name)}</strong><small>${point.id} · ${STATUS_TEXT[status]}</small></div>${dist != null ? `<span class="map-dist">${arrived ? "Você chegou" : `a ${formatDistance(dist)}`}</span>` : ""}</div>
@@ -169,11 +168,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
         <button type="button" class="map-btn primary" data-map="open" data-id="${point.id}">${arrived ? "Abrir e carimbar" : "Abrir ficha"}</button>
         ${mapped ? `<a class="map-btn" href="${esc(directionsUrl(point))}" target="_blank" rel="noopener noreferrer">Como chegar</a>` : ""}
         ${mapped ? `<a class="map-btn" href="${esc(streetViewUrl(point))}" target="_blank" rel="noopener noreferrer">Ver a rua</a>` : ""}
-        <button type="button" class="map-btn ${marking ? "on" : ""}" data-map="mark" data-id="${point.id}">${marking ? "Toque no mapa…" : mapped ? "Ajustar posição" : "Marcar no mapa"}</button>
-        ${user ? `<button type="button" class="map-btn" data-map="here" data-id="${point.id}">Usar minha posição</button>` : ""}
-        ${point.fieldMark ? `<button type="button" class="map-btn" data-map="clear" data-id="${point.id}">Remover marcação</button>` : ""}
       </div>
-      ${marking ? `<p class="map-sheet-src">${mapped ? "Arraste o marcador até o local exato da tag ou toque no mapa." : "Toque no mapa onde a tag está fixada."}</p>` : ""}
     </div>`;
   }
 
@@ -205,7 +200,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
       ${route && routeMapped < 2 ? `<p class="map-hint">Esta rota tem ${routeMapped} ponto${routeMapped === 1 ? "" : "s"} com coordenada. Marque os outros para o trajeto aparecer.</p>` : ""}
       ${message.text ? `<p class="map-msg" role="status">${esc(message.text)}</p>` : ""}
       ${sheet()}
-      ${pending.length ? `<details class="map-pending" ${pendingOpen ? "open" : ""}><summary>${pending.length} sem localização</summary><ul>${pending.map((p) => `<li><span>${esc(p.name)}</span><button type="button" class="map-btn" data-map="mark" data-id="${p.id}">Marcar no mapa</button></li>`).join("")}</ul></details>` : ""}
+      ${pending.length ? `<details class="map-pending" ${pendingOpen ? "open" : ""}><summary>${pending.length} sem localização</summary><ul>${pending.map((p) => `<li><span>${esc(p.name)}</span><span class="map-sheet-src">Localização não cadastrada</span></li>`).join("")}</ul></details>` : ""}
       <div class="map-foot"><span>${withCoords} de ${points.length} com coordenada</span><button type="button" class="map-btn" data-map="csv">Copiar marcações (CSV)</button></div>`;
   }
 
@@ -238,7 +233,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
       if (!markingId) return;
       const point = POINTS.find((p) => p.id === markingId);
       saveMark(markingId, { lat, lng });
-      message.text = `${point?.name || "Ponto"} marcado. Arraste o marcador para ajustar ou toque em “Ajustar posição” para terminar.`;
+      message.text = `${point?.name || "Ponto"} marcado.`;
       refresh();
     });
     engine.onDragStart(() => { if (tourTimer) stopTour(); });
