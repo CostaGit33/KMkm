@@ -515,7 +515,7 @@ app.get('/api/saude', wrap(async (_req, res) => {
 // Páginas públicas exigidas pela Google Play: política de privacidade e instruções de exclusão de conta.
 // O e-mail de contato vem da variável CONTATO_EMAIL (não fica escrito no código nem no repositório).
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
-const DATA_POLITICA = '18 de outubro de 2026';
+const DATA_POLITICA = '21 de outubro de 2026';
 function paginaPublica(arquivo) {
   return (_req, res) => {
     const contato = process.env.CONTATO_EMAIL || 'o contato informado na ficha do app na loja (defina CONTATO_EMAIL no servidor)';
@@ -526,6 +526,7 @@ function paginaPublica(arquivo) {
   };
 }
 app.get(['/privacidade', '/privacidade/'], paginaPublica('privacidade.html'));
+app.get(['/termos-de-uso', '/termos-de-uso/'], paginaPublica('termos-de-uso.html'));
 app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
 app.get(['/como-funciona', '/como-funciona/'], paginaPublica('como-funciona.html'));
 
