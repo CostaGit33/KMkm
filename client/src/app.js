@@ -11,6 +11,7 @@ import { api, mensagemErro, atualizarContaServidor, criarContaServidor, entrarCo
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
+import { setAnalyticsConsent } from "./telemetry.js";
 
 let state = loadState();
 let view = "home";
@@ -268,6 +269,14 @@ function handleClick(event) {
         });
       }
       break;
+    case "analytics-consent": {
+      const aceito = target.dataset.value === "granted";
+      setAnalyticsConsent(aceito);
+      document.getElementById("consent-banner")?.remove();
+      render();
+      showToast(aceito ? "Estatísticas de uso ativadas." : "Estatísticas de uso desativadas.");
+      break;
+    }
     case "reveal-point":
       state = revealPoint(state, id);
       render();
