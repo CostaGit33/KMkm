@@ -156,7 +156,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
 
   function sheet() {
     const point = POINTS.find((p) => p.id === selectedId);
-    if (!point) return `<p class="map-hint">Toque num marcador para ver o ponto, a distância até ele e o caminho. Os números seguem a ordem do catálogo.</p>`;
+    if (!point) return `<p class="map-hint">Toque em um símbolo para ver o ponto, a distância até ele e como chegar. Cada símbolo representa a categoria do local.</p>`;
     const status = statusOf(state, point);
     const name = status === "mystery" ? "Ponto misterioso" : point.name;
     const dist = user && hasCoords(point) ? distanceMeters(user, point) : null;
