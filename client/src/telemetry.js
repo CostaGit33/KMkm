@@ -88,9 +88,13 @@ export function track(name, params = {}) {
   }));
   window.gtag('event', name, safe);
 }
-export function mountConsentBanner() {
-  if (!analyticsAvailable || readConsent() !== null || typeof document === 'undefined') return;
-  if (document.getElementById('consent-banner')) return;
+export function mountConsentBanner({ force = false } = {}) {
+  if (!analyticsAvailable || (!force && readConsent() !== null) || typeof document === 'undefined') return;
+  const existing = document.getElementById('consent-banner');
+  if (existing) {
+    existing.querySelector('[data-consent="denied"]')?.focus();
+    return;
+  }
   const box = document.createElement('section');
   box.id = 'consent-banner';
   box.className = 'consent-banner';
@@ -105,4 +109,9 @@ export function mountConsentBanner() {
     box.remove();
   });
   document.body.appendChild(box);
+}
+
+/** Reabre as escolhas de consentimento sem apagar dados de conta ou progresso. */
+export function openConsentPreferences() {
+  mountConsentBanner({ force: true });
 }
