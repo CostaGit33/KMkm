@@ -527,6 +527,7 @@ function paginaPublica(arquivo) {
 }
 app.get(['/privacidade', '/privacidade/'], paginaPublica('privacidade.html'));
 app.get(['/termos-de-uso', '/termos-de-uso/'], paginaPublica('termos-de-uso.html'));
+app.get(['/cookies', '/cookies/'], paginaPublica('cookies.html'));
 app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
 app.get(['/como-funciona', '/como-funciona/'], paginaPublica('como-funciona.html'));
 
