@@ -1,0 +1,750 @@
+openapi: 3.0.3
+info:
+  title: +1 KM · API
+  version: 8.12.0
+  description: |
+    API do +1 KM (Express + MySQL). Contrato escrito a partir das rotas de `server/index.js`, `server/admin.js`
+    e `server/gamificacao.js`; se o código mudar, atualize este arquivo e a coleção em `docs/api/`.
+
+    **Autenticação.** A conta usa um cookie de sessão `mais1km_session` (HttpOnly; `Secure; SameSite=None` em HTTPS,
+    `SameSite=Lax` em HTTP). O token fica guardado só como hash no banco e vale 30 dias. As rotas legadas de apelido
+    (`/api/entrar`, `/api/sair`, `/api/sessao`) existem apenas para tags antigas e também aceitam `Authorization: Bearer`.
+
+    **Erros.** Sempre `{ "erro": "codigo_em_snake_case" }`. Limite de requisições por IP responde `429 muitas_tentativas`
+    com o cabeçalho `Retry-After`. O contador fica na memória do processo (zera a cada reinício).
+
+    Rotas `/api/*` que não existem respondem `404 { "erro": "rota_api_inexistente" }` (JSON, nunca HTML).
+
+    **Rastreio.** Toda resposta de `/api/*` traz `X-Request-Id` (o servidor aceita um valor enviado pelo cliente com
+    8 a 100 caracteres de `A-Za-z0-9._-`; senão gera um UUID). Falhas inesperadas respondem
+    `500 { "erro": "interno", "request_id": "…" }`, e o mesmo id aparece no log JSON do servidor (`http_request` e `http_error`).
+servers:
+  - url: http://localhost:3000
+    description: Desenvolvimento local
+  - url: https://app.exemplo.com.br
+    description: Produção (troque pelo domínio do Easypanel)
+tags:
+  - name: Sistema
+    description: Saúde, configuração do mapa e catálogo público
+  - name: Conta
+    description: Cadastro, login, sessão e exclusão
+  - name: Carimbos
+    description: Toque na tag (NFC ou QR) e caderneta
+  - name: Gamificação
+    description: XP, medalhas e pódio (exigem conta)
+  - name: Administração
+    description: Exige conta com papel `admin`
+  - name: Páginas públicas
+    description: Exigidas pela Google Play
+  - name: Legado
+    description: Apelido anônimo com token, só para tags antigas
+paths:
+  /api/saude:
+    get:
+      operationId: saude
+      tags: [Sistema]
+      security: []
+      summary: Saúde do serviço
+      description: Só responde `ok` se o banco também responder.
+      responses:
+        '200':
+          description: Serviço e banco no ar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  banco: { type: string, example: ok }
+                  versao: { type: string, example: local, description: 'Valor de RELEASE_VERSION; "desconhecida" se a variável não estiver definida.' }
+        '500': { $ref: '#/components/responses/ErroInterno' }
+  /api/config-mapa:
+    get:
+      operationId: configMapa
+      tags: [Sistema]
+      security: []
+      summary: Chaves públicas do Google Maps
+      description: Sem chave configurada, o app usa o mapa aberto (Leaflet/OSM). A chave do Google Maps é pública por natureza; restrinja-a por domínio no Google Cloud.
+      responses:
+        '200':
+          description: Configuração do mapa
+          headers:
+            Cache-Control: { schema: { type: string, example: no-store } }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  googleMapsKey: { type: string, nullable: true }
+                  googleMapId: { type: string, nullable: true }
+  /api/map-tiles/{z}/{x}/{y}.png:
+    get:
+      operationId: tileMapa
+      tags: [Sistema]
+      security: []
+      summary: Tile do mapa (proxy do OpenStreetMap)
+      description: 'Limite de 120 requisições por minuto por IP. Zoom de 0 a 19.'
+      parameters:
+        - { name: z, in: path, required: true, schema: { type: integer, minimum: 0, maximum: 19 } }
+        - { name: x, in: path, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: 'y', in: path, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          description: Imagem PNG
+          content:
+            image/png: { schema: { type: string, format: binary } }
+        '400': { $ref: '#/components/responses/Erro400' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/catalogo:
+    get:
+      operationId: catalogo
+      tags: [Sistema]
+      security: []
+      summary: Catálogo público de pontos e circuitos
+      description: |
+        Inclui todos os pontos não arquivados, inclusive os de `status` diferente de `publicado`
+        (o app trata `pendente` como ponto ainda não carimbável). Pontos com `oculto = true` também vêm na resposta.
+      responses:
+        '200':
+          description: Catálogo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Catalogo' }
+  /api/conta/criar:
+    post:
+      operationId: contaCriar
+      tags: [Conta]
+      security: []
+      summary: Criar conta
+      description: Cria a conta e já abre a sessão (cookie). Limite de 8 por 10 minutos por IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContaCriar' }
+      responses:
+        '201':
+          description: Conta criada; cookie `mais1km_session` definido
+          headers:
+            Set-Cookie: { schema: { type: string }, description: 'mais1km_session=...; HttpOnly' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioResposta' }
+        '400': { $ref: '#/components/responses/DadosContaInvalidos' }
+        '409':
+          description: E-mail já cadastrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: email_ja_cadastrado }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/conta/entrar:
+    post:
+      operationId: contaEntrar
+      tags: [Conta]
+      security: []
+      summary: Entrar com e-mail e senha
+      description: Limite de 12 por 10 minutos por IP. Não há recuperação de senha por e-mail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContaEntrar' }
+      responses:
+        '200':
+          description: Sessão aberta; cookie definido
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioResposta' }
+        '401':
+          description: E-mail ou senha não conferem
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: credenciais_invalidas }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/conta/sessao:
+    get:
+      operationId: contaSessao
+      tags: [Conta]
+      summary: Conta da sessão atual
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Conta logada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    allOf:
+                      - $ref: '#/components/schemas/Usuario'
+                      - type: object
+                        properties:
+                          admin: { type: boolean }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/conta:
+    put:
+      operationId: contaAtualizar
+      tags: [Conta]
+      summary: Atualizar nome, e-mail e (opcionalmente) a senha
+      description: Para trocar a senha envie `senhaNova` (8 a 128 caracteres) e `senhaAtual`.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContaAtualizar' }
+      responses:
+        '200':
+          description: Dados salvos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsuarioResposta' }
+        '400':
+          description: Dados inválidos ou senha atual incorreta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              examples:
+                dados: { value: { erro: dados_conta_invalidos } }
+                senha: { value: { erro: senha_atual_invalida } }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '404':
+          description: Conta inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '409':
+          description: E-mail já em uso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: email_ja_cadastrado }
+  /api/conta/sair:
+    post:
+      operationId: contaSair
+      tags: [Conta]
+      summary: Encerrar a sessão (revoga o token no servidor)
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Sessão encerrada e cookie removido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/eu:
+    delete:
+      operationId: contaExcluir
+      tags: [Conta]
+      summary: Excluir a conta e todos os carimbos
+      description: Irreversível. Limite de 8 por 10 minutos por IP.
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Conta, sessões e carimbos apagados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/tags/{codigo}/carimbar:
+    post:
+      operationId: tagCarimbar
+      tags: [Carimbos]
+      summary: Carimbar um ponto (toque na tag)
+      description: |
+        Cria o carimbo da rota (uma vez a cada 30 minutos; repetir dentro da janela devolve `repetido: true`).
+        O primeiro carimbo de um ponto desbloqueia a carta (`criatura.nova = true`). Se houver evento ou patrocínio ativo
+        no ponto, a resposta traz também `evento` com a edição numerada.
+        Limite de 30 por minuto por IP.
+
+        **Atenção:** o `codigo` da tag é público e fixo; hoje não há prova criptográfica de proximidade física.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string }, example: eu-001 }
+      responses:
+        '200':
+          description: Carimbo registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CarimboResposta' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '404':
+          description: Tag inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: tag_inexistente }
+        '409':
+          description: Ponto ainda não publicado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: ponto_nao_publicado }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/eventos/{slug}/carimbar:
+    post:
+      operationId: eventoCarimbar
+      tags: [Carimbos]
+      summary: Carimbar um card de evento ou patrocínio
+      description: Fora da janela do evento responde 409 e não altera a rota.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo: { type: string, description: Código da tag onde a pessoa está }
+      responses:
+        '200': { description: Carimbo do evento registrado }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '404':
+          description: Evento ou tag inexistente (`evento_inexistente`, `tag_inexistente`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '409':
+          description: '`evento_nao_comecou`, `fora_da_janela`, `ponto_nao_publicado` ou `ponto_fora_do_evento`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/caderneta:
+    get:
+      operationId: caderneta
+      tags: [Carimbos]
+      summary: Caderneta da pessoa (rotas, carimbos, coleção e eventos)
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Caderneta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    type: object
+                    properties:
+                      apelido: { type: string }
+                  eventos: { type: array, items: { type: object } }
+                  colecao: { $ref: '#/components/schemas/Colecao' }
+                  rotas: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/gamificacao/me:
+    get:
+      operationId: gamificacaoMe
+      tags: [Gamificação]
+      summary: XP, nível, medalhas e participação no pódio
+      description: Exige conta (sessão de apelido anônimo não é aceita). Limite de 90 por minuto.
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Resumo de gamificação
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  xp:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      byPoints: { type: integer }
+                      byRoutes: { type: integer }
+                      uniquePoints: { type: integer }
+                      completedRoutes: { type: integer }
+                      level: { type: object }
+                  medals: { type: array, items: { type: object } }
+                  participation:
+                    type: object
+                    properties:
+                      optedIn: { type: boolean }
+                      alias: { type: string }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/gamificacao/podio:
+    get:
+      operationId: gamificacaoPodio
+      tags: [Gamificação]
+      summary: Pódio do mês ou geral
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: periodo, in: query, schema: { type: string, enum: [geral] }, description: 'Omita para o pódio do mês atual' }
+        - { name: limite, in: query, schema: { type: integer, minimum: 3 } }
+      responses:
+        '200': { description: Classificação }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/gamificacao/participacao:
+    put:
+      operationId: gamificacaoParticipacao
+      tags: [Gamificação]
+      summary: Entrar ou sair do pódio público
+      description: O apelido público tem de 2 a 30 caracteres e não pode conter `@`.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [optIn]
+              properties:
+                optIn: { type: boolean }
+                alias: { type: string, minLength: 2, maxLength: 30 }
+      responses:
+        '200':
+          description: Participação atualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  optedIn: { type: boolean }
+                  alias: { type: string }
+        '400':
+          description: '`participacao_invalida` ou `apelido_publico_invalido`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/admin/eu:
+    get:
+      operationId: adminEu
+      tags: [Administração]
+      summary: Confirma que a conta é administradora
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Conta administradora
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  admin: { type: boolean, example: true }
+                  nome: { type: string }
+                  email: { type: string }
+                  conta_id: { type: integer }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/dados:
+    get:
+      operationId: adminDados
+      tags: [Administração]
+      summary: Tudo que as telas do painel precisam (rotas, pontos, circuitos, eventos, patrocinadores)
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Dados do painel }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/pontos:
+    post:
+      operationId: adminPontoCriar
+      tags: [Administração]
+      summary: Criar ponto
+      description: '`codigo` em minúsculas (regex no servidor), `rota_id` de uma rota não arquivada. Status inicial `pendente`.'
+      security: [{ sessionCookie: [] }]
+      responses:
+        '201': { description: Ponto criado }
+        '400': { description: '`codigo_invalido` ou `rota_invalida`' }
+        '409': { description: '`codigo_ja_existe`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/pontos/{codigo}:
+    put:
+      operationId: adminPontoEditar
+      tags: [Administração]
+      summary: Editar ponto (inclui os campos da carta)
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Salvo }
+        '404': { description: '`ponto_inexistente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+    delete:
+      operationId: adminPontoRemover
+      tags: [Administração]
+      summary: Remover ponto
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Removido }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/pontos/{codigo}/status:
+    post:
+      operationId: adminPontoStatus
+      tags: [Administração]
+      summary: Publicar, voltar a pendente ou arquivar um ponto
+      description: Arquivar um ponto que está em evento aberto responde `409 ponto_em_evento`.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Status atualizado }
+        '400': { description: '`status_invalido`' }
+        '404': { description: '`ponto_inexistente`' }
+        '409': { description: '`ponto_em_evento`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/usuarios:
+    get:
+      operationId: adminUsuarios
+      tags: [Administração]
+      summary: Lista de usuários
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Usuários }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/auditoria:
+    get:
+      operationId: adminAuditoria
+      tags: [Administração]
+      summary: Registro de ações administrativas
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Eventos de auditoria }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /privacidade:
+    get:
+      operationId: paginaPrivacidade
+      tags: [Páginas públicas]
+      security: []
+      summary: Política de Privacidade (HTML)
+      responses:
+        '200': { description: Página HTML, content: { text/html: { schema: { type: string } } } }
+  /excluir-conta:
+    get:
+      operationId: paginaExcluirConta
+      tags: [Páginas públicas]
+      security: []
+      summary: Como excluir a conta (HTML)
+      responses:
+        '200': { description: Página HTML, content: { text/html: { schema: { type: string } } } }
+  /como-funciona:
+    get:
+      operationId: paginaComoFunciona
+      tags: [Páginas públicas]
+      security: []
+      summary: Como funciona o +1 KM (HTML)
+      responses:
+        '200': { description: Página HTML, content: { text/html: { schema: { type: string } } } }
+  /api/entrar:
+    post:
+      operationId: legadoEntrar
+      tags: [Legado]
+      security: []
+      summary: Criar apelido anônimo com token (somente tags antigas)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apelido]
+              properties:
+                apelido: { type: string, minLength: 2, maxLength: 30 }
+                turma: { type: string, description: Código de convite da turma }
+      responses:
+        '200':
+          description: Token e usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  usuario: { type: object }
+        '400':
+          description: Apelido curto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: apelido_curto }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/sessao:
+    get:
+      operationId: legadoSessao
+      tags: [Legado]
+      summary: Sessão de apelido anônimo
+      security: [{ sessionCookie: [] }, { bearerToken: [] }]
+      responses:
+        '200': { description: Usuário }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+  /api/sair:
+    post:
+      operationId: legadoSair
+      tags: [Legado]
+      security: []
+      summary: Remove o cookie (não revoga o token legado)
+      responses:
+        '200':
+          description: Cookie removido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: mais1km_session
+      description: Cookie de sessão definido por `/api/conta/criar` e `/api/conta/entrar`.
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: Token legado de apelido anônimo.
+  responses:
+    NaoAutenticado:
+      description: Sem sessão válida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+          example: { erro: nao_autenticado }
+    SemPermissao:
+      description: A conta não é administradora
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+          example: { erro: sem_permissao }
+    DadosContaInvalidos:
+      description: Nome (2 a 80), e-mail ou senha (8 a 128) inválidos
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+          example: { erro: dados_conta_invalidos }
+    Erro400:
+      description: Parâmetros inválidos
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    MuitasTentativas:
+      description: Limite de requisições por IP excedido
+      headers:
+        Retry-After: { schema: { type: integer }, description: Segundos até poder tentar de novo }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+          example: { erro: muitas_tentativas }
+    ErroInterno:
+      description: Falha interna ou banco indisponível
+      headers:
+        X-Request-Id: { schema: { type: string }, description: Mesmo valor do campo request_id e do log do servidor }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+          example: { erro: interno, request_id: 3f6c1f4e-9a53-4c1c-8a0b-0d6f2f2f6b1e }
+  schemas:
+    Erro:
+      type: object
+      required: [erro]
+      properties:
+        erro: { type: string, example: nao_autenticado }
+        request_id: { type: string, description: 'Só nas falhas 500 (erro "interno"); cruze com o log do servidor.' }
+    Ok:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+    Usuario:
+      type: object
+      properties:
+        id: { type: integer }
+        conta_id: { type: integer }
+        nome: { type: string }
+        email: { type: string, format: email }
+    UsuarioResposta:
+      type: object
+      properties:
+        usuario: { $ref: '#/components/schemas/Usuario' }
+    ContaCriar:
+      type: object
+      required: [nome, email, senha]
+      properties:
+        nome: { type: string, minLength: 2, maxLength: 80 }
+        email: { type: string, format: email, maxLength: 160 }
+        senha: { type: string, minLength: 8, maxLength: 128, format: password }
+    ContaEntrar:
+      type: object
+      required: [email, senha]
+      properties:
+        email: { type: string, format: email }
+        senha: { type: string, format: password }
+    ContaAtualizar:
+      type: object
+      required: [nome, email]
+      properties:
+        nome: { type: string, minLength: 2, maxLength: 80 }
+        email: { type: string, format: email }
+        senhaAtual: { type: string, format: password }
+        senhaNova: { type: string, minLength: 8, maxLength: 128, format: password }
+    Catalogo:
+      type: object
+      properties:
+        pontos:
+          type: array
+          items:
+            type: object
+            properties:
+              codigo: { type: string, example: eu-001 }
+              nome: { type: string }
+              status: { type: string, enum: [pendente, publicado], description: 'Também pode vir outro status não arquivado' }
+              lat: { type: number, nullable: true }
+              lng: { type: number, nullable: true }
+              endereco: { type: string, nullable: true }
+              nota: { type: string, nullable: true }
+              categorias: { type: array, items: { type: string } }
+              icone: { type: string, nullable: true }
+              fonte_mapa: { type: string, nullable: true }
+              oculto: { type: boolean }
+        circuitos:
+          type: array
+          items:
+            type: object
+            properties:
+              slug: { type: string }
+              nome: { type: string }
+              subtitulo: { type: string, nullable: true }
+              icone: { type: string, nullable: true }
+              cor: { type: string }
+              codigos: { type: array, items: { type: string } }
+    Colecao:
+      type: object
+      description: Álbum de cartas da pessoa (uma carta por ponto publicado)
+      properties:
+        total: { type: integer }
+        capturadas: { type: integer }
+        por_categoria: { type: object, additionalProperties: { type: object } }
+        itens: { type: array, items: { type: object } }
+    CarimboResposta:
+      type: object
+      properties:
+        carimbo: { type: object, description: 'Carimbo da rota com `tag_nome`, `ordem`, `forma`, `parceiro`, `cor`' }
+        rota:
+          type: object
+          properties:
+            nome: { type: string }
+            total: { type: integer }
+            feitos: { type: integer }
+        repetido: { type: boolean }
+        evento: { type: object, nullable: true }
+        criatura:
+          type: object
+          properties:
+            nome: { type: string }
+            raridade: { type: string }
+            nova: { type: boolean, description: Verdadeiro no primeiro carimbo do ponto }
+            capturadas: { type: integer }
+            total: { type: integer }
+            carta: { type: object, nullable: true }
+        hoje: { type: integer }
+        turma: { type: object, nullable: true }
+        guardiao: { type: object, nullable: true }
+        certificado: { type: boolean }

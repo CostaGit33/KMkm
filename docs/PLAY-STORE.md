@@ -30,5 +30,5 @@ Checklist do que já está pronto no código e do que só você pode fazer.
 ## Testes antes de publicar
 - `npm --prefix server test` (unitários).
 - `BASE_URL=https://SEU-DOMINIO node server/scripts/smoke.mjs` (cria e apaga uma conta descartável).
-- Coleção Postman em `postman/mais1km.postman_collection.json` (`newman run … --env-var baseUrl=https://SEU-DOMINIO`).
+- Contrato e coleção Postman em `docs/api/`: em produção rode só a pasta somente leitura (`newman run docs/api/mais1km.postman_collection.json --env-var baseUrl=https://SEU-DOMINIO --folder "1 · Saúde e páginas (somente leitura)"`); a coleção inteira cria e apaga uma conta de teste, então use em local ou homologação.
 - Edição numerada (admin): `BASE_URL=… ADMIN_EMAIL=… ADMIN_SENHA=… node server/scripts/smoke.mjs --profundo`. Combine um horário: o card de teste ocupa 6 pontos durante a execução.
