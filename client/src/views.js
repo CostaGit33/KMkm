@@ -301,7 +301,7 @@ function pointRow(state, point, ordinal) {
 }
 
 function mapCanvas(state, filters) {
-  const points = getFilteredPoints(state, { ...filters, search: "" });
+  const points = getFilteredPoints(state, filters);
   const mapped = points.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
   return `<div class="map-stage"><div class="real-map" id="real-map" role="application" aria-label="Mapa de ${escapeHtml(CITY.name)} com ${mapped.length} pontos localizados"></div><div class="map-hud" id="map-hud"></div><div class="map-ui" id="map-ui"></div></div>`;
 }
