@@ -38,3 +38,12 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Trocar a senha do MySQL: altere no serviço MySQL e atualize `DATABASE_URL` no app; reimplante. Como já há usuários reais, faça fora de horário de pico e teste o login depois.
 - [ ] Limpeza do pódio de teste: rode primeiro `node server/scripts/teste-podio.js status`. O comando `limpar` só remove contas `@teste.invalid` e carimbos marcados `teste-podio`; contas de usuários reais não são tocadas (a sua própria conta perde apenas os 2 carimbos de teste, se você os criou).
 - [ ] Login: em janela anônima, criar conta, sair e entrar de novo; depois entrar com a mesma conta em outro aparelho ("Já tenho conta · Entrar").
+
+
+## Google Analytics 4 (consentimento)
+O GA4 só deve carregar depois do aceite no aviso ou da ativação em Perfil → Estatísticas de uso.
+- [ ] Em aba anônima, antes do aceite, não há requisições para `googletagmanager.com` ou `google-analytics.com`.
+- [ ] Ao aceitar, o script carrega e o evento `app_opened` aparece no GA4 DebugView.
+- [ ] Ao desativar em Perfil, eventos deixam de ser enviados e os cookies `_ga*` são removidos quando possível.
+- [ ] Google Signals e retenção de dados revisados no GA4.
+- [ ] Política `/privacidade` explica dados, finalidade, consentimento e revogação.
