@@ -1,5 +1,5 @@
 import { carregarConfigMapa, createGoogleEngine, createLeafletEngine } from "./map-engines.js";
-import { ROUTES, POINTS } from "./data.js";
+import { ROUTES, POINTS, CATEGORIES } from "./data.js";
 import { ARRIVAL_M, clearMark, directionsUrl, streetViewUrl, distanceMeters, formatDistance, hasCoords, marksCsv, saveMark } from "./geo.js";
 
 const EUNAPOLIS_VIEW = { center: [-16.3766, -39.5864], zoom: 14 };
@@ -56,7 +56,8 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
     const next = nextPoint()?.id === point.id ? " is-next" : "";
     const sel = selectedId === point.id ? " is-selected" : "";
     const field = point.coordinateKind === "field" ? " is-field" : point.coordinateKind === "area_anchor" ? " is-anchor" : "";
-    const label = status === "conquered" ? "✓" : status === "mystery" ? "?" : ordinal(point);
+    const category = CATEGORIES.find((item) => point.categoryIds?.includes(item.id));
+    const label = status === "mystery" ? "?" : (category?.icon || "•");
     return `<span class="mk-wrap"><span class="mk mk--${status}${dim}${next}${sel}${field}"><i class="mk-ring"></i><b>${label}</b></span></span>`;
   }
 
