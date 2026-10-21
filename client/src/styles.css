@@ -1096,3 +1096,22 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 @media(prefers-reduced-motion:reduce) {
   .map-fab,.map-chip,.map-btn { scroll-behavior:auto; transition:none; }
 }
+
+
+/* Correção: o painel de ações fica abaixo do mapa, nunca sobre a área cartográfica. */
+.map-stage { display:flex; flex-direction:column; overflow:visible; }
+.map-stage > .real-map { order:0; flex:0 0 auto; }
+.map-stage > .map-hud { position:absolute; inset:10px 10px auto; order:1; }
+.map-stage > .map-ui {
+  position:relative; inset:auto; order:2; flex:0 0 auto; width:100%;
+  max-height:none; overflow:visible; overscroll-behavior:auto;
+  padding:10px; border:0; border-top:1px solid var(--rule); border-radius:0 0 10px 10px;
+  background:var(--card); box-shadow:none; backdrop-filter:none;
+}
+.real-map .leaflet-control-zoom { margin-bottom:0; }
+@media(max-width:640px) {
+  .real-map { height:56vh; min-height:330px; max-height:560px; }
+  .map-stage > .map-ui { padding:8px; gap:8px; }
+  .map-stage > .map-hud { inset:7px 7px auto; }
+  .real-map .leaflet-control-zoom { margin-bottom:0; }
+}
