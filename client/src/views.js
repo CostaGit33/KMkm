@@ -461,6 +461,7 @@ function analyticsCard() {
       <h2 class="card-title">Estatísticas de uso</h2>
       <p class="small muted">${texto} <a href="/privacidade">Saiba mais</a></p>
       <button class="outline-button button-full" type="button" data-action="analytics-consent" data-value="${ligado ? "denied" : "granted"}">${ligado ? "Desativar estatísticas" : "Ativar estatísticas"}</button>
+      <button class="text-link privacy-preferences-link" type="button" data-action="privacy-preferences">Preferências de privacidade</button>
     </article>`;
 }
 
