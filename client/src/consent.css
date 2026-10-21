@@ -1,0 +1,15 @@
+/* Aviso de consentimento das estatísticas de uso. As duas escolhas têm o mesmo destaque. */
+.consent-banner {
+  position: fixed; z-index: 70; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  max-width: 520px; margin-inline: auto; box-sizing: border-box; padding: 14px; display: grid; gap: 12px;
+  border: 2px solid var(--ink, #2a2118); border-radius: 5px; background: var(--card, #fff9ed); color: var(--ink, #2a2118);
+  box-shadow: 3px 3px 0 var(--red, #b8322a); font-size: 13px; line-height: 1.45;
+}
+.consent-banner p { margin: 0; }
+.consent-banner a { color: inherit; font-weight: 700; text-decoration: underline; }
+.consent-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.consent-btn { min-height: 44px; padding: 0 18px; border: 2px solid var(--ink, #2a2118); border-radius: 5px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+.consent-btn:hover { background: var(--paper-deep, #e8dcc3); }
+.consent-btn:focus-visible, .consent-banner a:focus-visible { outline: 3px solid var(--red, #b8322a); outline-offset: 2px; }
+@media (min-width: 900px) { .consent-banner { left: auto; right: 20px; bottom: 20px; margin-inline: 0; } }
+@media print { .consent-banner { display: none !important; } }

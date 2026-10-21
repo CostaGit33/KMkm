@@ -1,8 +1,7 @@
-import { initTelemetry, track } from './telemetry.js';
+import { initTelemetry, mountConsentBanner } from './telemetry.js';
 
 const tagMatch = window.location.pathname.match(/^\/t\/([\w-]+)/i);
-initTelemetry();
-track(tagMatch ? 'tag_opened' : 'app_opened', { route: tagMatch ? 'tag' : 'app' });
+initTelemetry({ name: tagMatch ? 'tag_opened' : 'app_opened', params: { route: tagMatch ? 'tag' : 'app' } });
 
 // O catálogo (pontos e circuitos) vem do servidor antes de qualquer tela abrir; falhas não impedem o app.
 (async () => {
@@ -16,4 +15,5 @@ track(tagMatch ? 'tag_opened' : 'app_opened', { route: tagMatch ? 'tag' : 'app' 
   } else {
     await import('./app.js');
   }
+  mountConsentBanner();
 })();

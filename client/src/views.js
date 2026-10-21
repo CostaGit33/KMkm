@@ -2,9 +2,10 @@ import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, g
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
 import { secaoColecao, cartaHtml } from "./cartas.js";
+import { analyticsAvailable, getAnalyticsConsent } from "./telemetry.js";
 
 const NAV_ITEMS = [
-  { id: "home", label: "Caderneta", icon: "▤" },
+  { id: "home", label: "Início", icon: "⌂" },
   { id: "map", label: "Mapa", icon: "⌖" },
   { id: "routes", label: "Rotas", icon: "⌁" },
   { id: "collection", label: "Coleção", icon: "✳" },
@@ -242,24 +243,37 @@ function nextStepCard(state, city) {
 
 function renderHome(state) {
   const city = progressFor(state);
-  const nextStep = nextStepCard(state, city);
+  const next = POINTS.find((point) => pointStatus(state, point) === "available");
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
-  return `${pageHead("Caderneta", CITY.name)}
-    ${nextStep}
-    <section class="hero-card" aria-labelledby="hero-title">
-      <div class="hero-copy"><span class="hero-overline">${CITY.name}</span><h2 class="hero-title" id="hero-title">Sua cidade.<br />Sua coleção.</h2><div class="hero-foot"><span class="season-tag">${city.count}/${city.total} cartas</span></div></div>
-      <div class="hero-stamp" aria-label="${city.count} de ${city.total} pontos conquistados"><span><small>${escapeHtml(CITY.name)}</small><strong>${String(city.count).padStart(2, "0")}<span style="font-size:.48em">/${city.total}</span></strong><span class="stamp-divider"></span><small>conquistados</small></span></div>
+  const complete = city.total > 0 && city.count >= city.total;
+  return `${pageHead("Sua jornada", CITY.name, "Descubra a cidade, visite pontos e colecione histórias.")}
+    <section class="home-welcome" aria-labelledby="home-welcome-title">
+      <div class="home-welcome-copy">
+        <p class="home-welcome-kicker">+1 KM · ${escapeHtml(CITY.name)}</p>
+        <h2 id="home-welcome-title">${complete ? "Você descobriu cada caminho." : city.count === 0 ? "Sua próxima descoberta começa aqui." : `Continue descobrindo ${escapeHtml(CITY.name)}.`}</h2>
+        <p>${complete ? "Sua coleção desta edição está completa. Continue explorando os circuitos." : "Encontre um ponto participante, aproxime o celular da tag NFC e conquiste cartas da cidade."}</p>
+      </div>
+      <div class="home-welcome-mark" aria-hidden="true"><span>+1</span><small>KM</small></div>
+      <button class="home-discover-button" type="button" data-action="switch-view" data-view="map"><span class="home-discover-icon" aria-hidden="true">⌖</span><span>${complete ? "Explorar o mapa" : "Encontrar um ponto"}</span><span aria-hidden="true">→</span></button>
     </section>
-    <section class="home-actions" aria-label="Ações principais">
-      ${nextStep ? "" : `<button class="home-action-primary" type="button" data-action="switch-view" data-view="map"><span class="home-action-icon" aria-hidden="true">⌖</span><span><strong>Encontrar próximo ponto</strong><small>Explore o mapa e descubra onde ir</small></span><span class="home-action-arrow" aria-hidden="true">→</span></button>`}
-      <button class="home-action-secondary" type="button" data-action="switch-view" data-view="collection"><span aria-hidden="true">✳</span><span><strong>Minha coleção</strong><small>Veja as cartas que você conquistou</small></span><span aria-hidden="true">→</span></button>
-      <p class="home-action-hint">Ao chegar a um ponto publicado, aproxime o celular da tag NFC. Um carimbo válido desbloqueia a carta.</p>
+    <section class="home-progress-panel" aria-labelledby="home-progress-title">
+      <div class="home-progress-heading"><div><p class="eyebrow">Sua coleção</p><h2 id="home-progress-title">${city.count} de ${city.total} cartas</h2></div><span class="home-progress-medal" aria-hidden="true">✦</span></div>
+      ${progressBar(city, "green", `Progresso da coleção: ${city.count} de ${city.total} cartas`)}
+      <div class="home-progress-foot"><span>${city.percent}% concluído</span><button type="button" data-action="switch-view" data-view="collection">Ver coleção →</button></div>
     </section>
+    ${next ? `<section class="home-next-point" aria-labelledby="home-next-title"><div class="home-section-title"><div><p class="eyebrow">Continue sua jornada</p><h2 id="home-next-title">Próximo ponto para descobrir</h2></div><button type="button" data-action="switch-view" data-view="map">Ver todos</button></div><button class="home-next-card" type="button" data-action="open-point" data-id="${escapeHtml(next.id)}"><span class="home-next-symbol" aria-hidden="true">${escapeHtml(next.icon || "⌖")}</span><span class="home-next-copy"><strong>${escapeHtml(next.name)}</strong><small>${escapeHtml(next.note || "Ponto participante da cidade")}</small><span class="home-published-note">Consulte o mapa para confirmar disponibilidade</span></span><span class="home-next-arrow" aria-hidden="true">›</span></button></section>` : `<article class="home-complete-note"><strong>Parabéns pela jornada!</strong><span>Explore outros circuitos e continue conhecendo a cidade.</span></article>`}
+    <section class="home-shortcuts" aria-label="Explorar o aplicativo">
+      <button class="home-shortcut" type="button" data-action="switch-view" data-view="map"><span aria-hidden="true">⌖</span><strong>Mapa</strong><small>Explore a cidade</small></button>
+      <button class="home-shortcut" type="button" data-action="switch-view" data-view="routes"><span aria-hidden="true">⌁</span><strong>Rotas</strong><small>Siga circuitos</small></button>
+      <button class="home-shortcut" type="button" data-action="switch-view" data-view="collection"><span aria-hidden="true">✳</span><strong>Coleção</strong><small>Veja suas cartas</small></button>
+      <button class="home-shortcut" type="button" data-action="switch-view" data-view="podium"><span aria-hidden="true">✦</span><strong>Pódio</strong><small>Acompanhe o ranking</small></button>
+    </section>
+    <button class="home-nfc-guide" type="button" data-action="switch-view" data-view="map"><span class="home-nfc-icon" aria-hidden="true">)))</span><span><strong>${city.count === 0 ? "Quer sua primeira carta?" : "Pronto para o próximo carimbo?"}</strong><small>Visite um ponto publicado e aproxime o celular da tag NFC. O carimbo só é confirmado após a validação.</small></span><span aria-hidden="true">→</span></button>
     ${collectionSpotlight(state, city)}
-    <section><div class="section-heading"><div><h2>Progresso da cidade</h2><p>${city.count}/${city.total} pontos</p></div></div>
+    <section class="home-details-section"><div class="section-heading"><div><h2>Descubra mais da cidade</h2><p>Explore pontos por tema e acompanhe seu progresso.</p></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
       <div class="category-grid">${categoryTotals}</div>
-      <article class="card home-progress-card"><div class="progress-meta"><span>Progresso de ${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "red", `Pontos conquistados em ${CITY.name}`)}<p class="progress-guidance" role="status">${city.percent === 100 ? `Você conquistou todos os ${city.total} pontos desta edição.` : city.count === 0 ? `Sua primeira conquista começa em um ponto publicado. ${city.total} pontos disponíveis nesta edição.` : `Você já conquistou ${city.count} de ${city.total} pontos. Faltam ${city.total - city.count} para completar a cidade.`}</p><button class="route-card-button" type="button" data-action="switch-view" data-view="map">Continuar explorando →</button></article>
+      <article class="card home-progress-card"><div class="progress-meta"><span>Progresso de ${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "green", `Pontos conquistados em ${CITY.name}`)}<p class="progress-guidance" role="status">${city.percent === 100 ? `Você conquistou todos os ${city.total} pontos desta edição.` : city.count === 0 ? `Sua primeira conquista começa em um ponto publicado. ${city.total} pontos disponíveis nesta edição.` : `Você já conquistou ${city.count} de ${city.total} pontos. Faltam ${city.total - city.count} para completar a cidade.`}</p><button class="route-card-button" type="button" data-action="switch-view" data-view="map">Continuar explorando →</button></article>
     </section>
     ${renderCartoes(state)}`;
 }
@@ -410,6 +424,19 @@ export function renderView(state, view, selectedPointId, selectedRouteId, filter
   }
 }
 
+function analyticsCard() {
+  if (!analyticsAvailable) return "";
+  const ligado = getAnalyticsConsent() === "granted";
+  const texto = ligado
+    ? "Ativadas: medimos com o Google Analytics quantas vezes o app abre e se há erros, sem nome nem e-mail."
+    : "Desativadas. Nada é enviado ao Google Analytics.";
+  return `<article class="card">
+      <h2 class="card-title">Estatísticas de uso</h2>
+      <p class="small muted">${texto} <a href="/privacidade">Saiba mais</a></p>
+      <button class="outline-button button-full" type="button" data-action="analytics-consent" data-value="${ligado ? "denied" : "granted"}">${ligado ? "Desativar estatísticas" : "Ativar estatísticas"}</button>
+    </article>`;
+}
+
 export function renderProfile(state, mensagem = null) {
   const conta = state.account;
   const city = progressFor(state);
@@ -453,6 +480,7 @@ export function renderProfile(state, mensagem = null) {
       <p class="small muted">Sair encerra a sessão. Seus carimbos continuam salvos na sua conta.</p>
       <button class="outline-button button-full" type="button" data-action="logout">Sair da conta</button>
     </article>
+    ${analyticsCard()}
     <article class="card danger-zone">
       <h2 class="card-title">Excluir conta</h2>
       <p class="small muted">Apaga a conta e todos os carimbos deste aparelho. Não tem como desfazer.</p>
