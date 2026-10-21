@@ -286,6 +286,11 @@ function handleClick(event) {
       filters.pointFilter = target.dataset.filter || "all";
       render();
       break;
+    case "clear-map-filters":
+      filters = { categoryId: "all", pointFilter: "all", search: "" };
+      render();
+      document.getElementById("map-point-search")?.focus({ preventScroll: true });
+      break;
     case "toggle-theme": {
       const keepMenuFocus = menuOpen;
       state = setTheme(state, state.theme === "dark" ? "light" : "dark");
