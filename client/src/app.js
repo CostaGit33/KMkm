@@ -11,7 +11,7 @@ import { api, mensagemErro, atualizarContaServidor, criarContaServidor, entrarCo
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
-import { setAnalyticsConsent } from "./telemetry.js";
+import { setAnalyticsConsent, openConsentPreferences } from "./telemetry.js";
 
 let state = loadState();
 let view = "home";
@@ -268,6 +268,9 @@ function handleClick(event) {
           showToast(servidorLimpo ? "Conta e dados apagados." : "Conta apagada neste aparelho. Os dados do servidor continuam até você apagar a conta com internet.");
         });
       }
+      break;
+    case "privacy-preferences":
+      openConsentPreferences();
       break;
     case "analytics-consent": {
       const aceito = target.dataset.value === "granted";
