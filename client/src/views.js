@@ -305,9 +305,36 @@ function mapCanvas(state, filters) {
   const mapped = points.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
   return `<div class="map-stage"><div class="real-map" id="real-map" role="application" aria-label="Mapa de ${escapeHtml(CITY.name)} com ${mapped.length} pontos localizados"></div><div class="map-hud" id="map-hud"></div><div class="map-ui" id="map-ui"></div></div>`;
 }
-// Página do mapa: só o mapa, em tela cheia; rota, ponto selecionado e atalhos aparecem sobre ele.
+// Controles de mapa reutilizam os filtros existentes do catálogo, sem duplicar estado.
 function renderMap(state, filters) {
-  return `<h1 class="sr-only">Mapa de ${escapeHtml(CITY.name)}</h1>${mapCanvas(state, filters)}`;
+  const filtered = getFilteredPoints(state, filters);
+  const mapped = filtered.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng)).length;
+  const active = filters.categoryId !== "all" || filters.pointFilter !== "all" || !!filters.search.trim();
+  const filterLabels = [
+    ["all", "Todos"],
+    ["available", "Disponíveis"],
+    ["conquered", "Conquistados"],
+    ["discovered", "Descobertos"],
+    ["mystery", "Mistérios"],
+  ];
+  return `<h1 class="sr-only">Mapa de ${escapeHtml(CITY.name)}</h1>
+    <section class="map-discovery-tools" aria-label="Encontrar pontos no mapa">
+      <label class="map-search-label" for="map-point-search">Buscar ponto</label>
+      <div class="map-search-row">
+        <input id="map-point-search" class="search-input map-search-input" type="search" data-input="point-search" value="${escapeHtml(filters.search)}" placeholder="Nome ou código do ponto" autocomplete="off" aria-describedby="map-results-summary" />
+        <label class="sr-only" for="map-category-select">Filtrar por categoria</label>
+        <select id="map-category-select" class="filter-select map-category-select" data-select="category" aria-label="Filtrar por categoria">
+          <option value="all" ${filters.categoryId === "all" ? "selected" : ""}>Todas as categorias</option>
+          ${CATEGORIES.map((category) => `<option value="${escapeHtml(category.id)}" ${filters.categoryId === category.id ? "selected" : ""}>${escapeHtml(category.name)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="map-filter-chips" role="group" aria-label="Filtrar por situação">
+        ${filterLabels.map(([value, label]) => `<button type="button" class="filter-chip" data-action="set-point-filter" data-filter="${value}" aria-pressed="${filters.pointFilter === value}">${label}</button>`).join("")}
+      </div>
+      <p id="map-results-summary" class="map-results-summary" role="status" aria-live="polite"><strong>${filtered.length}</strong> ${filtered.length === 1 ? "ponto encontrado" : "pontos encontrados"} · <strong>${mapped}</strong> com localização no mapa</p>
+      ${active ? `<button class="map-clear-filters" type="button" data-action="clear-map-filters">Limpar filtros</button>` : ""}
+    </section>
+    ${mapCanvas(state, filters)}`;
 }
 
 function renderRoutes(state) {
