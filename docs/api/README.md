@@ -3,7 +3,7 @@
 | Arquivo | Para quê |
 |---|---|
 | `openapi.yaml` | Contrato OpenAPI 3.0 de todas as rotas (conta, carimbo, coleção, gamificação, admin, páginas públicas). |
-| `mais1km.postman_collection.json` | Coleção Postman/newman com 34 requisições e 42 asserções. |
+| `mais1km.postman_collection.json` | Coleção Postman/newman com 35 requisições e 43 asserções. |
 | `local.postman_environment.json` | Ambiente `baseUrl = http://localhost:3000`. |
 | `homologacao-ou-producao.postman_environment.json` | Ambiente com `baseUrl` para trocar pelo domínio publicado. |
 
@@ -27,7 +27,7 @@ No app do Postman: *Import* → escolha os três arquivos `.json`.
 
 ## O que cada pasta faz
 
-1. **Saúde e páginas (somente leitura).** `/api/saude` (inclui `banco` e `versao`), `/api/config-mapa`, `/api/catalogo`, tile inválido, páginas de privacidade, exclusão de conta e "como funciona", e as checagens de acesso negado sem sessão. Não grava nada: segura em produção.
+1. **Saúde e páginas (somente leitura).** `/api/saude` (inclui `banco` e `versao`), `/api/config-mapa`, `/api/catalogo`, tile inválido, páginas de privacidade, exclusão de conta e "como funciona", o corpo JSON malformado (400) e as checagens de acesso negado sem sessão. Não grava nada: segura em produção.
 2. **Conta e sessão.** Cria uma conta `postman-…@teste.invalid`, testa e-mail repetido, senha curta, e-mail inválido, troca de nome, senha atual errada, sair, entrar e sessão.
 3. **Carimbo e coleção.** Carimba o primeiro ponto publicado do catálogo (grava um carimbo real), repete o toque, tag inexistente, caderneta, gamificação e pódio.
 4. **Permissões e limpeza.** Conta comum não acessa `/api/admin/*` (403) e a conta de teste é apagada no fim.

@@ -302,6 +302,55 @@
           }
         },
         {
+          "name": "Corpo JSON malformado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 requisicao_invalida (não 500) e com request_id\", () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.erro).to.eql(\"requisicao_invalida\");",
+                  "  pm.expect(j.request_id).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conta/entrar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conta",
+                "entrar"
+              ]
+            },
+            "description": "O corpo é rejeitado antes de qualquer rota e do limite de tentativas: não grava nada e é seguro em produção.",
+            "body": {
+              "mode": "raw",
+              "raw": "{ json quebrado",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Sem sessão · caderneta",
           "event": [
             {

@@ -15,6 +15,9 @@ info:
 
     Rotas `/api/*` que não existem respondem `404 { "erro": "rota_api_inexistente" }` (JSON, nunca HTML).
 
+    Corpo JSON malformado responde `400 { "erro": "requisicao_invalida", "request_id": "…" }` e corpo acima de 100 kB
+    responde `413 { "erro": "corpo_grande_demais", "request_id": "…" }`; ambos acontecem antes de qualquer rota e do limite de tentativas.
+
     **Rastreio.** Toda resposta de `/api/*` traz `X-Request-Id` (o servidor aceita um valor enviado pelo cliente com
     8 a 100 caracteres de `A-Za-z0-9._-`; senão gera um UUID). Falhas inesperadas respondem
     `500 { "erro": "interno", "request_id": "…" }`, e o mesmo id aparece no log JSON do servidor (`http_request` e `http_error`).
