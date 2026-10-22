@@ -11,6 +11,7 @@ import { adminRouter, catalogoPublico } from './admin.js';
 import { gamificacaoRouter } from './gamificacao.js';
 import { cartaoAtivoNoPonto, cartoesDaCaderneta, emitirNumero, estadoDoCard } from './eventos.js';
 import { albumDaPessoa } from './criaturas.js';
+import { descarregarMonitoramento, iniciarMonitoramento, registrarErro } from './monitoramento.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
 
 const JANELA_REPETIDO_MIN = 30;
@@ -516,10 +517,13 @@ app.get('/api/saude', wrap(async (_req, res) => {
 // O e-mail de contato vem da variável CONTATO_EMAIL (não fica escrito no código nem no repositório).
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
 const DATA_POLITICA = '21 de outubro de 2026';
+const TEXTO_MONITORAMENTO = '<p>Para diagnosticar falhas técnicas, o servidor envia ao Sentry (região da União Europeia) a mensagem e a pilha de execução do erro, a versão do aplicativo, o caminho acessado (sem parâmetros) e um identificador da requisição. Não enviamos e-mail, nome, senha, cookies nem o conteúdo das requisições.</p>';
 function paginaPublica(arquivo) {
   return (_req, res) => {
     const contato = process.env.CONTATO_EMAIL || 'o contato informado na ficha do app na loja (defina CONTATO_EMAIL no servidor)';
-    const html = fs.readFileSync(path.join(dirPaginas, arquivo), 'utf8').replaceAll('{{CONTATO}}', contato.replace(/[<>&]/g, '')).replaceAll('{{DATA}}', DATA_POLITICA);
+    // Parágrafo sobre o rastreio de erros só aparece quando o Sentry está realmente ligado (SENTRY_DSN definido).
+    const monitoramento = process.env.SENTRY_DSN ? TEXTO_MONITORAMENTO : '';
+    const html = fs.readFileSync(path.join(dirPaginas, arquivo), 'utf8').replaceAll('{{CONTATO}}', contato.replace(/[<>&]/g, '')).replaceAll('{{DATA}}', DATA_POLITICA).replaceAll('{{MONITORAMENTO}}', monitoramento);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.send(html);
@@ -547,17 +551,27 @@ if (fs.existsSync(dist)) {
 }
 
 app.use((error, req, res, _next) => {
+  // Erro do cliente (corpo JSON malformado ou grande demais, vindo do express.json): responde 4xx em vez de 500.
+  const statusCliente = Number(error?.status ?? error?.statusCode);
+  if (Number.isInteger(statusCliente) && statusCliente >= 400 && statusCliente < 500) {
+    return res.status(statusCliente).json({ erro: statusCliente === 413 ? 'corpo_grande_demais' : 'requisicao_invalida', request_id: req.requestId });
+  }
   console.error(JSON.stringify({ type: 'http_error', request_id: req.requestId, method: req.method, path: req.path, error: error?.message || String(error) }));
+  registrarErro(error, { requestId: req.requestId, method: req.method, path: req.path });
   res.status(500).json({ erro: 'interno', request_id: req.requestId });
 });
 
 const port = Number(process.env.PORT || 3000);
+
+await iniciarMonitoramento();
 
 try {
   await initializeDatabase(pool);
   app.listen(port, '0.0.0.0', () => console.log(`Caderneta no ar na porta ${port}`));
 } catch (error) {
   console.error('Não foi possível inicializar o banco:', error);
+  registrarErro(error);
+  await descarregarMonitoramento();
   await pool.end();
   process.exitCode = 1;
 }
