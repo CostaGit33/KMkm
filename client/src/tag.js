@@ -16,6 +16,31 @@ const findPoint = (code, result) => findPointByCode(code) || {
   id: code.toUpperCase(), name: result?.carimbo?.tag_nome || 'Ponto da rota', categoryIds: ['cultura'], hidden: false,
 };
 
+// Evita requisições simultâneas se a pessoa tocar duas vezes ou o navegador repetir o evento.
+let stampInFlight = false;
+
+function mensagemErroTag(error) {
+  if (error?.code === 'tag_inexistente' || error?.status === 404) {
+    return { titulo: 'Tag não encontrada', texto: 'Confira o código deste ponto. Se o QR/NFC abriu este endereço, avise a organização para verificar a tag.', tentar: false };
+  }
+  if (error?.code === 'ponto_nao_publicado') {
+    return { titulo: 'Ponto temporariamente indisponível', texto: 'Este ponto ainda não está publicado para receber carimbos. Tente novamente mais tarde.', tentar: false };
+  }
+  if (error?.status === 429) {
+    return { titulo: 'Muitas tentativas seguidas', texto: 'Espere um minuto antes de tentar novamente.', tentar: true };
+  }
+  if (error?.status === 401) {
+    return { titulo: 'Sua sessão precisa ser renovada', texto: 'Volte à caderneta, entre na sua conta e leia a tag novamente.', tentar: false };
+  }
+  if (!error?.status) {
+    return { titulo: 'Sem conexão com o servidor', texto: 'Sua visita não pôde ser confirmada. Verifique a internet e tente novamente; não vamos marcar a visita como concluída sem confirmação.', tentar: true };
+  }
+  if (error.status >= 500) {
+    return { titulo: 'Servidor temporariamente indisponível', texto: 'Não recebemos a confirmação do carimbo. Aguarde alguns instantes e tente novamente.', tentar: true };
+  }
+  return { titulo: 'Não foi possível confirmar o carimbo', texto: 'A visita não foi confirmada. Tente novamente; se o problema continuar, volte à caderneta e procure a organização.', tentar: true };
+}
+
 function shell(content) {
   document.documentElement.dataset.theme = temaLocal();
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaLocal() === 'light' ? '#f4f4f5' : '#0e0e0f');
@@ -50,9 +75,12 @@ function cartaoCriatura(result) {
 }
 
 async function stamp(code) {
+  if (stampInFlight) return;
   const content = document.getElementById('tag-content');
+  if (!content) return;
+  stampInFlight = true;
   content.setAttribute("aria-busy", "true");
-  content.innerHTML = `<div class="card tag-card tag-loading" role="status"><span class="tag-loading-mark" aria-hidden="true">✳</span><p class="eyebrow">${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Confirmando sua visita…</h1><p class="page-subtitle">Estamos validando a tag e guardando sua conquista. Não feche esta tela.</p><span class="tag-loading-track" aria-hidden="true"></span></div>`;
+  content.innerHTML = `<div class="card tag-card tag-loading" role="status" aria-live="polite"><span class="tag-loading-mark" aria-hidden="true">✳</span><p class="eyebrow">PONTO ${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Confirmando sua visita…</h1><p class="page-subtitle">Estamos validando a tag e guardando sua conquista. Aguarde a confirmação antes de sair desta tela.</p><span class="tag-loading-track" aria-hidden="true"></span></div>`;
   try {
     const result = await api(`/tags/${encodeURIComponent(code)}/carimbar`, { method: 'POST' });
     const point = findPoint(code, result);
@@ -61,12 +89,35 @@ async function stamp(code) {
     const guardiao = result.guardiao ? `<article class="card tag-note"><strong>Guardião do ponto</strong><p>${escapeHtml(result.guardiao.apelido)} · ${result.guardiao.passagens} passagens</p></article>` : '';
     const carta = result.criatura?.carta;
     const conquista = carta ? `<div class="tag-criatura-arte">${cartaHtml(carta, { size: 190, tag: 'div' })}</div>` : `<div class="tag-stamp">${stamp}</div>`;
-    content.removeAttribute("aria-busy");
-    content.innerHTML = `<article class="card tag-card tag-success"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${result.repetido ? 'Carta já está na coleção' : 'Carta desbloqueada!'}</h1><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visita confirmada hoje: ${result.hoje} passagem(ns) neste ponto.</p>${findPointByCode(code) ? '<p class="small muted">Esta carta já está disponível na sua coleção.</p>' : ''}<a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
+    const titulo = result.repetido
+      ? 'Visita já registrada'
+      : result.criatura?.nova
+        ? 'Nova carta desbloqueada!'
+        : carta
+          ? 'Carta na coleção'
+          : 'Carimbo registrado!';
+    const feedback = result.repetido
+      ? 'Esta passagem já foi registrada recentemente. Não criamos uma visita duplicada.'
+      : result.criatura?.nova
+        ? 'Conquista salva com sucesso na sua coleção.'
+        : carta
+          ? 'Sua visita foi confirmada; esta carta já fazia parte da sua coleção.'
+          : 'Sua visita foi confirmada e o carimbo foi salvo.';
+    content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
   } catch (error) {
+    const falha = mensagemErroTag(error);
+    const acao = falha.tentar ? '<button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button>' : '';
+    content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${falha.titulo}</h1><p class="page-subtitle">${falha.texto}</p>${acao}<a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
+    document.getElementById('tag-retry')?.addEventListener('click', (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Tentando novamente…';
+      stamp(code);
+    }, { once: true });
+  } finally {
+    stampInFlight = false;
     content.removeAttribute("aria-busy");
-    content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${error.status === 404 ? 'Tag não encontrada' : 'Não foi possível carimbar'}</h1><p class="page-subtitle">${error.status === 404 ? 'Confira o código deste ponto.' : 'Tente novamente quando houver conexão.'}</p><button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button><a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
-    document.getElementById('tag-retry')?.addEventListener('click', () => stamp(code));
   }
 }
 
