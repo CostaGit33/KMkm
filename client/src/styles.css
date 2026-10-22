@@ -1174,6 +1174,25 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
   order:1;
   max-width:calc(100% - 20px);
 }
+/* Filtros, legenda e ficha não devem cobrir o mapa em nenhum breakpoint. */
+.map-stage > .map-ui {
+  position:relative;
+  inset:auto;
+  z-index:1;
+  order:2;
+  width:100%;
+  max-width:100%;
+  max-height:none;
+  overflow:visible;
+  padding:12px;
+  border:0;
+  border-top:1px solid var(--color-border);
+  border-radius:0 0 9px 9px;
+  background:var(--color-surface);
+  box-shadow:none;
+  backdrop-filter:none;
+}
+.real-map .leaflet-control-zoom { margin-bottom:0 !important; }
 .map-stage > .map-ui {
   position:relative; inset:auto; order:2; flex:0 0 auto; width:100%;
   max-height:none; overflow:visible; overscroll-behavior:auto;
@@ -1199,6 +1218,7 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
     border-top:1px solid var(--color-border);
     border-radius:0 0 9px 9px;
   }
+  .real-map .leaflet-control-zoom { margin-bottom:0 !important; }
   .map-stage > .map-hud { inset:7px 7px auto; gap:6px; }
   .map-fab { min-height:var(--tap-target); }
   .real-map .leaflet-control-zoom { margin-bottom:0; }
