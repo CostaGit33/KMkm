@@ -1069,6 +1069,9 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 
 
 /* Mapa V2: busca visível, filtros acessíveis e painel de ponto adaptado ao toque. */
+/* Simplifica o topo do mapa: mantém filtros rápidos e remove a barra de busca/categoria. */
+.map-discovery-tools .map-search-row { display:none !important; }
+
 .map-discovery-tools { display:grid; gap:8px; margin:0 0 12px; padding:12px; border:1px solid var(--rule); border-radius:10px; background:var(--card); box-shadow:0 3px 12px color-mix(in srgb,var(--ink) 6%,transparent); }
 .map-search-label { color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
 .map-search-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(135px,.72fr); gap:8px; }
