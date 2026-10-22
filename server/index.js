@@ -517,7 +517,7 @@ app.get('/api/saude', wrap(async (_req, res) => {
 // O e-mail de contato vem da variável CONTATO_EMAIL (não fica escrito no código nem no repositório).
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
 const DATA_POLITICA = '21 de outubro de 2026';
-const TEXTO_MONITORAMENTO = '<p>Para diagnosticar falhas técnicas, o servidor envia ao Sentry (região da União Europeia) a mensagem e a pilha de execução do erro, a versão do aplicativo, o caminho acessado (sem parâmetros) e um identificador da requisição. Não enviamos e-mail, nome, senha, cookies nem o conteúdo das requisições.</p>';
+const TEXTO_MONITORAMENTO = '<p>Para diagnosticar falhas técnicas, o servidor envia ao Sentry (região da União Europeia) a mensagem e a pilha de execução do erro, a versão do aplicativo, o caminho acessado (sem parâmetros) e um identificador da requisição. Quando <code>SENTRY_TRACES_SAMPLE_RATE</code> é maior que zero, também são enviados traces amostrados de duração e desempenho das requisições. Não enviamos e-mail, nome, senha, cookies nem o conteúdo das requisições.</p>';
 function paginaPublica(arquivo) {
   return (_req, res) => {
     const contato = process.env.CONTATO_EMAIL || 'o contato informado na ficha do app na loja (defina CONTATO_EMAIL no servidor)';

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deveRegistrar, descarregarMonitoramento, iniciarMonitoramento, limparEvento, monitoramentoLigado, registrarErro } from '../monitoramento.js';
+import { deveRegistrar, descarregarMonitoramento, iniciarMonitoramento, limparEvento, monitoramentoLigado, registrarErro, taxaDeTraces } from '../monitoramento.js';
 
 test('sem SENTRY_DSN o monitoramento fica desligado e nada quebra', async () => {
   assert.equal(await iniciarMonitoramento({}), false);
@@ -8,6 +8,14 @@ test('sem SENTRY_DSN o monitoramento fica desligado e nada quebra', async () => 
   assert.equal(monitoramentoLigado(), false);
   assert.doesNotThrow(() => registrarErro(new Error('x'), { requestId: 'abc', method: 'GET', path: '/api/x' }));
   await assert.doesNotReject(descarregarMonitoramento(10));
+});
+
+test('taxa de traces aceita somente valores finitos entre zero e um', () => {
+  assert.equal(taxaDeTraces(undefined), 0);
+  assert.equal(taxaDeTraces('0.1'), 0.1);
+  assert.equal(taxaDeTraces('-1'), 0);
+  assert.equal(taxaDeTraces('2'), 1);
+  assert.equal(taxaDeTraces('invalido'), 0);
 });
 
 test('erros 4xx não são enviados; 5xx e erros sem status são', () => {

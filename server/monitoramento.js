@@ -25,6 +25,12 @@ export function limparEvento(evento) {
   return evento;
 }
 
+export function taxaDeTraces(valor) {
+  const taxa = Number(valor);
+  if (!Number.isFinite(taxa)) return 0;
+  return Math.min(1, Math.max(0, taxa));
+}
+
 export async function iniciarMonitoramento(env = process.env) {
   const dsn = String(env.SENTRY_DSN || '').trim();
   if (!dsn) return false;
@@ -35,7 +41,9 @@ export async function iniciarMonitoramento(env = process.env) {
       release: env.RELEASE_VERSION || undefined,
       environment: env.SENTRY_ENVIRONMENT || env.NODE_ENV || 'production',
       sendDefaultPii: false,
-      tracesSampleRate: 0,
+      // Desligado por padrão. Em produção, use 0.05 ou 0.1 no EasyPanel para
+      // acompanhar latência sem coletar 100% das transações.
+      tracesSampleRate: taxaDeTraces(env.SENTRY_TRACES_SAMPLE_RATE),
       // Sem breadcrumbs de console: os logs do app já têm caminho e request_id, e preferimos não replicá-los.
       // Promessa rejeitada sem tratamento continua derrubando o processo (o Easypanel reinicia), como sem o Sentry;
       // o modo padrão do SDK ("warn") engoliria o erro e manteria o app vivo em estado incerto.

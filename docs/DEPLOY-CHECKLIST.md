@@ -10,6 +10,7 @@
 | `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou `v8.13`), devolvido em `/api/saude` e útil para achar qual deploy gerou um erro | recomendada |
 | `SENTRY_DSN` | DSN do projeto Sentry (`mais1km-api`). Liga o rastreio de erros 5xx e de falhas que derrubam o processo; sem a variável nada é enviado. Ao ligar, `/privacidade` passa a citar o Sentry | opcional |
 | `SENTRY_ENVIRONMENT` | rótulo do ambiente no Sentry (padrão `production`) | opcional |
+| `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | só para os testes de API; nunca em produção compartilhada | não |
 
 Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do Maps e não deve ir para o navegador.
@@ -44,7 +45,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 
 ## Monitoramento mínimo (Better Stack)
 - [x] Monitores criados em 21/10/2026: `+1 KM · API (saúde + banco)` (procura `"banco":"ok"` em `/api/saude`) e `+1 KM · App (página inicial)`, a cada 3 minutos, com alerta por e-mail e push.
-- [ ] Sentry: definir `SENTRY_DSN` no Easypanel, reimplantar e conferir no log a linha `{"type":"monitoramento","sentry":"ligado"}`. Para testar, derrube o banco por um instante em homologação e abra `/api/saude`: o erro aparece no Sentry com a tag `request_id`.
+- [ ] Sentry: definir `SENTRY_DSN` no Easypanel, reimplantar e conferir no log a linha `{"type":"monitoramento","sentry":"ligado"}`. Para monitorar latência, definir `SENTRY_TRACES_SAMPLE_RATE=0.05` ou `0.1`; `0` mantém traces desligados.
 - [ ] Apagar o monitor de exemplo `google.com` que veio com a conta.
 - [ ] Definir `RELEASE_VERSION` (hoje `/api/saude` devolve `"versao":"desconhecida"`), para saber qual deploy está no ar.
 
