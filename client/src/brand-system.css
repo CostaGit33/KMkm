@@ -1,0 +1,96 @@
+/* +1 KM — identidade visual unificada */
+:root,
+:root[data-theme="dark"] {
+  --brand-forest-deep: #081D14;
+  --brand-forest: #1A472E;
+  --brand-green: #1F593A;
+  --brand-gold: #C2A169;
+  --brand-cream: #F2E8DC;
+  --paper: var(--brand-forest-deep);
+  --paper-deep: #10271C;
+  --card: #10271C;
+  --card-strong: var(--brand-forest);
+  --ink: var(--brand-cream);
+  --muted: #C4CFC4;
+  --rule: #385746;
+  --red: var(--brand-gold);
+  --red-dark: #E0C18C;
+  --blue: #9DBEAA;
+  --green: #7FB18C;
+  --ochre: var(--brand-gold);
+  --frame: #06140D;
+  --line: rgba(242,232,220,.16);
+  --line-strong: rgba(242,232,220,.34);
+  --glow: rgba(194,161,105,.14);
+  --glow-red: rgba(194,161,105,.24);
+  --glass: rgba(8,29,20,.94);
+  --on-accent: #081D14;
+  --color-bg: var(--paper);
+  --color-bg-raised: var(--paper-deep);
+  --color-surface: var(--card);
+  --color-surface-raised: var(--card-strong);
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-border: var(--rule);
+  --color-primary: var(--brand-gold);
+  --color-info: #9DBEAA;
+  --color-success: #7FB18C;
+  --color-warning: var(--brand-gold);
+  --color-danger: #E5A49A;
+  --color-focus: #E0C18C;
+  --map-pin-available: #9DBEAA;
+  --map-pin-conquered: #7FB18C;
+  --map-pin-mystery: var(--brand-gold);
+}
+:root[data-theme="light"] {
+  --paper: #F2E8DC;
+  --paper-deep: #E6D9C8;
+  --card: #FFF9F1;
+  --card-strong: #EDE2D3;
+  --ink: #10271C;
+  --muted: #4E5D51;
+  --rule: #C8B9A3;
+  --red: #8A6938;
+  --red-dark: #684B25;
+  --blue: #285C43;
+  --green: #1F593A;
+  --ochre: #8A6938;
+  --frame: #081D14;
+  --line: rgba(8,29,20,.16);
+  --line-strong: rgba(8,29,20,.34);
+  --glow: rgba(138,105,56,.12);
+  --glow-red: rgba(138,105,56,.20);
+  --glass: rgba(255,249,241,.96);
+  --on-accent: #081D14;
+  --color-bg: var(--paper);
+  --color-bg-raised: var(--paper-deep);
+  --color-surface: var(--card);
+  --color-surface-raised: var(--card-strong);
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-border: var(--rule);
+  --color-primary: #1A472E;
+  --color-info: #285C43;
+  --color-success: #1F593A;
+  --color-warning: #8A6938;
+  --color-danger: #8B3029;
+  --color-focus: #285C43;
+  --map-pin-available: #285C43;
+  --map-pin-conquered: #1F593A;
+  --map-pin-mystery: #8A6938;
+}
+:where(button,a,input,select,textarea,[role="button"]):focus-visible {
+  outline: 2px solid var(--color-focus, var(--brand-gold));
+  outline-offset: 3px;
+}
+:root[data-theme="dark"] :where(.page-kicker,.hero-overline,.eyebrow) {
+  color: #D8BC88;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
