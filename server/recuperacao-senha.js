@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'node:crypto';
 import { pool, q } from './db/database.js';
-import { hashPassword, makeSalt, normalizeEmail, validEmail } from './security.js';
+import { clearSessionCookie, hashPassword, makeSalt, normalizeEmail, validEmail } from './security.js';
 
 export const recuperacaoSenhaRouter = express.Router();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -116,7 +116,7 @@ recuperacaoSenhaRouter.post('/redefinir-senha', rateLimit, async (req, res, next
     await connection.query('DELETE FROM sessoes WHERE conta_id = ?', [registro.conta_id]);
     await connection.query('UPDATE recuperacao_senha_tokens SET usado_em = UTC_TIMESTAMP() WHERE conta_id = ? AND usado_em IS NULL', [registro.conta_id]);
     await connection.commit();
-    res.setHeader('Set-Cookie', 'mais1km_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
+    clearSessionCookie(res);
     return res.json({ ok: true, mensagem: 'Senha redefinida. Entre com sua nova senha.' });
   } catch (error) {
     await connection.rollback().catch(() => {});
