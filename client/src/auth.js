@@ -59,26 +59,41 @@ const campo = (nome, rotulo, tipo, dica, autocomplete, extra = "") =>
   `<label class="field"><span>${rotulo}</span><input name="${nome}" type="${tipo}" placeholder="${esc(dica)}" autocomplete="${autocomplete}" ${extra} required /></label>`;
 
 export function renderAuth({ temConta = false, mensagem = "", emailSugerido = "", rascunho = {}, modo = "" } = {}) {
-  // modo explícito (escolhido pela pessoa) vence; sem ele, aparelho sem conta local abre em "criar".
+  const recuperar = modo === "recuperar";
+  const redefinir = modo === "redefinir";
   const criar = modo ? modo === "criar" : !temConta;
+  const titulo = recuperar ? "Recuperar senha" : redefinir ? "Criar nova senha" : criar ? "Criar conta" : "Entrar";
+  const descricao = recuperar
+    ? "Enviaremos um link seguro para o e-mail cadastrado."
+    : redefinir
+      ? "Escolha uma senha nova com pelo menos 8 caracteres."
+      : criar
+        ? "Sua conta e seus carimbos ficam vinculados ao servidor."
+        : "Entre com o e-mail e a senha da sua conta.";
+  const form = recuperar ? "recuperar-senha" : redefinir ? "redefinir-senha" : criar ? "criar" : "entrar";
   return `<section class="auth-page" aria-labelledby="auth-titulo">
     <div class="auth-brand">
       <img class="brand-mark" src="/icons/stamp.svg" alt="" width="72" height="72" />
       <h1 class="auth-title" id="auth-titulo">+1 KM</h1>
       <p class="auth-sub">Carimbos de rota para descobrir Eunápolis</p>
     </div>
-    <form class="card auth-card" data-form="${criar ? "criar" : "entrar"}" novalidate>
-      <h2 class="auth-h">${criar ? "Criar conta" : "Entrar"}</h2>
-    <p class="small muted">${criar ? "Sua conta e seus carimbos ficam vinculados ao servidor." : "Entre com o e-mail e a senha da sua conta."}</p>
+    <form class="card auth-card" data-form="${form}" novalidate>
+      <h2 class="auth-h">${titulo}</h2>
+      <p class="small muted">${descricao}</p>
+      ${!redefinir && !criar ? campo("email", "E-mail", "email", "voce@exemplo.com", "email", `inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(rascunho.email || emailSugerido)}"`) : ""}
       ${criar ? campo("nome", "Nome", "text", "Como você quer ser chamado", "name", `maxlength="36" value="${esc(rascunho.nome || "")}"`) : ""}
-      ${campo("email", "E-mail", "email", "voce@exemplo.com", "email", `inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(rascunho.email || emailSugerido)}"`)}
-      ${campo("senha", "Senha", "password", "Mínimo de 8 caracteres", criar ? "new-password" : "current-password", 'minlength="8"')}
+      ${criar || redefinir ? campo("senha", "Senha", "password", "Mínimo de 8 caracteres", "new-password", 'minlength="8"') : ""}
       ${criar ? campo("confirma", "Repita a senha", "password", "Digite a mesma senha", "new-password") : ""}
+      ${redefinir ? campo("confirma", "Repita a nova senha", "password", "Digite a mesma senha", "new-password") : ""}
       ${mensagem ? `<p class="auth-error" role="alert">${esc(mensagem)}</p>` : ""}
-      <button class="primary-button button-full" type="submit">${criar ? "Criar conta" : "Entrar"}</button>
+      <button class="primary-button button-full" type="submit">${recuperar ? "Enviar link de recuperação" : redefinir ? "Salvar nova senha" : criar ? "Criar conta" : "Entrar"}</button>
     </form>
-    <p class="auth-switch"><button class="text-link" type="button" data-action="auth-modo" data-modo="${criar ? "entrar" : "criar"}">${criar ? "Já tenho conta · Entrar" : "Não tenho conta · Criar conta"}</button></p>
+    <p class="auth-switch">
+      ${recuperar || redefinir
+        ? `<button class="text-link" type="button" data-action="auth-modo" data-modo="entrar">Voltar para entrar</button>`
+        : `<button class="text-link" type="button" data-action="auth-modo" data-modo="${criar ? "entrar" : "criar"}">${criar ? "Já tenho conta · Entrar" : "Não tenho conta · Criar conta"}</button>`}
+    </p>
     <p class="small muted legal-links">Ao continuar você concorda com a <a href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
-    ${criar || !temConta ? "" : `<div class="auth-foot"><p class="small muted">Esqueceu a senha? Por enquanto não há recuperação. A única saída é excluir a conta deste aparelho, o que apaga os carimbos.</p><button class="text-link" type="button" data-action="delete-account">Excluir conta deste aparelho</button></div>`}
+    ${!criar && !recuperar && !redefinir ? `<div class="auth-foot"><button class="text-link" type="button" data-action="auth-modo" data-modo="recuperar">Esqueci minha senha</button><p class="small muted">O link de recuperação expira em 30 minutos e só pode ser usado uma vez.</p><button class="text-link" type="button" data-action="delete-account">Excluir conta deste aparelho</button></div>` : ""}
   </section>`;
 }

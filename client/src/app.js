@@ -24,7 +24,7 @@ let searchTimer;
 let installPrompt = null;
 let authMessage = "";
 let authDraft = {};
-let authModo = "";
+let authModo = new URLSearchParams(window.location.search).has("redefinir") ? "redefinir" : "";
 let profileMessage = null;
 let menuOpen = false;
 // Botão "Mais" do rodapé (ou da lateral no desktop): o que estiver visível recebe o foco ao fechar a folha.
@@ -109,7 +109,7 @@ function render({ preserveFocus = false } = {}) {
     document.body.classList.remove("menu-open");
     document.querySelector(".app-shell").inert = false;
     document.getElementById("bottom-nav").inert = false;
-    if (!introDone && !introHandle) launchIntro();
+    if (!introDone && !introHandle && authModo !== "recuperar" && authModo !== "redefinir") launchIntro();
     if (introHandle) {
       app.innerHTML = "";
       document.title = "+1 KM";
@@ -247,7 +247,8 @@ function handleClick(event) {
       showToast("Você saiu. Seus carimbos continuam vinculados à conta.");
       break;
     case "auth-modo":
-      authModo = button.dataset.modo === "entrar" ? "entrar" : "criar";
+      authModo = ["entrar", "criar", "recuperar"].includes(button.dataset.modo) ? button.dataset.modo : "criar";
+      if (authModo === "entrar" && new URLSearchParams(window.location.search).has("redefinir")) window.history.replaceState(null, "", window.location.pathname);
       authMessage = "";
       render();
       document.querySelector(".auth-card input")?.focus();
@@ -432,6 +433,39 @@ async function handleSubmit(event) {
   const dados = new FormData(form);
   const v = (campo) => String(dados.get(campo) || "");
   switch (form.dataset.form) {
+    case "recuperar-senha": {
+      const email = v("email").trim().toLowerCase();
+      const erro = validarEmail(email);
+      if (erro) { authMessage = erro; authDraft = { email }; return render(); }
+      try {
+        await api("/conta/recuperar-senha", { method: "POST", body: { email } });
+        authMessage = "Se o e-mail estiver cadastrado, você receberá as instruções. Confira também o spam.";
+      } catch (error) {
+        authMessage = mensagemErro(error, "Não foi possível solicitar a recuperação agora.");
+      }
+      authDraft = { email };
+      render();
+      break;
+    }
+    case "redefinir-senha": {
+      const senha = v("senha");
+      const erro = validarSenha(senha) || (senha !== v("confirma") ? "As senhas não são iguais." : "");
+      if (erro) { authMessage = erro; return render(); }
+      const token = new URLSearchParams(window.location.search).get("redefinir") || "";
+      if (!token) { authMessage = "Link de recuperação inválido. Solicite outro e-mail."; return render(); }
+      try {
+        await api("/conta/redefinir-senha", { method: "POST", body: { token, senha } });
+        if (state.account?.email) state = updateAccount(state, await gerarSenha(senha));
+        window.history.replaceState(null, "", window.location.pathname);
+        authModo = "entrar";
+        authMessage = "Senha redefinida. Entre com sua nova senha.";
+        authDraft = { email: state.account?.email || "" };
+      } catch (error) {
+        authMessage = error.status === 400 ? "Este link é inválido, expirou ou já foi usado. Solicite outro." : mensagemErro(error, "Não foi possível redefinir a senha.");
+      }
+      render();
+      break;
+    }
     case "criar": {
       authDraft = { nome: v("nome"), email: v("email") };
       authMessage = validarNome(v("nome")) || validarEmail(v("email")) || validarSenha(v("senha"))
