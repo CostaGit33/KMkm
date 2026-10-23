@@ -13,6 +13,7 @@ import { cartaoAtivoNoPonto, cartoesDaCaderneta, emitirNumero, estadoDoCard } fr
 import { albumDaPessoa } from './criaturas.js';
 import { descarregarMonitoramento, iniciarMonitoramento, registrarErro } from './monitoramento.js';
 import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
+import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 
 const JANELA_REPETIDO_MIN = 30;
 const JANELA_TURMA_MIN = 4;
@@ -46,6 +47,9 @@ app.use('/api', (req, res, next) => {
 });
 
 const wrap = (f) => (req, res, next) => Promise.resolve(f(req, res, next)).catch(next);
+
+// Recuperação de senha por e-mail; rotas públicas com limites próprios e tokens de uso único.
+app.use('/api/conta', recuperacaoSenhaRouter);
 
 // Chave pública do Google Maps (feita para ficar no navegador: restrinja por domínio no Google Cloud). Sem chave, o app usa o mapa aberto.
 app.get('/api/config-mapa', (_req, res) => {
