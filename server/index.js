@@ -538,6 +538,7 @@ app.get(['/termos-de-uso', '/termos-de-uso/'], paginaPublica('termos-de-uso.html
 app.get(['/cookies', '/cookies/'], paginaPublica('cookies.html'));
 app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
 app.get(['/como-funciona', '/como-funciona/'], paginaPublica('como-funciona.html'));
+app.get(['/parceiros', '/parceiros/'], paginaPublica('parceiros.html'));
 
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {
