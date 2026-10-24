@@ -1,3 +1,4 @@
+import './redefinir-token.js'; // tira o token de recuperação da URL antes de qualquer medição
 import { initTelemetry, mountConsentBanner } from './telemetry.js';
 
 const tagMatch = window.location.pathname.match(/^\/t\/([\w-]+)/i);

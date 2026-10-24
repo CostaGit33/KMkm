@@ -2,30 +2,36 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { pool, q } from './db/database.js';
 import { clearSessionCookie, hashPassword, makeSalt, normalizeEmail, validEmail } from './security.js';
+import { registrarErro } from './monitoramento.js';
 
 export const recuperacaoSenhaRouter = express.Router();
 const WINDOW_MS = 15 * 60 * 1000;
-const MAX_IP = 5;
+const MAX_PEDIDOS_IP = 5;
+const MAX_REDEFINICOES_IP = 10;
 const MAX_EMAIL_PER_HOUR = 3;
 const buckets = new Map();
 
-function rateLimit(req, res, next) {
-  const now = Date.now();
-  const ip = req.ip || 'unknown';
-  const key = crypto.createHash('sha256').update(ip).digest('hex');
-  let bucket = buckets.get(key);
-  if (!bucket || bucket.until <= now) bucket = { count: 0, until: now + WINDOW_MS };
-  bucket.count += 1;
-  buckets.set(key, bucket);
-  if (buckets.size > 5000) {
-    for (const [k, v] of buckets) if (v.until <= now) buckets.delete(k);
-  }
-  if (bucket.count > MAX_IP) {
-    res.setHeader('Retry-After', String(Math.ceil((bucket.until - now) / 1000)));
-    return res.status(429).json({ erro: 'muitas_tentativas' });
-  }
-  req.recoveryIpHash = Buffer.from(key, 'hex');
-  next();
+// Um contador por rota: pedir o link e redefinir a senha não competem pelo mesmo limite.
+function rateLimit(nome, max) {
+  return (req, res, next) => {
+    const now = Date.now();
+    const ip = req.ip || 'unknown';
+    const hash = crypto.createHash('sha256').update(ip).digest('hex');
+    const key = `${nome}:${hash}`;
+    let bucket = buckets.get(key);
+    if (!bucket || bucket.until <= now) bucket = { count: 0, until: now + WINDOW_MS };
+    bucket.count += 1;
+    buckets.set(key, bucket);
+    if (buckets.size > 5000) {
+      for (const [k, v] of buckets) if (v.until <= now) buckets.delete(k);
+    }
+    if (bucket.count > max) {
+      res.setHeader('Retry-After', String(Math.ceil((bucket.until - now) / 1000)));
+      return res.status(429).json({ erro: 'muitas_tentativas' });
+    }
+    req.recoveryIpHash = Buffer.from(hash, 'hex');
+    next();
+  };
 }
 
 function tokenHash(token) {
@@ -34,13 +40,17 @@ function tokenHash(token) {
 function genericResponse(res) {
   return res.status(200).json({ ok: true, mensagem: 'Se o e-mail estiver cadastrado, você receberá as instruções para redefinir a senha.' });
 }
-async function enviarEmail({ email, nome, token }) {
+function configuracaoEmail() {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   const baseUrl = String(process.env.APP_PUBLIC_URL || '').replace(/\/$/, '');
-  if (!apiKey || !from || !/^https:\/\//i.test(baseUrl)) {
-    throw new Error('Recuperação de senha não configurada: defina RESEND_API_KEY, RESEND_FROM e APP_PUBLIC_URL HTTPS.');
-  }
+  if (!apiKey || !from || !/^https:\/\//i.test(baseUrl)) return null;
+  return { apiKey, from, baseUrl };
+}
+let avisouSemConfiguracao = false;
+
+async function enviarEmail({ email, nome, token, config }) {
+  const { apiKey, from, baseUrl } = config;
   const link = `${baseUrl}/?redefinir=${encodeURIComponent(token)}`;
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -60,10 +70,21 @@ async function enviarEmail({ email, nome, token }) {
   }
 }
 
-recuperacaoSenhaRouter.post('/recuperar-senha', rateLimit, async (req, res, next) => {
+// A resposta é a mesma (200 neutro) para e-mail inexistente, conta existente, falha do Resend ou recurso sem
+// configuração: quem pergunta não descobre quais e-mails têm conta, nem pelo status nem pelo tempo de resposta.
+// O envio acontece depois de responder; falhas vão para o log e o Sentry, e o token não usado é descartado.
+recuperacaoSenhaRouter.post('/recuperar-senha', rateLimit('pedido', MAX_PEDIDOS_IP), async (req, res, next) => {
   try {
     const email = normalizeEmail(req.body?.email);
     if (!validEmail(email)) return genericResponse(res);
+    const config = configuracaoEmail();
+    if (!config) {
+      if (!avisouSemConfiguracao) {
+        avisouSemConfiguracao = true;
+        console.error(JSON.stringify({ type: 'recuperacao_nao_configurada', aviso: 'defina RESEND_API_KEY, RESEND_FROM e APP_PUBLIC_URL (HTTPS)' }));
+      }
+      return genericResponse(res);
+    }
     const [conta] = await q('SELECT id, nome, email FROM contas WHERE email = ?', [email]);
     if (!conta) return genericResponse(res);
 
@@ -80,26 +101,28 @@ recuperacaoSenhaRouter.post('/recuperar-senha', rateLimit, async (req, res, next
       'INSERT INTO recuperacao_senha_tokens (conta_id, token_hash, ip_hash, expira_em) VALUES (?, ?, ?, ?)',
       [conta.id, tokenHash(token), req.recoveryIpHash, expira]
     );
-    try {
-      await enviarEmail({ email: conta.email, nome: conta.nome, token });
-    } catch (error) {
-      await q('UPDATE recuperacao_senha_tokens SET usado_em = UTC_TIMESTAMP() WHERE token_hash = ?', [tokenHash(token)]);
-      throw error;
-    }
-    return genericResponse(res);
+    genericResponse(res);
+    enviarEmail({ email: conta.email, nome: conta.nome, token, config }).catch(async (error) => {
+      await q('UPDATE recuperacao_senha_tokens SET usado_em = UTC_TIMESTAMP() WHERE token_hash = ?', [tokenHash(token)]).catch(() => {});
+      console.error(JSON.stringify({ type: 'recuperacao_email_falhou', request_id: req.requestId, error: String(error?.message || error).slice(0, 300) }));
+      registrarErro(error, { requestId: req.requestId, method: req.method, path: req.path });
+    });
   } catch (error) {
     next(error);
   }
 });
 
-recuperacaoSenhaRouter.post('/redefinir-senha', rateLimit, async (req, res, next) => {
+recuperacaoSenhaRouter.post('/redefinir-senha', rateLimit('redefinir', MAX_REDEFINICOES_IP), async (req, res, next) => {
   const token = String(req.body?.token || '');
   const senha = String(req.body?.senha || '');
   if (token.length < 30 || token.length > 200 || senha.length < 8 || senha.length > 128) {
     return res.status(400).json({ erro: 'token_ou_senha_invalidos' });
   }
-  const connection = await pool.getConnection();
+  // Express 4 não captura erro de handler async: a conexão também precisa estar dentro do try, senão um
+  // banco indisponível vira promessa rejeitada sem tratamento e derruba o processo.
+  let connection;
   try {
+    connection = await pool.getConnection();
     await connection.beginTransaction();
     const [rows] = await connection.query(
       'SELECT id, conta_id FROM recuperacao_senha_tokens WHERE token_hash = ? AND usado_em IS NULL AND expira_em > UTC_TIMESTAMP() FOR UPDATE',
@@ -115,13 +138,15 @@ recuperacaoSenhaRouter.post('/redefinir-senha', rateLimit, async (req, res, next
     await connection.query('UPDATE contas SET senha_hash = ?, senha_salt = ? WHERE id = ?', [hash, salt, registro.conta_id]);
     await connection.query('DELETE FROM sessoes WHERE conta_id = ?', [registro.conta_id]);
     await connection.query('UPDATE recuperacao_senha_tokens SET usado_em = UTC_TIMESTAMP() WHERE conta_id = ? AND usado_em IS NULL', [registro.conta_id]);
+    const [[conta]] = await connection.query('SELECT email FROM contas WHERE id = ?', [registro.conta_id]);
     await connection.commit();
     clearSessionCookie(res);
-    return res.json({ ok: true, mensagem: 'Senha redefinida. Entre com sua nova senha.' });
+    // Devolve o e-mail da conta (quem tem o token já é dono dele): o app preenche o login e atualiza o hash local só se for a conta deste aparelho.
+    return res.json({ ok: true, email: conta?.email || null, mensagem: 'Senha redefinida. Entre com sua nova senha.' });
   } catch (error) {
-    await connection.rollback().catch(() => {});
+    await connection?.rollback().catch(() => {});
     next(error);
   } finally {
-    connection.release();
+    connection?.release();
   }
 });

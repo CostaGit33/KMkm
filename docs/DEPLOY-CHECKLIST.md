@@ -8,6 +8,9 @@
 | `GOOGLE_MAPS_API_KEY` | chave `AIza...` do Maps JavaScript API | recomendada |
 | `GOOGLE_MAP_ID` | Map ID para estilo próprio (verde e dourado) | opcional |
 | `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou `v8.13`), devolvido em `/api/saude` e útil para achar qual deploy gerou um erro | recomendada |
+| `RESEND_API_KEY` | chave de envio do Resend (segredo: só variável de execução, nunca Build Args nem `VITE_*`). Liga a recuperação de senha | para recuperar senha |
+| `RESEND_FROM` | remetente de um domínio verificado no Resend, ex.: `Mais1km <conta@seudominio.com.br>` | para recuperar senha |
+| `APP_PUBLIC_URL` | URL pública HTTPS do app, sem barra final; base do link do e-mail | para recuperar senha |
 | `SENTRY_DSN` | DSN do projeto Sentry (`mais1km-api`). Liga o rastreio de erros 5xx e de falhas que derrubam o processo; sem a variável nada é enviado. Ao ligar, `/privacidade` passa a citar o Sentry | opcional |
 | `SENTRY_ENVIRONMENT` | rótulo do ambiente no Sentry (padrão `production`) | opcional |
 | `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |

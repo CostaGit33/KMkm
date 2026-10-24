@@ -147,7 +147,7 @@ paths:
       tags: [Conta]
       security: []
       summary: Entrar com e-mail e senha
-      description: Limite de 12 por 10 minutos por IP. Não há recuperação de senha por e-mail.
+      description: Limite de 12 por 10 minutos por IP. Esqueceu a senha? Use `/api/conta/recuperar-senha`.
       requestBody:
         required: true
         content:
@@ -167,6 +167,72 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Erro' }
               example: { erro: credenciais_invalidas }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/conta/recuperar-senha:
+    post:
+      operationId: contaRecuperarSenha
+      tags: [Conta]
+      security: []
+      summary: Pedir o e-mail de recuperação de senha
+      description: |
+        Sempre responde `200` com o mesmo corpo (e-mail inexistente, inválido, conta existente, falha do Resend ou
+        recurso sem configuração), para não revelar quais e-mails têm conta. O e-mail sai depois da resposta, com um link
+        `APP_PUBLIC_URL/?redefinir=TOKEN` válido por 30 minutos e de uso único; um pedido novo invalida os anteriores.
+        Limites: 5 pedidos por 15 minutos por IP e 3 e-mails por hora por conta (acima disso continua `200`, sem e-mail).
+        Exige `RESEND_API_KEY`, `RESEND_FROM` e `APP_PUBLIC_URL` (HTTPS).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, example: pessoa@exemplo.com }
+      responses:
+        '200':
+          description: Resposta neutra
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecuperacaoNeutra' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /api/conta/redefinir-senha:
+    post:
+      operationId: contaRedefinirSenha
+      tags: [Conta]
+      security: []
+      summary: Trocar a senha com o token do e-mail
+      description: |
+        Troca a senha, encerra todas as sessões da conta (o cookie é apagado) e inutiliza o token. Devolve o e-mail da
+        conta para o app preencher o login. Limite de 10 por 15 minutos por IP, em contador separado do pedido.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, senha]
+              properties:
+                token: { type: string, description: Valor de `redefinir` no link recebido por e-mail }
+                senha: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200':
+          description: Senha trocada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  email: { type: string, nullable: true, example: pessoa@exemplo.com }
+                  mensagem: { type: string }
+        '400':
+          description: Token inexistente, expirado ou já usado, ou senha fora de 8 a 128 caracteres
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              examples:
+                token_invalido: { value: { erro: token_invalido_ou_expirado } }
+                dados_invalidos: { value: { erro: token_ou_senha_invalidos } }
         '429': { $ref: '#/components/responses/MuitasTentativas' }
   /api/conta/sessao:
     get:
@@ -646,6 +712,11 @@ components:
           schema: { $ref: '#/components/schemas/Erro' }
           example: { erro: interno, request_id: 3f6c1f4e-9a53-4c1c-8a0b-0d6f2f2f6b1e }
   schemas:
+    RecuperacaoNeutra:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        mensagem: { type: string, example: 'Se o e-mail estiver cadastrado, você receberá as instruções para redefinir a senha.' }
     Erro:
       type: object
       required: [erro]

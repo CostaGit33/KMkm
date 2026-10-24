@@ -12,6 +12,7 @@ import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
 import { setAnalyticsConsent, openConsentPreferences } from "./telemetry.js";
+import { lerTokenRedefinicao, limparTokenRedefinicao } from "./redefinir-token.js";
 
 let state = loadState();
 let view = "home";
@@ -24,7 +25,8 @@ let searchTimer;
 let installPrompt = null;
 let authMessage = "";
 let authDraft = {};
-let authModo = new URLSearchParams(window.location.search).has("redefinir") ? "redefinir" : "";
+let authModo = lerTokenRedefinicao() ? "redefinir" : "";
+let authSucesso = false;
 let profileMessage = null;
 let menuOpen = false;
 // Botão "Mais" do rodapé (ou da lateral no desktop): o que estiver visível recebe o foco ao fechar a folha.
@@ -102,7 +104,8 @@ function launchIntro() {
 function render({ preserveFocus = false } = {}) {
   podiumRoot?.unmount();
   podiumRoot = null;
-  const conectado = isSignedIn(state);
+  // Com um link de redefinição aberto, o formulário de nova senha vem antes do app, mesmo com sessão neste aparelho.
+  const conectado = isSignedIn(state) && authModo !== "redefinir";
   document.body.classList.toggle("is-auth", !conectado);
   if (!conectado) {
     menuOpen = false;
@@ -115,7 +118,7 @@ function render({ preserveFocus = false } = {}) {
       document.title = "+1 KM";
       return;
     }
-    app.innerHTML = renderAuth({ temConta: !!state.account, mensagem: authMessage, emailSugerido: state.account?.email || "", rascunho: authDraft, modo: authModo });
+    app.innerHTML = renderAuth({ temConta: !!state.account, mensagem: authMessage, sucesso: authSucesso, emailSugerido: state.account?.email || "", rascunho: authDraft, modo: authModo });
     document.title = "Entrar · +1 KM";
     return;
   }
@@ -248,8 +251,10 @@ function handleClick(event) {
       break;
     case "auth-modo":
       authModo = ["entrar", "criar", "recuperar"].includes(button.dataset.modo) ? button.dataset.modo : "criar";
-      if (authModo === "entrar" && new URLSearchParams(window.location.search).has("redefinir")) window.history.replaceState(null, "", window.location.pathname);
+      limparTokenRedefinicao();
+      introDone = true; // quem veio do link de recuperação não precisa rever a abertura ao voltar para o login
       authMessage = "";
+      authSucesso = false;
       render();
       document.querySelector(".auth-card input")?.focus();
       break;
@@ -432,6 +437,7 @@ async function handleSubmit(event) {
   event.preventDefault();
   const dados = new FormData(form);
   const v = (campo) => String(dados.get(campo) || "");
+  authSucesso = false;
   switch (form.dataset.form) {
     case "recuperar-senha": {
       const email = v("email").trim().toLowerCase();
@@ -440,6 +446,7 @@ async function handleSubmit(event) {
       try {
         await api("/conta/recuperar-senha", { method: "POST", body: { email } });
         authMessage = "Se o e-mail estiver cadastrado, você receberá as instruções. Confira também o spam.";
+        authSucesso = true;
       } catch (error) {
         authMessage = mensagemErro(error, "Não foi possível solicitar a recuperação agora.");
       }
@@ -451,15 +458,23 @@ async function handleSubmit(event) {
       const senha = v("senha");
       const erro = validarSenha(senha) || (senha !== v("confirma") ? "As senhas não são iguais." : "");
       if (erro) { authMessage = erro; return render(); }
-      const token = new URLSearchParams(window.location.search).get("redefinir") || "";
-      if (!token) { authMessage = "Link de recuperação inválido. Solicite outro e-mail."; return render(); }
+      const token = lerTokenRedefinicao();
+      if (!token) { authMessage = "Link de recuperação inválido ou expirado. Solicite outro e-mail."; return render(); }
       try {
-        await api("/conta/redefinir-senha", { method: "POST", body: { token, senha } });
-        if (state.account?.email) state = updateAccount(state, await gerarSenha(senha));
-        window.history.replaceState(null, "", window.location.pathname);
+        const resposta = await api("/conta/redefinir-senha", { method: "POST", body: { token, senha } });
+        limparTokenRedefinicao();
+        const emailConta = String(resposta?.email || "").toLowerCase();
+        // O servidor encerrou todas as sessões da conta. O hash local só muda se esta for a conta guardada neste aparelho.
+        const mesmaConta = !!state.account && !!emailConta && state.account.email === emailConta;
+        if (mesmaConta) {
+          state = updateAccount(state, await gerarSenha(senha));
+          if (isSignedIn(state)) state = signOut(state);
+        }
         authModo = "entrar";
+        introDone = true;
         authMessage = "Senha redefinida. Entre com sua nova senha.";
-        authDraft = { email: state.account?.email || "" };
+        authSucesso = true;
+        authDraft = { email: emailConta || state.account?.email || "" };
       } catch (error) {
         authMessage = error.status === 400 ? "Este link é inválido, expirou ou já foi usado. Solicite outro." : mensagemErro(error, "Não foi possível redefinir a senha.");
       }
@@ -505,12 +520,13 @@ async function handleSubmit(event) {
         try {
           servidor = await criarContaServidor({ nome: state.account.nome, email, senha: v("senha") });
         } catch (migrationError) {
-          authMessage = migrationError.code === "email_ja_cadastrado" ? "A conta existe no servidor, mas a senha precisa ser redefinida." : "Não foi possível recuperar esta conta no servidor.";
+          authMessage = migrationError.code === "email_ja_cadastrado" ? "Esta senha não é mais a da conta (ela foi redefinida ou trocada em outro aparelho). Use a senha nova ou toque em “Esqueci minha senha”." : "Não foi possível recuperar esta conta no servidor.";
           return render();
         }
       }
-      // Aparelho novo (ou app reinstalado): não há conta local, então guarda a senha em hash para o uso offline.
-      const hashLocal = state.account?.hash ? {} : await gerarSenha(v("senha"));
+      // A senha acabou de ser confirmada pelo servidor: o hash local acompanha sempre, senão uma senha trocada
+      // ou redefinida em outro aparelho deixaria aqui a antiga valendo para a conferência local (Perfil, troca de senha).
+      const hashLocal = await gerarSenha(v("senha"));
       state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email, serverId: servidor.usuario.id, ...hashLocal });
       state = signIn(state);
       authModo = "";
