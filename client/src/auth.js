@@ -58,7 +58,7 @@ export async function senhaConfere(conta, senha) {
 const campo = (nome, rotulo, tipo, dica, autocomplete, extra = "") =>
   `<label class="field"><span>${rotulo}</span><input name="${nome}" type="${tipo}" placeholder="${esc(dica)}" autocomplete="${autocomplete}" ${extra} required /></label>`;
 
-export function renderAuth({ temConta = false, mensagem = "", emailSugerido = "", rascunho = {}, modo = "" } = {}) {
+export function renderAuth({ temConta = false, mensagem = "", sucesso = false, emailSugerido = "", rascunho = {}, modo = "" } = {}) {
   const recuperar = modo === "recuperar";
   const redefinir = modo === "redefinir";
   const criar = modo ? modo === "criar" : !temConta;
@@ -80,12 +80,11 @@ export function renderAuth({ temConta = false, mensagem = "", emailSugerido = ""
     <form class="card auth-card" data-form="${form}" novalidate>
       <h2 class="auth-h">${titulo}</h2>
       <p class="small muted">${descricao}</p>
-      ${!redefinir && !criar ? campo("email", "E-mail", "email", "voce@exemplo.com", "email", `inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(rascunho.email || emailSugerido)}"`) : ""}
       ${criar ? campo("nome", "Nome", "text", "Como você quer ser chamado", "name", `maxlength="36" value="${esc(rascunho.nome || "")}"`) : ""}
-      ${criar || redefinir ? campo("senha", "Senha", "password", "Mínimo de 8 caracteres", "new-password", 'minlength="8"') : ""}
-      ${criar ? campo("confirma", "Repita a senha", "password", "Digite a mesma senha", "new-password") : ""}
-      ${redefinir ? campo("confirma", "Repita a nova senha", "password", "Digite a mesma senha", "new-password") : ""}
-      ${mensagem ? `<p class="auth-error" role="alert">${esc(mensagem)}</p>` : ""}
+      ${!redefinir ? campo("email", "E-mail", "email", "voce@exemplo.com", "email", `inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(rascunho.email || emailSugerido)}"`) : ""}
+      ${!recuperar ? campo("senha", redefinir ? "Nova senha" : "Senha", "password", "Mínimo de 8 caracteres", criar || redefinir ? "new-password" : "current-password", 'minlength="8"') : ""}
+      ${criar || redefinir ? campo("confirma", redefinir ? "Repita a nova senha" : "Repita a senha", "password", "Digite a mesma senha", "new-password") : ""}
+      ${mensagem ? `<p class="auth-error${sucesso ? " ok" : ""}" role="${sucesso ? "status" : "alert"}">${esc(mensagem)}</p>` : ""}
       <button class="primary-button button-full" type="submit">${recuperar ? "Enviar link de recuperação" : redefinir ? "Salvar nova senha" : criar ? "Criar conta" : "Entrar"}</button>
     </form>
     <p class="auth-switch">
@@ -94,6 +93,6 @@ export function renderAuth({ temConta = false, mensagem = "", emailSugerido = ""
         : `<button class="text-link" type="button" data-action="auth-modo" data-modo="${criar ? "entrar" : "criar"}">${criar ? "Já tenho conta · Entrar" : "Não tenho conta · Criar conta"}</button>`}
     </p>
     <p class="small muted legal-links">Ao continuar você concorda com a <a href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
-    ${!criar && !recuperar && !redefinir ? `<div class="auth-foot"><button class="text-link" type="button" data-action="auth-modo" data-modo="recuperar">Esqueci minha senha</button><p class="small muted">O link de recuperação expira em 30 minutos e só pode ser usado uma vez.</p><button class="text-link" type="button" data-action="delete-account">Excluir conta deste aparelho</button></div>` : ""}
+    ${!criar && !recuperar && !redefinir ? `<div class="auth-foot"><button class="text-link" type="button" data-action="auth-modo" data-modo="recuperar">Esqueci minha senha</button><p class="small muted">O link de recuperação expira em 30 minutos e só pode ser usado uma vez.</p>${temConta ? `<button class="text-link" type="button" data-action="delete-account">Excluir conta deste aparelho</button>` : ""}</div>` : ""}
   </section>`;
 }
