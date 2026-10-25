@@ -10,10 +10,15 @@
 | `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou `v8.13`), devolvido em `/api/saude` e útil para achar qual deploy gerou um erro | recomendada |
 | `RESEND_API_KEY` | chave de envio do Resend (segredo: só variável de execução, nunca Build Args nem `VITE_*`). Liga a recuperação de senha | para recuperar senha |
 | `RESEND_FROM` | remetente de um domínio verificado no Resend, ex.: `Mais1km <conta@seudominio.com.br>` | para recuperar senha |
-| `APP_PUBLIC_URL` | URL pública HTTPS do app, sem barra final; base do link do e-mail | para recuperar senha |
+| `APP_PUBLIC_URL` | URL pública HTTPS do app, sem barra final; base do link do e-mail e dos links das tags (CSV/QR) | para recuperar senha e exportar links |
 | `SENTRY_DSN` | DSN do projeto Sentry (`mais1km-api`). Liga o rastreio de erros 5xx e de falhas que derrubam o processo; sem a variável nada é enviado. Ao ligar, `/privacidade` passa a citar o Sentry | opcional |
 | `SENTRY_ENVIRONMENT` | rótulo do ambiente no Sentry (padrão `production`) | opcional |
 | `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |
+| `TAG_KEY_SECRET` | segredo (32+ caracteres aleatórios) das chaves dos links das tags. Segredo de execução; **guarde uma cópia fora do servidor**: sem ele os links já gravados nas tags deixam de funcionar | sim, antes de gravar as tags |
+| `GEOFENCE_RAIO_PADRAO_M` | raio padrão (m) para exigir localização no carimbo; `0` desliga. Só ligue com coordenadas conferidas em campo | opcional (padrão 0) |
+| `EXIGIR_AUTORIZACAO` | `true` (padrão) exige responsável, autorização e vistoria para publicar um ponto | opcional |
+| `CSP_LEGADO` | `true` reabre `unsafe-inline`/`unsafe-eval` em scripts; só como saída temporária se a CSP estrita quebrar algo | não |
+| `FRAME_ANCESTORS` / `ORIGENS_PERMITIDAS` / `COOKIE_SAMESITE` | só se o app for embutido em outro site ou servido por mais de um domínio (padrões seguros: nenhum / só o próprio host / `Lax`) | não |
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | só para os testes de API; nunca em produção compartilhada | não |
 
 Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do Maps e não deve ir para o navegador.
@@ -23,6 +28,11 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Chave do Maps restrita por domínio (referenciadores HTTP) e só à Maps JavaScript API.
 - [ ] Rodar `node server/scripts/teste-podio.js limpar` para apagar carimbos de teste.
 - [ ] Conferir que `/api/admin/dados` sem login responde 401.
+- [ ] Definir `TAG_KEY_SECRET`, rodar `npm --prefix server run chaves -- ativar-todos` e `... urls`; gravar nas tags/QR os links **com** `?k=`. Conferir em `/api/saude` que `chaves` é `configuradas`.
+- [ ] Abrir o app no celular e conferir no console que não há violações de CSP (mapa, fontes, GA4 depois de aceitar o aviso). Se algo quebrar, `CSP_LEGADO=true` é a saída temporária.
+- [ ] Cada ponto a publicar tem responsável, autorização e vistoria registrados (`npm --prefix server run pontos -- listar` mostra `sem doc`).
+- [ ] Backup do MySQL feito **e restaurado em um banco de teste** (backup nunca restaurado não conta).
+- [ ] Rodar `npm --prefix server run relatorio-piloto` uma vez para conferir que o relatório abre.
 
 ## 3. Conferência pós-deploy
 - [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; "desconhecida" significa que a variável não foi definida).

@@ -1,3 +1,4 @@
+import './tag-chave.js'; // tira a chave do link da tag (?k=) da URL antes de qualquer medição
 import './redefinir-token.js'; // tira o token de recuperação da URL antes de qualquer medição
 import { initTelemetry, mountConsentBanner } from './telemetry.js';
 

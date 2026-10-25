@@ -1,3 +1,5 @@
+> **Documento histórico.** Descreve uma versão anterior do projeto e **não** reflete o estado atual. Para o estado de hoje: [README](../../README.md), [CHANGELOG](../../CHANGELOG.md) e [índice](../INDEX.md).
+
 # Verificação da V8.4 (administração)
 
 Feito neste ambiente (MariaDB 10.11, Node 22, Chromium):

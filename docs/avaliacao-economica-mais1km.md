@@ -1,3 +1,5 @@
+> **Atualização (25/10/2026).** Esta avaliação foi escrita antes de várias entregas: mapa passou de Leaflet para Google Maps com alternativa OSM; o backend é persistente (MySQL), com contas, recuperação de senha, administração, relatório do piloto, monitoramento e política de privacidade; carimbos têm chave no link, localização opcional e marcação de suspeitos. A conclusão econômica continua valendo: **ativo técnico inicial, negócio ainda não comprovado**. O que falta é comprador/patrocinador, autorização dos pontos e métricas do piloto (use `docs/comercial/` e a aba *Piloto* do `/admin`).
+
 # Avaliação econômica preliminar — +1KM / piloto Eunápolis
 
 **Data de referência:** outubro de 2026  

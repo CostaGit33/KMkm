@@ -1,16 +1,24 @@
-# Entregas da versão 5 do +1KM
+# Pendências (lista viva)
 
-- Integrar a experiência completa do V3, preservando caderneta, mapa, filtros, jornada de 90 dias, coleções, certificados, perfil, autenticação local e carimbos SVG generativos.
-- Incorporar as melhorias do V4: menu lateral responsivo com foco/teclado, alternância de tema, instalação PWA, acesso direto às rotas e destino editorial Eunápolis.
-- Manter o backend Express/MySQL-compatible e os fluxos persistentes existentes de entrada, tags, carimbagem, guardião, carimbo de turma, progresso e certificado.
-- Entregar a rota pública `/t/:codigo` com tela V5 para abrir a caderneta, carimbar, mostrar progresso da rota, carimbo coletivo, guardião e retorno à caderneta.
-- Preservar o manifesto, os ícones, o service worker e o cache offline; atualizar o identificador para V5 sem remover dados locais existentes.
-- Configurar identidade +1KM V5, build Vite e servidor de produção sem quebrar o health check `/api/saude`.
-- Validar sintaxe dos módulos, build do cliente, health check, carregamento da home, manifesto de rotas e fluxo público de tag com o seed existente.
-- Preparar a próxima etapa de segurança: sessão em cookie HttpOnly/Secure/SameSite=None no Preview HTTPS, rate-limiting, validação de payloads e autorização administrativa.
-- Preparar a próxima etapa operacional: CRUD administrativo de rotas/tags, geração de código revogável, QR Code e PDF A4 sem incluir tokens de sessão.
-- Adicionar mapa real Leaflet/OpenStreetMap ao produto, com tiles servidos por proxy same-origin, marcadores clicáveis e identificação visual do estado dos carimbos; Eunápolis deve exibir os três pontos com coordenadas conferidas e manter os demais como coordenada pendente, sem inventar posições.
+Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 
-## Integração V6 futurista
+## Antes de abrir ao público
+- [ ] Definir `TAG_KEY_SECRET`, ativar chaves e gravar as tags com `?k=` (`docs/seguranca.md`).
+- [ ] Autorização, responsável e vistoria registrados para cada ponto a publicar (`docs/comercial/`).
+- [ ] Backup do MySQL **restaurado** em banco de teste; trocar a senha do MySQL exposta em log de build.
+- [ ] Conferir CSP no celular (mapa, fontes, GA4 após consentimento).
+- [ ] Coordenadas validadas em campo antes de ligar localização por raio.
+- [ ] `CONTATO_EMAIL`, `RELEASE_VERSION`, limpar carimbos de teste (`teste-podio limpar`).
 
-- Integrar os recursos visuais da V6 futurista ao projeto atual: tema Noite Neon/Holo Dia, fontes Orbitron/Rajdhani/Alfa Slab One, abertura cinematográfica em canvas com cadastro em etapas, carimbos SVG HUD/glifos digitais e ícones PWA; preservar mapa real, segurança, e backend.
+## Técnico
+- [ ] Teste de ponta a ponta: criar conta → carimbar → abrir em outro aparelho (hoje só testes unitários e `smoke.mjs` manual).
+- [ ] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
+- [ ] Limite de tentativas fora da memória (tabela ou Redis) se houver mais de uma instância.
+- [ ] Limpeza automática de contas anônimas antigas.
+- [ ] Prova de presença com NTAG 424 DNA (validar assinatura SDM no servidor) se patrocínio pagar por visita comprovada.
+- [ ] Carimbo offline com fila e reenvio idempotente.
+- [ ] Reduzir `styles.css`/`future.css`/`views.js` (arquivos grandes) por tela.
+
+## Comercial
+- [ ] Carta de interesse ou contrato-piloto de pelo menos um comprador/patrocinador (`docs/comercial/carta-interesse.md`).
+- [ ] Rodar o piloto com ao menos 20 participantes e decidir pelo relatório (aba *Piloto*).

@@ -40,13 +40,20 @@ const ERROS = {
   nao_exclua_a_si_mesmo: 'Você não pode excluir a própria conta por aqui.',
   rebaixe_o_admin_antes: 'Rebaixe este administrador a usuário antes de excluir.',
   conta_inexistente: 'Esta pessoa não tem conta com e-mail e senha.',
+  autorizacao_pendente: 'Faltam responsável, autorização ou vistoria registrados neste ponto.',
+  data_invalida: 'Data inválida. Use o seletor de data.',
+  raio_invalido: 'Raio inválido: use um número inteiro entre 0 e 5000 metros.',
+  sem_segredo_de_chaves: 'O servidor não tem TAG_KEY_SECRET configurado (32+ caracteres). Defina-o no ambiente e reimplante.',
+  sem_url_publica: 'O servidor não tem APP_PUBLIC_URL configurado; defina a URL pública HTTPS do app.',
+  acao_invalida: 'Ação inválida.',
+  origem_nao_permitida: 'O pedido foi bloqueado por segurança (origem diferente). Recarregue a página.',
   interno: 'Erro interno do servidor. Tente de novo.',
   rede: 'Sem conexão com o servidor.',
 };
 export function mensagem(erro) {
   const base = ERROS[erro?.code] || `Erro: ${erro?.code || 'desconhecido'}`;
   const d = erro?.dados || {};
-  const lista = d.codigos || d.eventos || d.conflitos;
+  const lista = d.faltando || d.codigos || d.eventos || d.conflitos;
   const extra = Array.isArray(lista) && lista.length ? ` (${lista.join(', ')})` : d.carimbos ? ` (${d.carimbos} carimbo(s))` : d.pontos ? ` (${d.pontos} ponto(s))` : '';
   return base + extra;
 }

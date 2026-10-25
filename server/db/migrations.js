@@ -221,6 +221,22 @@ async function ensureColecaoEdicaoSchema() {
   )`);
   await atribuirCriaturas();
 }
+// Acesso ao carimbo, operação dos pontos e antifraude.
+// - chave_versao: 0 = link aberto (legado); >= 1 = o link da tag precisa da chave ?k= (HMAC, veja tag-acesso.js).
+//   Girar a chave do ponto = somar 1; o link antigo deixa de valer.
+// - raio_m: raio em metros para exigir localização no carimbo (NULL = usa GEOFENCE_RAIO_PADRAO_M; 0 = desligado).
+// - responsável, autorização e vistoria: o ponto só é publicado com esses dados (ou com confirmação explícita).
+// - carimbos.suspeito: motivo da suspeita (não bloqueia; serve para revisão e para o relatório do piloto).
+async function ensureAcessoSchema() {
+  await ensureColumn('tags', 'chave_versao', 'INT NOT NULL DEFAULT 0');
+  await ensureColumn('tags', 'raio_m', 'INT NULL');
+  await ensureColumn('tags', 'responsavel_nome', 'VARCHAR(120) NULL');
+  await ensureColumn('tags', 'responsavel_contato', 'VARCHAR(120) NULL');
+  await ensureColumn('tags', 'autorizado_em', 'DATE NULL');
+  await ensureColumn('tags', 'vistoriado_em', 'DATE NULL');
+  await ensureColumn('carimbos', 'suspeito', 'VARCHAR(32) NULL');
+  if (!(await hasIndex('carimbos', 'idx_carimbos_suspeito'))) await q('CREATE INDEX idx_carimbos_suspeito ON carimbos (suspeito)');
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
@@ -239,4 +255,5 @@ export async function runMigrations() {
   await ensureCatalogoLimpo();
   await ensureGamificationSchema();
   await ensureColecaoEdicaoSchema();
+  await ensureAcessoSchema();
 }

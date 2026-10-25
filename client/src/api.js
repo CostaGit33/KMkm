@@ -10,7 +10,7 @@ export async function api(caminho, { method = 'GET', body } = {}) {
   });
   let data = null;
   try { data = await r.json(); } catch {}
-  if (!r.ok) throw Object.assign(new Error(data?.erro || 'erro_api'), { status: r.status, code: data?.erro });
+  if (!r.ok) throw Object.assign(new Error(data?.erro || 'erro_api'), { status: r.status, code: data?.erro, dados: data });
   return data;
 }
 

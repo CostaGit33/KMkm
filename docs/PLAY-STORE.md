@@ -7,7 +7,7 @@ Checklist do que já está pronto no código e do que só você pode fazer.
 - Exclusão de conta dentro do app (Perfil → Excluir conta) e no servidor (`DELETE /api/eu`), que apaga carimbos, XP, ranking e sessões.
 - Links para as duas páginas na tela de login e no Perfil.
 - Tema escuro por padrão, sem conteúdo de demonstração, sem moedas, compras ou revenda (edição numerada e criaturas são gratuitas e intransferíveis).
-- Cabeçalho HSTS em HTTPS, CSP sem script embutido, cookie de sessão HttpOnly.
+- Cabeçalho HSTS em HTTPS, CSP estrita para scripts (sem `unsafe-inline` nem `unsafe-eval`; estilos embutidos ainda são aceitos), cookie de sessão HttpOnly com `SameSite=Lax`.
 
 ## Variáveis do servidor (Easypanel)
 - `CONTATO_EMAIL`: e-mail público que aparece nas páginas de privacidade e exclusão. Obrigatório antes de publicar.

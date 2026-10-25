@@ -1,4 +1,5 @@
 import { api, entrar, token } from './api.js';
+import { lerChaveTag } from './tag-chave.js';
 import { findPointByCode } from './data.js';
 import { installInk, stampHtml } from './stamp-kit.js';
 import { cartaHtml } from './cartas.js';
@@ -19,7 +20,33 @@ const findPoint = (code, result) => findPointByCode(code) || {
 // Evita requisições simultâneas se a pessoa tocar duas vezes ou o navegador repetir o evento.
 let stampInFlight = false;
 
+// Posição do aparelho, só no momento do carimbo e só quando o ponto pede. O servidor confere a distância e
+// não guarda a coordenada.
+function obterPosicao() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('sem_geolocalizacao'));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+      reject,
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+    );
+  });
+}
+
 function mensagemErroTag(error) {
+  if (error?.code === 'chave_invalida') {
+    return { titulo: 'Este link da tag não confere', texto: 'O link foi substituído ou está incompleto. Se você leu uma tag ou QR no local, avise a organização para trocar a etiqueta.', tentar: false };
+  }
+  if (error?.code === 'localizacao_necessaria') {
+    return { titulo: 'Confirme que você está no local', texto: 'Este ponto pede a sua localização no momento do carimbo. Ela não é guardada: só conferimos a distância até o ponto.', localizar: true };
+  }
+  if (error?.code === 'fora_do_raio') {
+    const { raio, distancia } = error.dados || {};
+    return { titulo: 'Você parece estar longe do ponto', texto: `Chegue mais perto da tag${raio ? ` (o ponto confere um raio de ${raio} m${distancia ? `; você está a cerca de ${distancia} m` : ''})` : ''}. Se já está no local, espere o GPS firmar e tente de novo.`, localizar: true };
+  }
+  if (error?.code === 'muitos_carimbos') {
+    return { titulo: 'Carimbos em ritmo alto demais', texto: 'Por segurança, espere alguns minutos antes de carimbar outro ponto.', tentar: true };
+  }
   if (error?.code === 'tag_inexistente' || error?.status === 404) {
     return { titulo: 'Tag não encontrada', texto: 'Confira o código deste ponto. Se o QR/NFC abriu este endereço, avise a organização para verificar a tag.', tentar: false };
   }
@@ -74,7 +101,7 @@ function cartaoCriatura(result) {
   return `<article class="card tag-card tag-criatura nova" role="status"><p class="eyebrow">Ponto descoberto!</p><h2 class="page-title">Você desbloqueou o personagem deste local.</h2><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">${progresso}.</p><a class="outline-button button-full" href="/">Ver minha coleção</a></article>`;
 }
 
-async function stamp(code) {
+async function stamp(code, pos = null) {
   if (stampInFlight) return;
   const content = document.getElementById('tag-content');
   if (!content) return;
@@ -82,7 +109,7 @@ async function stamp(code) {
   content.setAttribute("aria-busy", "true");
   content.innerHTML = `<div class="card tag-card tag-loading" role="status" aria-live="polite"><span class="tag-loading-mark" aria-hidden="true">✳</span><p class="eyebrow">PONTO ${escapeHtml(code.toUpperCase())}</p><h1 class="page-title">Confirmando sua visita…</h1><p class="page-subtitle">Estamos validando a tag e guardando sua conquista. Aguarde a confirmação antes de sair desta tela.</p><span class="tag-loading-track" aria-hidden="true"></span></div>`;
   try {
-    const result = await api(`/tags/${encodeURIComponent(code)}/carimbar`, { method: 'POST' });
+    const result = await api(`/tags/${encodeURIComponent(code)}/carimbar`, { method: 'POST', body: { chave: lerChaveTag(code) || undefined, pos: pos || undefined } });
     const point = findPoint(code, result);
     const stamp = stampHtml(point, result.carimbo?.ordem || 1, { entry: { at: result.carimbo?.criado_em || new Date().toISOString() }, size: 230, plus: true });
     const turma = result.turma ? `<article class="card tag-note"><strong>${result.turma.formou ? 'Carimbo de turma formado!' : 'Carimbo coletivo em andamento'}</strong><p>${result.turma.formou ? 'A turma deixou uma marca conjunta neste ponto.' : `${result.turma.presentes} presentes. Faltam ${Math.max(0, result.turma.necessarios - result.turma.presentes)} em até 4 minutos.`}</p></article>` : '';
@@ -106,8 +133,23 @@ async function stamp(code) {
     content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
   } catch (error) {
     const falha = mensagemErroTag(error);
-    const acao = falha.tentar ? '<button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button>' : '';
+    const acao = falha.localizar
+      ? '<button class="primary-button button-full" id="tag-localizar" type="button">Confirmar minha localização</button>'
+      : falha.tentar ? '<button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button>' : '';
     content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${falha.titulo}</h1><p class="page-subtitle">${falha.texto}</p>${acao}<a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
+    document.getElementById('tag-localizar')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Obtendo localização…';
+      try {
+        stamp(code, await obterPosicao());
+      } catch {
+        button.disabled = false;
+        button.textContent = 'Tentar de novo';
+        if (!document.getElementById('tag-geo-erro')) button.insertAdjacentHTML('beforebegin', '<p class="page-subtitle" id="tag-geo-erro" role="alert">Não foi possível obter a localização. Autorize a localização do navegador para este site e tente de novo.</p>');
+      }
+    }, { once: true });
     document.getElementById('tag-retry')?.addEventListener('click', (event) => {
       const button = event.currentTarget;
       if (button.disabled) return;

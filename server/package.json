@@ -9,6 +9,8 @@
     "evento": "node scripts/evento.js",
     "pontos": "node scripts/pontos.js",
     "admin": "node scripts/admin.js",
+    "chaves": "node scripts/chaves.js",
+    "relatorio-piloto": "node scripts/relatorio-piloto.js",
     "teste-podio": "node scripts/teste-podio.js",
     "test": "node --test test/*.test.js"
   },

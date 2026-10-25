@@ -51,3 +51,9 @@ O app lê `/api/catalogo` ao abrir. O que você cria, renomeia, arquiva ou reord
 - O admin mostra e-mails das pessoas. Use só para suporte e não compartilhe prints (LGPD).
 - Use HTTPS e uma senha forte e exclusiva na conta de admin. Não há verificação de e-mail no cadastro: **crie sua conta antes de divulgar o app** para ninguém registrar o seu e-mail primeiro.
 - A página `/admin` só é uma tela: quem protege os dados é a API (papel `admin` checado no servidor a cada requisição).
+
+## 7. Novidades de segurança e operação (V8.13)
+- **Editar ponto → Operação e segurança:** responsável, contato, data da autorização e da vistoria, e raio de localização. Publicar exige responsável + autorização + vistoria; sem isso o admin pergunta se quer publicar mesmo assim e a decisão fica no *Registro*.
+- **Link da tag:** ativa, gira ou desativa a chave (`?k=`) do link do ponto e mostra o link para gravar na tag/QR. **Exportar links (CSV)** gera todos de uma vez; **Ativar chave em todos** liga a chave nos pontos que ainda têm link aberto. Veja `docs/seguranca.md`.
+- **Aba Piloto:** funil (primeiro carimbo, segundo ponto, retorno em 7 dias, conclusão), prontidão dos pontos, carimbos por ponto, suspeitos e os sinais de parada.
+- Variáveis novas: `TAG_KEY_SECRET`, `APP_PUBLIC_URL` (para o CSV), `GEOFENCE_RAIO_PADRAO_M`, `EXIGIR_AUTORIZACAO`.

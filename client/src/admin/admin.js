@@ -3,9 +3,9 @@ import { CATEGORIES } from '../data.js';
 import { $, $$, esc, req, mensagem, avisar, dialogo, confirmar, arrastavel, paraCampoLocal, legivel } from './ui.js';
 
 const raiz = $('#raiz');
-const S = { eu: null, dados: null, aba: 'pontos', busca: '', filtroStatus: 'todos', usuarios: null, buscaPessoa: '', pagina: 0, registro: null };
+const S = { piloto: null, pilotoDias: 14, eu: null, dados: null, aba: 'pontos', busca: '', filtroStatus: 'todos', usuarios: null, buscaPessoa: '', pagina: 0, registro: null };
 const nomeCategoria = (id) => CATEGORIES.find((c) => c.id === id)?.name || id;
-const ABAS = [['pontos', 'Pontos'], ['rotas', 'Rotas'], ['eventos', 'Eventos'], ['pessoas', 'Pessoas'], ['registro', 'Registro']];
+const ABAS = [['pontos', 'Pontos'], ['rotas', 'Rotas'], ['eventos', 'Eventos'], ['pessoas', 'Pessoas'], ['piloto', 'Piloto'], ['registro', 'Registro']];
 
 // ---------- entrada ----------
 async function iniciar() {
@@ -71,6 +71,7 @@ async function conteudo() {
     else if (S.aba === 'rotas') el.innerHTML = htmlRotas();
     else if (S.aba === 'eventos') el.innerHTML = htmlEventos();
     else if (S.aba === 'pessoas') { el.innerHTML = '<p class="ajuda">Carregando…</p>'; if (!S.usuarios) await carregarPessoas(); el.innerHTML = htmlPessoas(); }
+    else if (S.aba === 'piloto') { el.innerHTML = '<p class="ajuda">Carregando…</p>'; S.piloto = await req('GET', `/admin/relatorio-piloto?dias=${S.pilotoDias}`); el.innerHTML = htmlPiloto(); }
     else if (S.aba === 'registro') { el.innerHTML = '<p class="ajuda">Carregando…</p>'; S.registro = (await req('GET', '/admin/auditoria')).registros; el.innerHTML = htmlRegistro(); }
     ligarEventos(el);
   } catch (erro) { el.innerHTML = `<div class="erro-form">${esc(mensagem(erro))}</div>`; }
@@ -101,7 +102,7 @@ function htmlPontos() {
   const contagem = (s) => pontos.filter((p) => p.status === s).length;
   return `<div class="barra"><input type="search" id="busca-ponto" placeholder="Buscar por código ou nome" value="${esc(S.busca)}" aria-label="Buscar ponto" />
     <select id="filtro-status" aria-label="Filtrar por status"><option value="todos">Todos os status</option>${['publicado', 'pendente', 'arquivado'].map((s) => `<option value="${s}" ${S.filtroStatus === s ? 'selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}</select>
-    <span class="espaco"></span><button class="btn pri" data-act="novo-ponto">+ Novo ponto</button></div>
+    <span class="espaco"></span><a class="btn" href="/api/admin/pontos-urls.csv" download>Exportar links (CSV)</a><button class="btn" data-act="chaves-todos">Ativar chave em todos</button><button class="btn pri" data-act="novo-ponto">+ Novo ponto</button></div>
     <p class="ajuda">${total} pontos · ${contagem('publicado')} publicados (recebem carimbo) · ${contagem('pendente')} pendentes · ${contagem('arquivado')} arquivados. Arraste a alça ⠿ (ou use ↑ ↓ com ela focada) para mudar a ordem; a ordem numera os carimbos da rota.${filtrando ? ' <b>Limpe a busca e o filtro para reordenar.</b>' : ''}</p>
     ${grupos.map(({ r, itens }) => {
       const vis = itens.filter(passa);
@@ -116,8 +117,9 @@ function linhaPonto(p, n, travado) {
     <div class="corpo"><div class="titulo">${esc(p.nome)} ${p.oculto ? '<span class="chip pendente" title="Aparece como mistério até ser descoberto">surpresa</span>' : ''}</div>
       <div class="meta"><span class="cod">${esc(p.codigo)}</span><span class="chip ${esc(p.status)}">${esc(p.status)}</span>
         <span class="${sem ? 'alerta' : ''}">${sem ? 'sem coordenadas' : `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`}</span>
+        ${p.responsavel_nome && p.autorizado_em && p.vistoriado_em ? '' : '<span class="alerta" title="Falta responsável, autorização ou vistoria">sem autorização/vistoria</span>'}<span class="${p.chave_versao > 0 ? '' : 'alerta'}">${p.chave_versao > 0 ? `link com chave v${p.chave_versao}` : 'link aberto'}</span>
         <span>${p.carimbos} carimbo(s)</span>${p.eventos ? `<span>${p.eventos} evento(s)</span>` : ''}<span>${p.categorias.map(nomeCategoria).join(' · ')}</span></div></div>
-    <div class="acoes"><button class="btn mini" data-act="editar-ponto" data-id="${esc(p.codigo)}">Editar</button>
+    <div class="acoes"><button class="btn mini" data-act="editar-ponto" data-id="${esc(p.codigo)}">Editar</button><button class="btn mini" data-act="chave-ponto" data-id="${esc(p.codigo)}">Link da tag</button>
       ${p.status === 'publicado' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="pendente">Despublicar</button>` : p.status === 'pendente' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="publicado">Publicar</button>` : `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="pendente">Restaurar</button>`}
       ${p.status !== 'arquivado' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="arquivado">Arquivar</button>` : ''}
       <button class="btn mini perigo" data-act="excluir-ponto" data-id="${esc(p.codigo)}">Excluir</button></div></li>`;
@@ -145,6 +147,13 @@ function formularioPonto(p) {
       <label class="campo"><span>Endereço</span><input type="text" name="endereco" value="${esc(d.endereco)}" maxlength="200" /></label>
       <label class="campo"><span>Fonte da coordenada</span><input type="text" name="fonte_mapa" value="${esc(d.fonte_mapa)}" maxlength="80" placeholder="Ex.: conferido em campo em 12/10" /></label>
       <label class="campo"><span>Descrição curta (aparece na página do ponto)</span><textarea name="nota" maxlength="400">${esc(d.nota)}</textarea></label>
+      <h4 style="margin:14px 0 4px">Operação e segurança do ponto</h4>
+      <p class="ajuda" style="margin-top:0">Para publicar: responsável, autorização do local e vistoria registrados. O raio só vale com coordenada conferida em campo.</p>
+      <div class="dois"><label class="campo"><span>Responsável pelo local</span><input type="text" name="responsavel_nome" value="${esc(d.responsavel_nome || '')}" maxlength="120" /></label>
+        <label class="campo"><span>Contato do responsável</span><input type="text" name="responsavel_contato" value="${esc(d.responsavel_contato || '')}" maxlength="120" /></label></div>
+      <div class="dois"><label class="campo"><span>Autorização recebida em</span><input type="date" name="autorizado_em" value="${esc(d.autorizado_em || '')}" /></label>
+        <label class="campo"><span>Vistoria feita em</span><input type="date" name="vistoriado_em" value="${esc(d.vistoriado_em || '')}" /></label></div>
+      <label class="campo"><span>Raio para exigir localização (metros; vazio = padrão do servidor, 0 = desligado)</span><input type="number" name="raio_m" min="0" max="5000" step="10" inputmode="numeric" value="${d.raio_m ?? ''}" /></label>
       <h4 style="margin:14px 0 4px">Carta do personagem</h4>
       <div class="dois"><label class="campo"><span>Personagem (vazio = automático)</span><input type="text" name="criatura" value="${esc(d.criatura || '')}" maxlength="60" /></label>
         <label class="campo"><span>Categoria da carta</span><select name="categoria_carta">${[['natureza', 'Natureza'], ['historia', 'História'], ['cultura', 'Cultura'], ['trabalho', 'Trabalho'], ['litoral', 'Litoral'], ['misterio', 'Mistério']].map(([v, n]) => `<option value="${v}" ${(d.categoria_carta || '') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
@@ -181,11 +190,16 @@ function formularioPonto(p) {
         codigo: String(fd.get('codigo') || '').trim().toLowerCase(), rota_id: Number(fd.get('rota_id')), nome: fd.get('nome'),
         categorias: fd.getAll('categorias'), lat: fd.get('lat'), lng: fd.get('lng'), endereco: fd.get('endereco'), fonte_mapa: fd.get('fonte_mapa'), nota: fd.get('nota'),
         criatura: fd.get('criatura'), raridade: fd.get('raridade'), categoria_carta: fd.get('categoria_carta'), frase: fd.get('frase'), historia: fd.get('historia'), arte: fd.get('arte'), icone: fd.get('icone'), forma: fd.get('forma'), oculto: fd.get('oculto') === 'on', parceiro: fd.get('parceiro') === 'on', status: fd.get('status') || undefined,
+        responsavel_nome: fd.get('responsavel_nome'), responsavel_contato: fd.get('responsavel_contato'), autorizado_em: fd.get('autorizado_em'), vistoriado_em: fd.get('vistoriado_em'), raio_m: fd.get('raio_m'),
       };
       if (corpo.status === 'publicado' && !corpo.lat && !(await confirmar('Publicar sem coordenadas?', 'O ponto não vai aparecer no mapa, mas já poderá receber carimbo. Publicar assim mesmo?'))) return;
       const botao = $('button[type=submit]', f); botao.disabled = true;
       try {
-        if (novo) await req('POST', '/admin/pontos', corpo); else await req('PUT', `/admin/pontos/${encodeURIComponent(d.codigo)}`, corpo);
+        const enviar = (extra = {}) => (novo ? req('POST', '/admin/pontos', { ...corpo, ...extra }) : req('PUT', `/admin/pontos/${encodeURIComponent(d.codigo)}`, { ...corpo, ...extra }));
+        try { await enviar(); } catch (erroEnvio) {
+          if (erroEnvio.code !== 'autorizacao_pendente' || !(await confirmar('Publicar sem documentação?', `Faltam: ${(erroEnvio.dados?.faltando || []).join(', ')}. O ponto vai receber carimbos mesmo assim; a decisão fica registrada na auditoria.`, { rotulo: 'Publicar assim mesmo', perigo: true }))) throw erroEnvio;
+          await enviar({ forcar: true });
+        }
         fechar(); avisar(novo ? 'Ponto criado.' : 'Ponto salvo.'); await recarregar(); conteudo();
       } catch (erro) { const box = $('[data-erro]', el); box.hidden = false; box.textContent = mensagem(erro); box.scrollIntoView({ block: 'nearest' }); botao.disabled = false; }
     });
@@ -373,6 +387,64 @@ function htmlRegistro() {
     ${S.registro.map((r) => `<tr><td>${legivel(r.criado_em, S.dados.fuso)}</td><td>${esc(r.quem)}</td><td><code>${esc(r.acao)}</code></td><td>${esc(r.alvo || '')}</td><td>${esc(r.detalhe || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="vazio">Nada registrado ainda.</td></tr>'}</tbody></table></div>`;
 }
 
+// ---------- LINK DA TAG (chave) ----------
+function dialogoChave(p) {
+  const cfg = S.dados.chaves || {};
+  const com = Number(p.chave_versao) > 0;
+  dialogo(`<div class="caixa"><header><h3>Link da tag · ${esc(p.codigo)}</h3><button class="btn mini" type="button" data-fechar>Fechar</button></header>
+    <div class="conteudo">
+      <p class="ajuda" style="margin-top:0">${com ? `Este ponto exige chave no link (versão ${p.chave_versao}). Se o QR ou a tag vazar ou for trocado, gire a chave: o link antigo deixa de funcionar.` : 'Este ponto está com <b>link aberto</b>: quem souber o código consegue carimbar de longe.'}</p>
+      <p class="ajuda">A chave impede adivinhar códigos. Ela não prova presença: quem fotografa o QR ou lê a tag tem o link.</p>
+      ${cfg.segredo_configurado ? '' : '<div class="erro-form">Defina TAG_KEY_SECRET no servidor (32+ caracteres) para usar chaves.</div>'}
+      <div data-resultado></div></div>
+    <footer>${com ? '<button class="btn" data-chave="desativar" type="button">Desativar</button><button class="btn perigo" data-chave="girar" type="button">Girar chave</button>' : '<button class="btn pri" data-chave="ativar" type="button">Ativar chave</button>'}</footer></div>`, (el) => {
+    el.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-chave]');
+      if (!b || b.disabled) return;
+      const acao = b.dataset.chave;
+      if (acao === 'girar' && !(await confirmar('Girar a chave?', 'O link atual deixa de funcionar. Regrave a tag NFC ou reimprima o QR deste ponto.', { rotulo: 'Girar chave', perigo: true }))) return;
+      b.disabled = true;
+      try {
+        const r = await req('POST', `/admin/pontos/${encodeURIComponent(p.codigo)}/chave`, { acao });
+        const alvo = $('[data-resultado]', el);
+        const completo = r.url ? new URL(r.url, location.origin).href : '';
+        alvo.innerHTML = r.url ? `<label class="campo"><span>Link para gravar na tag / gerar o QR</span><input type="text" readonly value="${esc(completo)}" /></label><button class="btn" type="button" data-copiar>Copiar link</button>${r.regravar_tag ? '<p class="ajuda">Regrave a tag com este link: o anterior não vale mais.</p>' : ''}` : '<p class="ajuda">Chave desativada: o ponto voltou ao link aberto.</p>';
+        $('[data-copiar]', alvo)?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(completo); avisar('Link copiado.'); } catch { avisar('Não foi possível copiar; selecione o texto.', 'erro'); } });
+        await recarregar(); conteudo();
+      } catch (erro) { avisar(mensagem(erro), 'erro'); b.disabled = false; }
+    });
+  });
+}
+
+// ---------- PILOTO (métricas de decisão) ----------
+function htmlPiloto() {
+  const r = S.piloto;
+  const f = r.funil;
+  const t = (v) => (v == null ? '—' : `${v}%`);
+  const linha = (rotulo, valor) => `<tr><th scope="row">${esc(rotulo)}</th><td>${esc(valor)}</td></tr>`;
+  return `<div class="barra"><label class="campo" style="margin:0"><span>Período (pela data do primeiro carimbo)</span><select id="piloto-dias">${[7, 14, 30, 90].map((n) => `<option value="${n}" ${S.pilotoDias === n ? 'selected' : ''}>Últimos ${n} dias</option>`).join('')}</select></label></div>
+    <h2 style="margin:8px 0">Sinais</h2>
+    <ul class="lista">${r.sinais.map((s) => `<li class="linha"><div class="corpo"><span class="chip ${s.nivel === 'alerta' ? 'pendente' : s.nivel === 'ok' ? 'publicado' : 'rascunho'}">${esc(s.nivel)}</span> ${esc(s.texto)}</div></li>`).join('')}</ul>
+    <h2 style="margin:14px 0 4px">Funil</h2>
+    <div class="rolagem"><table class="tabela"><tbody>
+      ${linha('Contas criadas', f.contas_criadas)}
+      ${linha('Participantes (1 carimbo ou mais)', `${f.participantes} (${t(f.taxa_primeiro_carimbo_pct)} das contas)`)}
+      ${linha('Carimbaram 2 pontos ou mais', `${f.segundo_ponto.pessoas} (${t(f.segundo_ponto.taxa_pct)})`)}
+      ${linha('Voltaram em até 7 dias', `${f.retorno_7_dias.voltaram} de ${f.retorno_7_dias.elegiveis} elegíveis (${t(f.retorno_7_dias.taxa_pct)})`)}
+      ${f.conclusao_por_rota.map((c) => linha(`Concluíram “${c.rota}” (${c.pontos} pontos)`, `${c.pessoas} (${t(c.taxa_pct)})`)).join('')}
+    </tbody></table></div>
+    <h2 style="margin:14px 0 4px">Prontidão dos pontos publicados</h2>
+    <div class="rolagem"><table class="tabela"><tbody>
+      ${linha('Publicados', r.prontidao.publicados)}${linha('Sem autorização registrada', r.prontidao.sem_autorizacao)}${linha('Sem vistoria registrada', r.prontidao.sem_vistoria)}${linha('Com link aberto (sem chave)', r.prontidao.sem_chave)}${linha('Sem coordenada', r.prontidao.sem_coordenada)}
+    </tbody></table></div>
+    <h2 style="margin:14px 0 4px">Carimbos por ponto <span class="ajuda" style="margin:0">— acumulado</span></h2>
+    <div class="rolagem"><table class="tabela"><thead><tr><th>Ponto</th><th>Status</th><th>Carimbos</th><th>Pessoas</th><th>Último</th></tr></thead><tbody>
+      ${r.pontos.map((p) => `<tr><td>${esc(p.codigo)} · ${esc(p.nome)}</td><td>${esc(p.status)}</td><td>${p.carimbos}</td><td>${p.pessoas}</td><td>${p.ultimo ? legivel(p.ultimo, S.dados.fuso) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="vazio">Sem pontos.</td></tr>'}
+    </tbody></table></div>
+    ${r.suspeitos.length ? `<p class="ajuda">Carimbos suspeitos: ${r.suspeitos.map((s) => `${esc(s.motivo)} (${s.n})`).join(', ')}. Revise antes de premiar ou prestar contas a patrocinador.</p>` : ''}
+    <p class="ajuda">${esc(r.observacao)}</p>`;
+}
+
 // ---------- eventos da tela ----------
 function ligarEventos(el) {
   $$('[data-sort]', el).forEach((caixa) => {
@@ -387,6 +459,7 @@ function ligarEventos(el) {
     busca.addEventListener('input', () => { S.busca = busca.value; const pos = busca.selectionStart; $('#conteudo').innerHTML = htmlPontos(); ligarEventos($('#conteudo')); const novo = $('#busca-ponto'); novo.focus(); novo.setSelectionRange(pos, pos); });
     $('#filtro-status', el).addEventListener('change', (e) => { S.filtroStatus = e.target.value; conteudo(); });
   }
+  $('#piloto-dias', el)?.addEventListener('change', (e) => { S.pilotoDias = Number(e.target.value) || 14; conteudo(); });
   const pessoa = $('#busca-pessoa', el);
   if (pessoa) pessoa.addEventListener('keydown', (e) => { if (e.key === 'Enter') { S.buscaPessoa = pessoa.value; S.pagina = 0; S.usuarios = null; conteudo(); } });
   el.onclick = async (e) => {
@@ -396,10 +469,29 @@ function ligarEventos(el) {
     const ponto = () => S.dados.pontos.find((p) => p.codigo === id);
     if (act === 'novo-ponto') formularioPonto(null);
     else if (act === 'editar-ponto') formularioPonto(ponto());
+    else if (act === 'chave-ponto') dialogoChave(ponto());
+    else if (act === 'chaves-todos') {
+      if (await confirmar('Ativar chave em todos os pontos?', 'Os links antigos (sem ?k=) deixam de funcionar. Exporte os links novos em CSV e regrave as tags NFC / reimprima os QR antes de abrir ao público.', { rotulo: 'Ativar em todos' })) {
+        await executar(async () => { const r = await req('POST', '/admin/chaves/ativar-todos'); avisar(`${r.ativados} ponto(s) agora exigem chave.`); }, null);
+      }
+    }
     else if (act === 'status-ponto') {
       if (valor === 'arquivado' && !(await confirmar('Arquivar ponto?', `“${ponto().nome}” sai do app e deixa de receber carimbo. Os carimbos já dados continuam guardados.`, { rotulo: 'Arquivar' }))) return;
       if (valor === 'publicado' && ponto().lat == null && !(await confirmar('Publicar sem coordenadas?', 'O ponto não vai aparecer no mapa, mas já poderá receber carimbo (confirme a validação em campo).', { rotulo: 'Publicar' }))) return;
-      await executar(() => req('POST', `/admin/pontos/${encodeURIComponent(id)}/status`, { status: valor }), valor === 'publicado' ? 'Ponto publicado.' : valor === 'arquivado' ? 'Ponto arquivado.' : 'Ponto atualizado.');
+      const caminhoStatus = `/admin/pontos/${encodeURIComponent(id)}/status`;
+      if (valor === 'publicado') {
+        try {
+          await req('POST', caminhoStatus, { status: valor });
+          avisar('Ponto publicado.'); await recarregar(); conteudo();
+        } catch (erro) {
+          if (erro.code !== 'autorizacao_pendente') { avisar(mensagem(erro), 'erro'); return; }
+          if (await confirmar('Publicar sem documentação?', `Faltam: ${(erro.dados?.faltando || []).join(', ')}. O ponto vai receber carimbos mesmo assim; a decisão fica registrada na auditoria. O ideal é preencher em Editar.`, { rotulo: 'Publicar assim mesmo', perigo: true })) {
+            await executar(() => req('POST', caminhoStatus, { status: valor, forcar: true }), 'Ponto publicado (sem documentação completa).');
+          }
+        }
+        return;
+      }
+      await executar(() => req('POST', caminhoStatus, { status: valor }), valor === 'arquivado' ? 'Ponto arquivado.' : 'Ponto atualizado.');
     } else if (act === 'excluir-ponto') {
       if (await confirmar('Excluir ponto?', `“${ponto().nome}” será apagado de vez. Só é possível se ninguém tiver carimbado; do contrário, arquive.`, { rotulo: 'Excluir', perigo: true })) await executar(() => req('DELETE', `/admin/pontos/${encodeURIComponent(id)}`), 'Ponto excluído.');
     } else if (act === 'novo-circuito') formularioCircuito(null);
