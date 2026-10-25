@@ -71,8 +71,9 @@ export function loadGoogleMaps(apiKey) {
 }
 
 export async function createGoogleEngine(element, { center, zoom }, { apiKey, mapId, theme, onAuthFailure }) {
-  await loadGoogleMaps(apiKey);
+  // Registrar antes de carregar o script: o Google pode reportar falha de autorização durante a carga.
   window.gm_authFailure = () => onAuthFailure?.();
+  await loadGoogleMaps(apiKey);
   const { Map, Polyline, Circle } = await google.maps.importLibrary("maps");
   const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
   const map = new Map(element, {
