@@ -1,3 +1,5 @@
+> **Atualização (25/10/2026).** Já feitos desde esta análise: recuperação de senha, Sentry/Better Stack, consentimento do GA4, cookie `SameSite=Lax`, CSP estrita, senha atual para trocar e-mail/senha, chave e rotação do link da tag, localização opcional, marcação de carimbos suspeitos, responsável/autorização/vistoria por ponto, relatório do piloto e modelos comerciais. Ainda abertos: testes de ponta a ponta, backup com restauração comprovada, prova criptográfica de presença (NTAG 424 DNA) e carimbos offline. Lista viva: `TODO.md`.
+
 # Roadmap de evoluções necessárias — KMkm / +1 KM
 
 **Data:** 20 de outubro de 2026  

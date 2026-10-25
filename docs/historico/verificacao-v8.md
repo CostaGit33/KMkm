@@ -1,3 +1,5 @@
+> **Documento histórico.** Descreve uma versão anterior do projeto e **não** reflete o estado atual. Para o estado de hoje: [README](../../README.md), [CHANGELOG](../../CHANGELOG.md) e [índice](../INDEX.md).
+
 # Verificação V8 (somente Eunápolis)
 
 Executado em 12/10/2026 com MariaDB 10.11 (não foi testado com MySQL 8.4, HTTPS, celular físico nem NFC real).

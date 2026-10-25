@@ -28,11 +28,33 @@ export function hashSessionToken(token) {
 export function sessionExpiry() {
   return new Date(Date.now() + SESSION_DAYS * 86400000);
 }
+// Cookie de sessão. O app e a API usam a mesma origem, então SameSite=Lax basta e protege melhor contra CSRF
+// do que SameSite=None. Só use COOKIE_SAMESITE=None se o app for realmente embutido em outro site (exige HTTPS).
+export function cookieSameSite(env = process.env) {
+  const valor = String(env.COOKIE_SAMESITE || 'Lax').toLowerCase();
+  return valor === 'none' ? 'None' : valor === 'strict' ? 'Strict' : 'Lax';
+}
+export function cookieAttrs({ https, sameSite = cookieSameSite() }) {
+  const seguro = https || sameSite === 'None';
+  return `Path=/; HttpOnly; SameSite=${sameSite}${seguro ? '; Secure' : ''}`;
+}
+function requisicaoHttps(res) {
+  return res.req?.headers['x-forwarded-proto'] === 'https' || process.env.COOKIE_SECURE === 'true';
+}
 export function setSessionCookie(res, token) {
-  const secure = res.req?.headers['x-forwarded-proto'] === 'https' || process.env.COOKIE_SECURE === 'true';
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${SESSION_DAYS * 86400}; Path=/; HttpOnly;${secure ? ' Secure; SameSite=None' : ' SameSite=Lax'}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${SESSION_DAYS * 86400}; ${cookieAttrs({ https: requisicaoHttps(res) })}`);
 }
 export function clearSessionCookie(res) {
-  const secure = res.req?.headers['x-forwarded-proto'] === 'https' || process.env.COOKIE_SECURE === 'true';
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure; SameSite=None' : ' SameSite=Lax'}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Max-Age=0; ${cookieAttrs({ https: requisicaoHttps(res) })}`);
 }
+
+// Gasta o mesmo tempo de uma verificação real quando o e-mail não existe, para o login não revelar
+// (pelo tempo de resposta) quais e-mails têm conta.
+const SAL_FALSO = Buffer.alloc(16, 7);
+const HASH_FALSO = Buffer.alloc(64, 1);
+export function verificacaoFalsa(password) {
+  verifyPassword(password, HASH_FALSO, SAL_FALSO);
+  return false;
+}
+
+export const MAX_SESSOES_POR_CONTA = 10;

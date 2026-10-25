@@ -30,7 +30,8 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 56px}h1{font-size:clamp(26p
 <h2>2. Dados que podem ser tratados</h2>
 <ul>
 <li><strong>Cadastro:</strong> nome ou apelido e endereço de e-mail, para criar e administrar a conta.</li>
-<li><strong>Autenticação:</strong> senha armazenada em formato de hash, conforme a implementação informada do sistema; a senha não deve ser armazenada em texto puro.</li>
+<li><strong>Localização no momento do carimbo (somente em pontos que exigem):</strong> o aplicativo pede a posição do aparelho apenas quando você toca em “Confirmar minha localização”. O servidor compara a distância até o ponto e <strong>não grava</strong> a coordenada. O mapa também usa a sua posição só no aparelho. Carimbos podem ser marcados como suspeitos (por exemplo, dois pontos distantes em poucos segundos) para revisão.</li>
+    <li><strong>Autenticação:</strong> senha armazenada em formato de hash, conforme a implementação informada do sistema; a senha não deve ser armazenada em texto puro.</li>
 <li><strong>Atividade no aplicativo:</strong> carimbos registrados, pontos visitados, XP, cartas e dados necessários para a coleção e para recursos como ranking, quando utilizados.</li>
 <li><strong>Dados técnicos e de segurança:</strong> informações de requisições, como endereço IP, data e hora, quando registradas pela infraestrutura, para operação, diagnóstico e prevenção de abuso.</li>
 <li><strong>Preferências locais:</strong> configurações e escolhas salvas no aparelho ou navegador, conforme os recursos utilizados.</li>

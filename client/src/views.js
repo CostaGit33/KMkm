@@ -492,6 +492,7 @@ export function renderProfile(state, mensagem = null) {
       <form class="form-stack" data-form="perfil-dados" novalidate>
         <label class="field"><span>Nome</span><input name="nome" type="text" maxlength="36" autocomplete="name" value="${escapeHtml(conta.nome)}" required /></label>
         <label class="field"><span>E-mail</span><input name="email" type="email" inputmode="email" autocapitalize="none" autocomplete="email" value="${escapeHtml(conta.email)}" required /></label>
+        <label class="field"><span>Senha atual <small>(só para trocar o e-mail)</small></span><input name="senha_atual" type="password" autocomplete="current-password" /></label>
         <button class="primary-button button-full" type="submit">Salvar dados</button>
       </form>
     </article>

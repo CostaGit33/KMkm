@@ -1,3 +1,5 @@
+> **Documento histórico.** Descreve uma versão anterior do projeto e **não** reflete o estado atual. Para o estado de hoje: [README](../../README.md), [CHANGELOG](../../CHANGELOG.md) e [índice](../INDEX.md).
+
 # Verificação da V3 (caderneta_3) antes da V7
 
 Conferido com servidor e banco reais (MariaDB 10.11, não MySQL 8.4), banco novo e banco vindo da V6.1:

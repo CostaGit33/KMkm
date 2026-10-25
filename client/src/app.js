@@ -491,7 +491,7 @@ async function handleSubmit(event) {
       try {
         servidor = await criarContaServidor({ nome, email: v("email").trim().toLowerCase(), senha: v("senha") });
       } catch (error) {
-        authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar a conta no servidor.");
+        authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : error.code === "senha_igual_ao_email" ? "A senha não pode ser igual ao e-mail." : mensagemErro(error, "Não foi possível criar a conta no servidor.");
         return render();
       }
       const senha = await gerarSenha(v("senha"));
@@ -544,11 +544,16 @@ async function handleSubmit(event) {
         return render();
       }
       try {
-        const servidor = await atualizarContaServidor({ nome: v("nome").trim(), email: v("email").trim().toLowerCase() });
+        const novoEmail = v("email").trim().toLowerCase();
+        if (novoEmail !== String(state.account.email || "").toLowerCase() && !v("senha_atual")) {
+          profileMessage = { texto: "Para trocar o e-mail, informe a senha atual.", ok: false };
+          return render();
+        }
+        const servidor = await atualizarContaServidor({ nome: v("nome").trim(), email: novoEmail, senhaAtual: v("senha_atual") || undefined });
         state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email });
         profileMessage = { texto: "Dados salvos.", ok: true };
       } catch (error) {
-        profileMessage = { texto: error.code === "email_ja_cadastrado" ? "Este e-mail já está em uso." : mensagemErro(error, "Não foi possível salvar no servidor."), ok: false };
+        profileMessage = { texto: error.code === "email_ja_cadastrado" ? "Este e-mail já está em uso." : error.code === "senha_atual_invalida" ? "A senha atual não confere." : mensagemErro(error, "Não foi possível salvar no servidor."), ok: false };
       }
       render();
       break;

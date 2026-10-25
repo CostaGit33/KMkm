@@ -6,6 +6,8 @@ import crypto from 'node:crypto';
 import { pool, q } from './db/database.js';
 import { instanteLocal } from './time.js';
 import { CATEGORIAS_CARTA, RARIDADES, atribuirCriaturas } from './criaturas.js';
+import { segredoDasChaves, urlDoPonto } from './tag-acesso.js';
+import { relatorioPiloto } from './relatorio.js';
 import { MAX_PONTOS_PATROCINIO, MIN_PONTOS_PATROCINIO, TIPOS, conflitosDeJanela, relatorioAgregado } from './eventos.js';
 
 const FUSO = process.env.APP_TZ || 'America/Bahia';
@@ -24,6 +26,30 @@ const texto = (v, max) => String(v ?? '').trim().slice(0, max);
 const opcional = (v, max) => { const t = texto(v, max); return t || null; };
 const slugify = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70);
 const REGEX_CODIGO = /^[a-z0-9][a-z0-9-]{2,79}$/;
+// Publicar exige responsável, autorização e vistoria registrados (ou confirmação explícita, que fica na auditoria).
+// Desligue só com EXIGIR_AUTORIZACAO=false (por exemplo, em ambiente de testes).
+const EXIGIR_AUTORIZACAO = process.env.EXIGIR_AUTORIZACAO !== 'false';
+
+function dataOpcional(valor) {
+  const t = texto(valor, 10);
+  if (!t) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t) || Number.isNaN(Date.parse(`${t}T00:00:00Z`))) falha(400, 'data_invalida');
+  return t;
+}
+function raioOpcional(valor) {
+  if (valor === undefined || valor === null || String(valor).trim() === '') return null;
+  const n = Number(valor);
+  if (!Number.isInteger(n) || n < 0 || n > 5000) falha(400, 'raio_invalido', { maximo: 5000 });
+  return n;
+}
+// O que falta para um ponto poder ser publicado com segurança operacional.
+export function pendenciasDePublicacao(ponto) {
+  const faltas = [];
+  if (!ponto.responsavel_nome) faltas.push('responsável');
+  if (!ponto.autorizado_em) faltas.push('autorização');
+  if (!ponto.vistoriado_em) faltas.push('vistoria');
+  return faltas;
+}
 
 function coordenadas(body) {
   const vazio = (v) => v === undefined || v === null || String(v).trim() === '';
@@ -59,6 +85,11 @@ function dadosDoPonto(body) {
     frase: opcional(body.frase, 160),
     historia: opcional(body.historia, 400),
     arte: /^[\w.-]{1,80}$/.test(String(body.arte || '').trim()) ? String(body.arte).trim() : null,
+    responsavel_nome: opcional(body.responsavel_nome, 120),
+    responsavel_contato: opcional(body.responsavel_contato, 120),
+    autorizado_em: dataOpcional(body.autorizado_em),
+    vistoriado_em: dataOpcional(body.vistoriado_em),
+    raio_m: raioOpcional(body.raio_m),
     lat,
     lng,
   };
@@ -154,6 +185,15 @@ export async function catalogoPublico() {
   };
 }
 
+// Gate de publicação. Devolve true quando foi liberado "à força" (fica registrado na auditoria).
+function exigirPublicacaoSegura(ponto, corpo, codigo) {
+  if (!EXIGIR_AUTORIZACAO) return false;
+  const faltas = pendenciasDePublicacao(ponto);
+  if (!faltas.length) return false;
+  if (corpo?.forcar === true) return true;
+  falha(409, 'autorizacao_pendente', { codigos: [codigo], faltando: faltas });
+}
+
 export function adminRouter({ limit, wrap }) {
   const router = express.Router();
   const h = (fn) => wrap(async (req, res, next) => {
@@ -175,6 +215,7 @@ export function adminRouter({ limit, wrap }) {
   router.get('/dados', h(async (_req, res) => {
     const rotas = await q(`SELECT r.id, r.nome, r.tipo, r.cor, r.km, r.status, r.subtitulo, (SELECT COUNT(*) FROM tags t WHERE t.rota_id = r.id) AS pontos FROM rotas r ORDER BY r.id`);
     const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.criatura, t.raridade, t.categoria_carta, t.frase, t.historia, t.arte, t.carta,
+      t.chave_versao, t.raio_m, t.responsavel_nome, t.responsavel_contato, DATE_FORMAT(t.autorizado_em, '%Y-%m-%d') AS autorizado_em, DATE_FORMAT(t.vistoriado_em, '%Y-%m-%d') AS vistoriado_em,
       t.rota_id, (SELECT COUNT(*) FROM carimbos c WHERE c.tag_id = t.id) AS carimbos, (SELECT COUNT(*) FROM evento_tags et WHERE et.tag_id = t.id) AS eventos
       FROM tags t ORDER BY t.rota_id, t.ordem, t.id`);
     const circuitos = await q('SELECT id, slug, nome, subtitulo, icone, cor, ordem, status FROM circuitos ORDER BY ordem, id');
@@ -185,6 +226,8 @@ export function adminRouter({ limit, wrap }) {
     const patrocinadores = await q('SELECT p.id, p.nome, (SELECT COUNT(*) FROM eventos e WHERE e.patrocinador_id = p.id) AS eventos FROM patrocinadores p ORDER BY p.nome');
     res.json({
       fuso: FUSO,
+      exigir_autorizacao: EXIGIR_AUTORIZACAO,
+      chaves: { segredo_configurado: Boolean(segredoDasChaves()), url_publica_configurada: Boolean(process.env.APP_PUBLIC_URL) },
       categorias: CATEGORIAS,
       limites_patrocinio: { minimo: MIN_PONTOS_PATROCINIO, maximo: MAX_PONTOS_PATROCINIO },
       rotas: rotas.map((r) => ({ ...r, km: r.km == null ? null : Number(r.km), pontos: Number(r.pontos) })),
@@ -207,12 +250,13 @@ export function adminRouter({ limit, wrap }) {
     const [rota] = await q('SELECT id, status FROM rotas WHERE id = ?', [rotaId]);
     if (!rota || rota.status === 'arquivado') falha(400, 'rota_invalida');
     const status = STATUS_PONTO.includes(req.body.status) ? req.body.status : 'pendente';
+    if (status === 'publicado') exigirPublicacaoSegura(dados, req.body, codigo);
     try {
       await tx(async (c) => {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
-        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto, criatura, raridade, categoria_carta, frase, historia, arte)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte]);
+        await c.query(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto, criatura, raridade, categoria_carta, frase, historia, arte, responsavel_nome, responsavel_contato, autorizado_em, vistoriado_em, raio_m)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [codigo, rotaId, prox, dados.nome, dados.forma, dados.parceiro, status, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, dados.oculto, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte, dados.responsavel_nome, dados.responsavel_contato, dados.autorizado_em, dados.vistoriado_em, dados.raio_m]);
       });
       await atribuirCriaturas();
     } catch (error) {
@@ -238,8 +282,8 @@ export function adminRouter({ limit, wrap }) {
         const [[{ prox }]] = await c.query('SELECT COALESCE(MAX(ordem), 0) + 1 AS prox FROM tags WHERE rota_id = ?', [rotaId]);
         ordem = prox;
       }
-      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ?, criatura = COALESCE(?, criatura), raridade = COALESCE(?, raridade), categoria_carta = COALESCE(?, categoria_carta), frase = ?, historia = ?, arte = ? WHERE id = ?`,
-        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte, tag.id]);
+      await c.query(`UPDATE tags SET nome = ?, forma = ?, parceiro = ?, oculto = ?, lat = ?, lng = ?, endereco = ?, nota = ?, categorias = ?, icone = ?, fonte_mapa = ?, rota_id = ?, ordem = ?, criatura = COALESCE(?, criatura), raridade = COALESCE(?, raridade), categoria_carta = COALESCE(?, categoria_carta), frase = ?, historia = ?, arte = ?, responsavel_nome = ?, responsavel_contato = ?, autorizado_em = ?, vistoriado_em = ?, raio_m = ? WHERE id = ?`,
+        [dados.nome, dados.forma, dados.parceiro, dados.oculto, dados.lat, dados.lng, dados.endereco, dados.nota, dados.categorias, dados.icone, dados.fonte_mapa, rotaId, ordem, dados.criatura, dados.raridade, dados.categoria_carta, dados.frase, dados.historia, dados.arte, dados.responsavel_nome, dados.responsavel_contato, dados.autorizado_em, dados.vistoriado_em, dados.raio_m, tag.id]);
       if (rotaId !== tag.rota_id) await renumerar(c, tag.rota_id);
     });
     await registrar(req, 'ponto.editar', tag.codigo, dados.nome);
@@ -255,8 +299,10 @@ export function adminRouter({ limit, wrap }) {
       const abertos = await eventosAbertosDoPonto(tag.id);
       if (abertos.length) falha(409, 'ponto_em_evento', { eventos: abertos.map((e) => e.slug) });
     }
+    let forcado = false;
+    if (status === 'publicado' && tag.status !== 'publicado') forcado = exigirPublicacaoSegura(tag, req.body, tag.codigo);
     await q('UPDATE tags SET status = ? WHERE id = ?', [status, tag.id]);
-    await registrar(req, `ponto.${status}`, tag.codigo, tag.nome);
+    await registrar(req, forcado ? 'ponto.publicado_sem_documentacao' : `ponto.${status}`, tag.codigo, forcado ? `${tag.nome} · faltava: ${pendenciasDePublicacao(tag).join(', ')}` : tag.nome);
     res.json({ ok: true });
   }));
 
@@ -514,6 +560,49 @@ export function adminRouter({ limit, wrap }) {
     });
     await registrar(req, 'usuario.excluir', u.email || u.apelido);
     res.json({ ok: true });
+  }));
+
+  // ---------- Chaves dos links das tags (veja tag-acesso.js para o que elas garantem) ----------
+  const urlBase = () => String(process.env.APP_PUBLIC_URL || '').replace(/\/+$/, '');
+  router.post('/pontos/:codigo/chave', h(async (req, res) => {
+    const segredo = segredoDasChaves();
+    if (!segredo) falha(409, 'sem_segredo_de_chaves');
+    const [tag] = await q('SELECT * FROM tags WHERE codigo = ?', [req.params.codigo]);
+    if (!tag) falha(404, 'ponto_inexistente');
+    const acao = String(req.body.acao || '');
+    if (!['ativar', 'girar', 'desativar'].includes(acao)) falha(400, 'acao_invalida');
+    const versao = acao === 'desativar' ? 0 : acao === 'girar' ? Number(tag.chave_versao) + 1 : Math.max(1, Number(tag.chave_versao));
+    await q('UPDATE tags SET chave_versao = ? WHERE id = ?', [versao, tag.id]);
+    await registrar(req, `ponto.chave_${acao}`, tag.codigo, `versão ${versao}`);
+    res.json({ versao, url: versao > 0 ? urlDoPonto(urlBase(), { codigo: tag.codigo, chave_versao: versao }, segredo) : null, regravar_tag: acao === 'girar' });
+  }));
+  router.post('/chaves/ativar-todos', h(async (req, res) => {
+    if (!segredoDasChaves()) falha(409, 'sem_segredo_de_chaves');
+    const [r] = await pool.query("UPDATE tags SET chave_versao = 1 WHERE chave_versao = 0 AND status <> 'arquivado'");
+    await registrar(req, 'ponto.chave_ativar_todos', null, `${r.affectedRows} ponto(s)`);
+    res.json({ ativados: r.affectedRows });
+  }));
+  // CSV com o link de cada ponto, para gravar nas tags NFC / gerar os QR. Guarde com cuidado: contém as chaves.
+  router.get('/pontos-urls.csv', h(async (req, res) => {
+    const segredo = segredoDasChaves();
+    if (!urlBase()) falha(409, 'sem_url_publica');
+    const tags = await q("SELECT codigo, nome, status, chave_versao FROM tags WHERE status <> 'arquivado' ORDER BY rota_id, ordem, id");
+    const seguro = (v) => { const t = String(v ?? '').replace(/[\r\n]+/g, ' '); return `"${(/^[=+\-@\t]/.test(t) ? `'${t}` : t).replace(/"/g, '""')}"`; };
+    const linhas = ['codigo,nome,status,chave,url', ...tags.map((t) => [t.codigo, t.nome, t.status, Number(t.chave_versao) > 0 && segredo ? `v${t.chave_versao}` : 'sem chave', urlDoPonto(urlBase(), t, segredo)].map(seguro).join(','))];
+    await registrar(req, 'ponto.exportar_urls', null, `${tags.length} ponto(s)`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Disposition', 'attachment; filename="mais1km-urls-das-tags.csv"');
+    res.type('text/csv').send(`\uFEFF${linhas.join('\n')}\n`);
+  }));
+
+  // ---------- Relatório do piloto ----------
+  router.get('/relatorio-piloto', h(async (req, res) => {
+    try {
+      res.json(await relatorioPiloto({ dias: Number(req.query.dias) || 14 }));
+    } catch (error) {
+      if (error?.status === 400) falha(400, error.message);
+      throw error;
+    }
   }));
 
   router.get('/auditoria', h(async (_req, res) => {

@@ -1,3 +1,5 @@
+> **Documento histórico.** Descreve uma versão anterior do projeto e **não** reflete o estado atual. Para o estado de hoje: [README](../../README.md), [CHANGELOG](../../CHANGELOG.md) e [índice](../INDEX.md).
+
 # Auditoria funcional e operacional — +1 KM / Caderneta v8.3
 
 Data: 2026-10-13

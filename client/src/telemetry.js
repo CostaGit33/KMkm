@@ -43,7 +43,8 @@ function loadGoogleAnalytics() {
   window.gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
   window.gtag('consent', 'update', { analytics_storage: 'granted' });
   window.gtag('js', new Date());
-  window.gtag('config', gaId, { send_page_view: false, anonymize_ip: true });
+  // page_location sem query string: links de tag (?k=) e de recuperação nunca vão para o Google.
+  window.gtag('config', gaId, { send_page_view: false, anonymize_ip: true, page_location: location.origin + location.pathname });
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;

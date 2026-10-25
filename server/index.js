@@ -12,7 +12,9 @@ import { gamificacaoRouter } from './gamificacao.js';
 import { cartaoAtivoNoPonto, cartoesDaCaderneta, emitirNumero, estadoDoCard } from './eventos.js';
 import { albumDaPessoa } from './criaturas.js';
 import { descarregarMonitoramento, iniciarMonitoramento, registrarErro } from './monitoramento.js';
-import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verifyPassword } from './security.js';
+import { clearSessionCookie, hashPassword, hashSessionToken, makeSalt, makeSessionToken, MAX_SESSOES_POR_CONTA, normalizeEmail, SESSION_COOKIE, sessionExpiry, setSessionCookie, validEmail, verificacaoFalsa, verifyPassword } from './security.js';
+import { montarCsp } from './csp.js';
+import { avaliarDeslocamento, avaliarLocalizacao, avaliarRitmo, chaveConfere, segredoDasChaves } from './tag-acesso.js';
 import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 
 const JANELA_REPETIDO_MIN = 30;
@@ -35,14 +37,29 @@ app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https:; img-src 'self' data: https://maps.gstatic.com https://maps.google.com https://*.googleapis.com https://*.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://tile.openstreetmap.de https://api.maptiler.com https://*.googleapis.com; worker-src 'self' blob:; manifest-src 'self';");
+  res.setHeader('Content-Security-Policy', montarCsp({ legado: process.env.CSP_LEGADO === 'true', https: req.headers['x-forwarded-proto'] === 'https', frameAncestors: process.env.FRAME_ANCESTORS }));
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
 app.use(express.json());
+// Proteção contra CSRF: pedidos que alteram dados só valem vindos do próprio site. Bloqueia quando o navegador
+// declara origem de outro site (Sec-Fetch-Site) ou quando o cabeçalho Origin não é o host do app nem está em
+// ORIGENS_PERMITIDAS (lista separada por vírgula, ex.: https://app.exemplo.com). Clientes que usam o cabeçalho
+// Authorization (scripts, testes) não enviam cookie de sessão e seguem liberados.
+const ORIGENS_PERMITIDAS = String(process.env.ORIGENS_PERMITIDAS || '').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
+function origemPermitida(req) {
+  const origem = String(req.headers.origin || '').toLowerCase();
+  if (!origem || origem === 'null') return origem !== 'null';
+  if (ORIGENS_PERMITIDAS.includes(origem)) return true;
+  try {
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim().toLowerCase();
+    return new URL(origem).host === host;
+  } catch { return false; }
+}
 app.use('/api', (req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS' && req.headers['sec-fetch-site'] === 'cross-site' && !req.headers.authorization) {
-    return res.status(403).json({ erro: 'origem_nao_permitida' });
-  }
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (req.headers.authorization) return next();
+  if (req.headers['sec-fetch-site'] === 'cross-site' || !origemPermitida(req)) return res.status(403).json({ erro: 'origem_nao_permitida' });
   next();
 });
 
@@ -78,10 +95,12 @@ function readCookie(req, name) {
   return item ? decodeURIComponent(item.slice(name.length + 1)) : '';
 }
 
-function limit({ windowMs, max, name }) {
+// `chave` (opcional) devolve um identificador extra (ex.: e-mail) para limitar também por alvo, não só por IP.
+function limit({ windowMs, max, name, chave }) {
   return (req, res, next) => {
     const now = Date.now();
-    const identity = `${name}:ip:${req.ip || 'unknown'}`;
+    const alvo = chave ? String(chave(req) || '') : '';
+    const identity = `${name}:${alvo ? `k:${alvo}` : `ip:${req.ip || 'unknown'}`}`;
     const prior = rateBuckets.get(identity);
     const bucket = !prior || prior.expiresAt <= now ? { count: 0, expiresAt: now + windowMs } : prior;
     bucket.count += 1;
@@ -120,6 +139,7 @@ app.post('/api/conta/criar', limit({ windowMs: 10 * 60 * 1000, max: 8, name: 'co
   const email = normalizeEmail(req.body.email);
   const senha = String(req.body.senha || '');
   if (nome.length < 2 || !validEmail(email) || senha.length < 8 || senha.length > 128) return res.status(400).json({ erro: 'dados_conta_invalidos' });
+  if (senha.toLowerCase() === email) return res.status(400).json({ erro: 'senha_igual_ao_email' });
   const salt = makeSalt();
   const hash = hashPassword(senha, salt);
   const connection = await pool.getConnection();
@@ -139,24 +159,38 @@ app.post('/api/conta/criar', limit({ windowMs: 10 * 60 * 1000, max: 8, name: 'co
   } finally { connection.release(); }
 }));
 
-app.post('/api/conta/entrar', limit({ windowMs: 10 * 60 * 1000, max: 12, name: 'conta-entrar' }), wrap(async (req, res) => {
-  const email = normalizeEmail(req.body.email);
-  const senha = String(req.body.senha || '');
-  const [conta] = validEmail(email) ? await q('SELECT c.*, u.id AS usuario_id, u.apelido FROM contas c JOIN usuarios u ON u.id = c.usuario_id WHERE c.email = ?', [email]) : [];
-  if (!conta || !verifyPassword(senha, Buffer.from(conta.senha_hash), Buffer.from(conta.senha_salt))) return res.status(401).json({ erro: 'credenciais_invalidas' });
-  const token = makeSessionToken();
-  await q('DELETE FROM sessoes WHERE conta_id = ? AND expira_em <= UTC_TIMESTAMP()', [conta.id]);
-  await q('INSERT INTO sessoes (conta_id, token_hash, expira_em) VALUES (?, ?, ?)', [conta.id, hashSessionToken(token), sessionExpiry()]);
-  setSessionCookie(res, token);
-  res.json({ usuario: { id: conta.usuario_id, conta_id: conta.id, nome: conta.nome, email: conta.email } });
-}));
+// Mantém só as sessões mais recentes da conta (as mais antigas saem), para uma conta esquecida em muitos
+// aparelhos não acumular sessões válidas para sempre.
+async function limitarSessoes(contaId) {
+  await q('DELETE FROM sessoes WHERE conta_id = ? AND expira_em <= UTC_TIMESTAMP()', [contaId]);
+  await q('DELETE FROM sessoes WHERE conta_id = ? AND id NOT IN (SELECT id FROM (SELECT id FROM sessoes WHERE conta_id = ? ORDER BY id DESC LIMIT ?) recentes)', [contaId, contaId, MAX_SESSOES_POR_CONTA]);
+}
+
+const emailDoCorpo = (req) => normalizeEmail(req.body?.email);
+app.post('/api/conta/entrar',
+  limit({ windowMs: 10 * 60 * 1000, max: 12, name: 'conta-entrar' }),
+  limit({ windowMs: 15 * 60 * 1000, max: 8, name: 'conta-entrar-email', chave: emailDoCorpo }),
+  wrap(async (req, res) => {
+    const email = emailDoCorpo(req);
+    const senha = String(req.body.senha || '').slice(0, 256);
+    const [conta] = validEmail(email) ? await q('SELECT c.*, u.id AS usuario_id, u.apelido FROM contas c JOIN usuarios u ON u.id = c.usuario_id WHERE c.email = ?', [email]) : [];
+    const confere = conta ? verifyPassword(senha, Buffer.from(conta.senha_hash), Buffer.from(conta.senha_salt)) : verificacaoFalsa(senha);
+    if (!conta || !confere) return res.status(401).json({ erro: 'credenciais_invalidas' });
+    const token = makeSessionToken();
+    await q('INSERT INTO sessoes (conta_id, token_hash, expira_em) VALUES (?, ?, ?)', [conta.id, hashSessionToken(token), sessionExpiry()]);
+    await limitarSessoes(conta.id);
+    setSessionCookie(res, token);
+    res.json({ usuario: { id: conta.usuario_id, conta_id: conta.id, nome: conta.nome, email: conta.email } });
+  }));
 
 app.get('/api/conta/sessao', auth, (req, res) => {
   if (!req.conta) return res.status(401).json({ erro: 'sessao_conta_necessaria' });
   res.json({ usuario: { id: req.u.id, conta_id: req.conta.id, nome: req.conta.nome, email: req.conta.email, admin: req.conta.papel === 'admin' } });
 });
 
-app.put('/api/conta', auth, wrap(async (req, res) => {
+// Trocar e-mail ou senha exige a senha atual: uma sessão roubada (aparelho emprestado, cookie vazado) não basta
+// para assumir a conta. Depois da troca, as outras sessões são encerradas e só a atual continua.
+app.put('/api/conta', limit({ windowMs: 10 * 60 * 1000, max: 12, name: 'conta-editar' }), auth, wrap(async (req, res) => {
   if (!req.conta) return res.status(401).json({ erro: 'sessao_conta_necessaria' });
   const nome = String(req.body.nome || '').trim().slice(0, 80);
   const email = normalizeEmail(req.body.email);
@@ -164,10 +198,16 @@ app.put('/api/conta', auth, wrap(async (req, res) => {
   const [conta] = await q('SELECT * FROM contas WHERE id = ?', [req.conta.id]);
   if (!conta) return res.status(404).json({ erro: 'conta_inexistente' });
   const senhaNova = String(req.body.senhaNova || '');
+  const trocaEmail = email !== conta.email;
+  if (trocaEmail || senhaNova) {
+    const senhaAtual = String(req.body.senhaAtual || '').slice(0, 256);
+    if (!senhaAtual || !verifyPassword(senhaAtual, Buffer.from(conta.senha_hash), Buffer.from(conta.senha_salt))) return res.status(403).json({ erro: 'senha_atual_invalida' });
+  }
   let sql = 'UPDATE contas SET nome = ?, email = ?';
   const params = [nome, email];
   if (senhaNova) {
-    if (senhaNova.length < 8 || senhaNova.length > 128 || !verifyPassword(String(req.body.senhaAtual || ''), Buffer.from(conta.senha_hash), Buffer.from(conta.senha_salt))) return res.status(400).json({ erro: 'credenciais_invalidas' });
+    if (senhaNova.length < 8 || senhaNova.length > 128) return res.status(400).json({ erro: 'dados_conta_invalidos' });
+    if (senhaNova.toLowerCase() === email) return res.status(400).json({ erro: 'senha_igual_ao_email' });
     const salt = makeSalt();
     sql += ', senha_hash = ?, senha_salt = ?';
     params.push(hashPassword(senhaNova, salt), salt);
@@ -179,11 +219,15 @@ app.put('/api/conta', auth, wrap(async (req, res) => {
     if (error?.code === 'ER_DUP_ENTRY') return res.status(409).json({ erro: 'email_ja_cadastrado' });
     throw error;
   }
+  if (trocaEmail || senhaNova) await q('DELETE FROM sessoes WHERE conta_id = ? AND id <> ?', [req.conta.id, req.conta.sessaoId ?? 0]);
   res.json({ usuario: { id: req.u.id, conta_id: req.conta.id, nome, email } });
 }));
 
 app.post('/api/conta/sair', auth, wrap(async (req, res) => {
-  if (req.conta) await q('DELETE FROM sessoes WHERE conta_id = ?', [req.conta.id]);
+  if (req.conta) {
+    if (req.body?.todos === true || !req.conta.sessaoId) await q('DELETE FROM sessoes WHERE conta_id = ?', [req.conta.id]);
+    else await q('DELETE FROM sessoes WHERE id = ?', [req.conta.sessaoId]);
+  }
   clearSessionCookie(res);
   res.json({ ok: true });
 }));
@@ -237,11 +281,29 @@ const guardiao = async (tagId) => (await q(
   [tagId],
 ))[0] ?? null;
 
+const SEGREDO_CHAVES = segredoDasChaves();
+const RAIO_PADRAO_M = Number(process.env.GEOFENCE_RAIO_PADRAO_M || 0);
+
+// Confere a chave do link da tag (?k=) e, se o ponto exigir, a localização. Devolve null quando liberado
+// ou { status, corpo } com o motivo. As camadas e seus limites estão explicados em tag-acesso.js.
+function conferirAcessoAoPonto(tag, entrada) {
+  if (!chaveConfere(entrada?.chave, tag, SEGREDO_CHAVES)) return { status: 403, corpo: { erro: 'chave_invalida' } };
+  const loc = avaliarLocalizacao(tag, entrada?.pos, RAIO_PADRAO_M);
+  if (!loc.ok) return { status: 409, corpo: { erro: loc.motivo, raio: loc.raio, ...(loc.distancia != null ? { distancia: loc.distancia } : {}) } };
+  return null;
+}
+
 app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, name: 'carimbar' }), auth, wrap(async (req, res) => {
   const tag = await tagInfo(req.params.codigo);
   if (!tag) return res.status(404).json({ erro: 'tag_inexistente' });
   if (tag.status !== 'publicado' || tag.rota_status !== 'publicado') return res.status(409).json({ erro: 'ponto_nao_publicado' });
+  const bloqueio = conferirAcessoAoPonto(tag, req.body || {});
+  if (bloqueio) return res.status(bloqueio.status).json(bloqueio.corpo);
   const usuario = req.u;
+  // Ritmo: carimbos novos nos últimos 10 minutos (toques repetidos no mesmo ponto não criam linha nova).
+  const [{ recentes }] = await q('SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE', [usuario.id]);
+  const ritmo = avaliarRitmo(recentes);
+  if (ritmo.bloquear) return res.status(429).json({ erro: 'muitos_carimbos' });
 
   const connection = await pool.getConnection();
   let carimbo;
@@ -263,9 +325,19 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
     carimbo = recent[0];
     repetido = Boolean(carimbo);
     if (!carimbo) {
+      // Suspeita (não bloqueia): deslocamento impossível desde o último carimbo ou ritmo alto demais.
+      const [anteriores] = await connection.query(
+        `SELECT t.lat, t.lng, TIMESTAMPDIFF(SECOND, c.criado_em, NOW()) AS segundos
+         FROM carimbos c JOIN tags t ON t.id = c.tag_id
+         WHERE c.usuario_id = ? AND c.evento_id IS NULL AND c.tag_id <> ? AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+         ORDER BY c.id DESC LIMIT 1`,
+        [usuario.id, tag.id],
+      );
+      const suspeito = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
+      if (suspeito) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: usuario.id, ponto: tag.codigo, motivo: suspeito }));
       const [result] = await connection.query(
-        'INSERT INTO carimbos (usuario_id, tag_id, seed) VALUES (?, ?, ?)',
-        [usuario.id, tag.id, crypto.randomInt(2 ** 31)],
+        'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
+        [usuario.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
       );
       const [created] = await connection.query('SELECT * FROM carimbos WHERE id = ?', [result.insertId]);
       carimbo = created[0];
@@ -392,6 +464,8 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   const tag = await tagInfo(String(req.body?.codigo || ''));
   if (!tag) return res.status(404).json({ erro: 'tag_inexistente' });
   if (tag.status !== 'publicado' || tag.rota_status !== 'publicado') return res.status(409).json({ erro: 'ponto_nao_publicado' });
+  const bloqueioEvento = conferirAcessoAoPonto(tag, req.body || {});
+  if (bloqueioEvento) return res.status(bloqueioEvento.status).json(bloqueioEvento.corpo);
   const [liga] = await q('SELECT 1 FROM evento_tags WHERE evento_id = ? AND tag_id = ?', [card.id, tag.id]);
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
   let repetido = false;
@@ -505,11 +579,11 @@ app.use('/api/admin', auth, adminRouter({ limit, wrap }));
 
 app.get('/api/saude', wrap(async (_req, res) => {
   await q('SELECT 1 AS ok');
-  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'desconhecida' });
+  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'desconhecida', chaves: SEGREDO_CHAVES ? 'configuradas' : 'sem_segredo' });
 }));
 
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
-const DATA_POLITICA = '21 de outubro de 2026';
+const DATA_POLITICA = '25 de outubro de 2026';
 const TEXTO_MONITORAMENTO = '<p>Para diagnosticar falhas técnicas, o servidor envia ao Sentry (região da União Europeia) a mensagem e a pilha de execução do erro, a versão do aplicativo, o nome do host e a URL completa da rota.</p>';
 
 function paginaPublica(arquivo) {
@@ -563,6 +637,10 @@ await iniciarMonitoramento();
 
 try {
   await initializeDatabase(pool);
+  if (!SEGREDO_CHAVES) {
+    const [{ n }] = await q('SELECT COUNT(*) AS n FROM tags WHERE chave_versao > 0');
+    if (Number(n) > 0) console.error(JSON.stringify({ type: 'config', alerta: 'tags_com_chave_sem_TAG_KEY_SECRET', tags: Number(n), efeito: 'as chaves NAO estao sendo exigidas' }));
+  }
   app.listen(port, '0.0.0.0', () => console.log(`Caderneta no ar na porta ${port}`));
 } catch (error) {
   console.error('Não foi possível inicializar o banco:', error);
