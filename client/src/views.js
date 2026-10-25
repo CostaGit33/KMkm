@@ -83,7 +83,8 @@ function renderSideDrawer(state, activeView, activeRouteId, open) {
   const personal = [
     drawerLink("Certificados", `${certificateRoutes(state).length} rotas concluídas`, "🎖", { action: "open-certificates", active: activeView === "certificates" }),
     drawerLink("Perfil", "Dados, progresso e conta", "◉", { view: "profile", active: activeView === "profile" }),
-  ].join("") + `<a class="drawer-link" href="/como-funciona"><span class="drawer-icon" aria-hidden="true">?</span><span class="drawer-link-copy"><strong>Como funciona</strong><small>Passo a passo e dúvidas comuns</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>`;
+  ].join("") + `<a class="drawer-link" href="/como-funciona"><span class="drawer-icon" aria-hidden="true">?</span><span class="drawer-link-copy"><strong>Como funciona</strong><small>Passo a passo e dúvidas comuns</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>
+      <a class="drawer-link" href="/parceiros"><span class="drawer-icon" aria-hidden="true">↗</span><span class="drawer-link-copy"><strong>Seja parceiro</strong><small>Prefeitura, empresas e eventos</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>`;
   const openClass = open ? "is-open" : "";
   return `<div class="drawer-backdrop ${openClass}" data-action="close-menu" aria-hidden="true"></div>
     <aside class="side-drawer ${openClass}" id="app-side-menu" role="dialog" aria-modal="${open ? "true" : "false"}" aria-labelledby="side-drawer-title" aria-hidden="${open ? "false" : "true"}" ${open ? "" : "inert"}>
