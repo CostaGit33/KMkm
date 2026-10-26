@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pool } from './database.js';
-import { importarCatalogoInicial, migracaoAplicada, runMigrations } from './migrations.js';
+import { garantirIgrejaMatriz, importarCatalogoInicial, migracaoAplicada, runMigrations } from './migrations.js';
 
 const dir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -20,6 +20,7 @@ export async function initializeDatabase(connection = pool) {
     for (const sql of statements('seed-eunapolis.sql')) await connection.query(sql);
     await importarCatalogoInicial();
   }
+  await garantirIgrejaMatriz();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
