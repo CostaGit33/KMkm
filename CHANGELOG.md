@@ -2,6 +2,10 @@
 
 Movido do README para o README ficar curto e atual. Cada seção descreve o que aquela versão entregou; para o estado de hoje, leia o [README](README.md) e [docs/INDEX.md](docs/INDEX.md).
 
+## V8.14 · Igreja Matriz
+- **Ponto Igreja Matriz** (`eu-015`, ou o próximo código livre): entra no catálogo como `pendente`, sem coordenada nem tag, no Circuito Cultural Central. A pesquisa do projeto já a listava nesse circuito, mas ela nunca tinha sido cadastrada. A migração `008_igreja_matriz` roda uma vez, não duplica se a administração já cadastrou uma Matriz e não sobrescreve campos já preenchidos.
+- **Carta Comum da Matriz**: personagem "Torre da Matriz", categoria História, arte `matriz-comum.webp` (foto atual, 800×800). Textos neutros, editáveis no painel admin. Falta no painel: coordenada, endereço, responsável, autorização e vistoria antes de publicar.
+
 ## V8.13 · Segurança do carimbo e da conta, operação do piloto
 - **Chave no link da tag** (`/t/eu-001?k=…`, HMAC com `TAG_KEY_SECRET`): impede adivinhar códigos; girar a chave revoga o link antigo. Admin → *Link da tag*, CSV de links e `scripts/chaves.js`.
 - **Localização opcional por ponto** (`raio_m` ou `GEOFENCE_RAIO_PADRAO_M`): só é pedida quando o ponto exige; a coordenada não é guardada.

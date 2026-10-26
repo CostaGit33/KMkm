@@ -237,6 +237,55 @@ async function ensureAcessoSchema() {
   await ensureColumn('carimbos', 'suspeito', 'VARCHAR(32) NULL');
   if (!(await hasIndex('carimbos', 'idx_carimbos_suspeito'))) await q('CREATE INDEX idx_carimbos_suspeito ON carimbos (suspeito)');
 }
+// Igreja Matriz: a pesquisa do projeto já listava a Matriz no Circuito Cultural Central, mas ela nunca entrou no catálogo.
+// Entra como ponto próprio, "pendente" (sem tag física e sem coordenada até a vistoria), com a carta Comum (foto atual,
+// arquivo em client/public/cartas). A carta Rara (foto de antes da reforma) é um card de evento e as fotos entram na
+// galeria do ponto, não aqui. Os textos abaixo são neutros e editáveis no painel admin.
+export const PONTO_MATRIZ = {
+  codigoPreferido: 'eu-015',
+  nome: 'Igreja Matriz',
+  nota: 'Igreja Matriz de Eunápolis.',
+  categorias: 'historia,cultura',
+  icone: '✝',
+  circuito: 'eu-cultura',
+  carta: { criatura: 'Torre da Matriz', raridade: 'comum', categoria_carta: 'historia', frase: 'A Matriz ao entardecer.', arte: 'matriz-comum.webp' },
+};
+async function codigoLivre(preferido) {
+  const [ocupado] = await q('SELECT id FROM tags WHERE codigo = ?', [preferido]);
+  if (!ocupado) return preferido;
+  const linhas = await q("SELECT codigo FROM tags WHERE codigo REGEXP '^eu-[0-9]+$'");
+  const maior = linhas.reduce((m, l) => Math.max(m, Number(String(l.codigo).slice(3))), 0);
+  return `eu-${String(maior + 1).padStart(3, '0')}`;
+}
+// Roda uma única vez, depois da importação do catálogo (init.js), para valer também em banco novo. Se a administração já
+// cadastrou a Matriz por conta própria, não duplica: só completa a carta no que estiver vazio.
+export async function garantirIgrejaMatriz() {
+  const versao = '008_igreja_matriz';
+  if (await migracaoAplicada(versao)) return;
+  const m = PONTO_MATRIZ;
+  let [ponto] = await q("SELECT id, codigo FROM tags WHERE status <> 'arquivado' AND LOWER(nome) LIKE '%matriz%' ORDER BY id LIMIT 1");
+  if (!ponto) {
+    await q("INSERT IGNORE INTO rotas (nome, tipo, cor, km, cidade_id, status, subtitulo) VALUES ('Eunápolis · Catálogo editorial', 'cidade', 'ocre', NULL, 'eunapolis', 'editorial', 'Pontos ainda sem tag física publicada')");
+    const [rota] = await q("SELECT id FROM rotas WHERE nome = 'Eunápolis · Catálogo editorial'");
+    const [{ prox }] = await q('SELECT COALESCE(MAX(ordem), 0) AS prox FROM tags WHERE rota_id = ?', [rota.id]);
+    const codigo = await codigoLivre(m.codigoPreferido);
+    await q(`INSERT INTO tags (codigo, rota_id, ordem, nome, forma, parceiro, status, lat, lng, endereco, nota, categorias, icone, fonte_mapa, oculto)
+      VALUES (?, ?, ?, ?, 'c', FALSE, 'pendente', NULL, NULL, NULL, ?, ?, ?, NULL, FALSE)`,
+    [codigo, rota.id, Number(prox) + 1, m.nome, m.nota, m.categorias, m.icone]);
+    [ponto] = await q('SELECT id, codigo FROM tags WHERE codigo = ?', [codigo]);
+  }
+  const c = m.carta;
+  await q(`UPDATE tags SET criatura = COALESCE(NULLIF(criatura, ''), ?), raridade = COALESCE(NULLIF(raridade, ''), ?),
+    categoria_carta = COALESCE(NULLIF(categoria_carta, ''), ?), frase = COALESCE(NULLIF(frase, ''), ?), arte = COALESCE(NULLIF(arte, ''), ?) WHERE id = ?`,
+  [c.criatura, c.raridade, c.categoria_carta, c.frase, c.arte, ponto.id]);
+  const [circuito] = await q('SELECT id FROM circuitos WHERE slug = ?', [m.circuito]);
+  if (circuito) {
+    const [{ prox }] = await q('SELECT COALESCE(MAX(ordem), 0) AS prox FROM circuito_pontos WHERE circuito_id = ?', [circuito.id]);
+    await q('INSERT IGNORE INTO circuito_pontos (circuito_id, tag_id, ordem) VALUES (?, ?, ?)', [circuito.id, ponto.id, Number(prox) + 1]);
+  }
+  await atribuirCriaturas(); // dá o número da carta (próximo da coleção) e completa o que ainda faltar
+  await q('INSERT INTO schema_migrations (version) VALUES (?)', [versao]);
+}
 export async function runMigrations() {
   await ensureMigrationsTable();
   for (const file of readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
