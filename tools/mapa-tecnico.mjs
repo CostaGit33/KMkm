@@ -25,7 +25,7 @@ async function walk(dir, depth = 0) {
   });
   const result = [];
   for (const entry of entries) {
-    if (entry.name.startsWith(".") || EXCLUDED.has(entry.name)) continue;
+    if (entry.name === ".git" || EXCLUDED.has(entry.name)) continue;
     const absolute = path.join(dir, entry.name);
     const relative = path.relative(ROOT, absolute).split(path.sep).join("/");
     if (entry.isDirectory()) {
