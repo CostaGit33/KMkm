@@ -98,7 +98,7 @@ lines.push(
   "",
   ...["README.md", "TODO.md", "docs/INDEX.md", "docs/DEPLOY-CHECKLIST.md", "docs/seguranca.md", "server/index.js", "server/admin.js", "server/db/catalogo-inicial.json", "client/package.json", "docker-compose.yml", "Dockerfile", ".github/workflows"].map(file => {
     const exists = entries.some(e => e.path === file || e.path.startsWith(file + "/"));
-    return `- ${exists ? "Encontrado" : "Não encontrado"}: \`${file}\``;
+    return "- " + (exists ? "Encontrado" : "Não encontrado") + ": `" + file + "`";
   }),
   "",
   "## Como atualizar",
