@@ -106,7 +106,16 @@ function limit({ windowMs, max, name, chave }) {
     bucket.count += 1;
     rateBuckets.set(identity, bucket);
     if (rateBuckets.size > 4000) {
-      for (const [key, value] of rateBuckets) if (value.expiresAt <= now) rateBuckets.delete(key);
+      for (const [key, value] of rateBuckets) {
+        if (value.expiresAt <= now) rateBuckets.delete(key);
+      }
+      // O mapa é por processo: sob tráfego distribuído, milhares de IPs/alvos diferentes
+      // não podem fazê-lo crescer sem limite. Mantém o limite de memória mesmo se nenhum bucket expirou.
+      while (rateBuckets.size > 4000) {
+        const oldest = rateBuckets.keys().next().value;
+        if (oldest === undefined) break;
+        rateBuckets.delete(oldest);
+      }
     }
     if (bucket.count > max) {
       res.setHeader('Retry-After', String(Math.ceil((bucket.expiresAt - now) / 1000)));
