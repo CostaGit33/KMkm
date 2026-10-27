@@ -1,0 +1,60 @@
+/* Página ampliada de carta: leitura imersiva sem alterar a miniatura da coleção. */
+.carta-pagina-dialogo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: max(22px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(ellipse at 50% 25%, color-mix(in srgb, #d9a84a 13%, transparent), transparent 46%),
+    var(--color-bg, #081d14);
+  color: var(--color-text, #f4ecd2);
+  overscroll-behavior: contain;
+}
+.carta-pagina-dialogo::backdrop { background: #050b08; }
+.carta-pagina-voltar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 0 22px;
+  color: #e5bd52;
+  font: 600 13px/1.4 "Montserrat", sans-serif;
+}
+.carta-pagina-voltar span { font-size: 21px; }
+.carta-pagina-cabecalho { max-width: 520px; margin: 0 auto 22px; text-align: center; }
+.carta-pagina-cabecalho .eyebrow { margin: 0 0 7px; color: #e5bd52; font-size: 10px; letter-spacing: .16em; }
+.carta-pagina-cabecalho h2 { margin: 0; font: 700 clamp(23px, 5vw, 32px)/1.2 "Cinzel", serif; }
+.carta-pagina-cabecalho p:last-child { margin: 8px 0 0; color: #c4c8bd; font-size: 12px; }
+.carta-pagina-dialogo .carta-detalhe { width: min(100%, 560px); margin: 0 auto; gap: 22px; }
+.carta-pagina-dialogo .carta-detalhe > .carta {
+  width: min(100%, 340px);
+  max-width: 340px;
+  min-height: 0;
+  padding-bottom: 16px;
+  border-radius: 18px;
+  box-shadow: 0 18px 55px #0008, inset 0 0 0 4px #12291f, inset 0 0 0 5px #8f6d24;
+}
+.carta-pagina-dialogo .carta-detalhe .carta-arte { width: 100%; aspect-ratio: 4 / 4.6; height: auto; }
+.carta-pagina-dialogo .carta-detalhe .carta-num { width: 36px; height: 36px; font-size: 14px; }
+.carta-pagina-dialogo .carta-detalhe .carta-nome { margin-top: 12px; padding: 0 14px; font-size: clamp(15px, 3.5vw, 19px); }
+.carta-pagina-dialogo .carta-detalhe .carta-local { padding: 0 14px; font-size: 12px; }
+.carta-pagina-dialogo .carta-detalhe .carta-selo { margin-top: 10px; font-size: 10px; }
+.carta-pagina-dialogo .carta-info { max-width: 460px; padding: 18px; border: 1px solid #806a36; border-radius: 14px; background: #10251c; }
+.carta-pagina-dialogo .carta-info dl { gap: 8px 16px; font-size: 13px; }
+.carta-pagina-dialogo .carta-historia { font-size: 14px; line-height: 1.7; }
+.carta-pagina-dialogo .carta-frase { line-height: 1.65; }
+.carta-pagina-dialogo .carta-dica { max-width: 420px; color: #d5d7cf; line-height: 1.6; }
+.carta-pagina-dialogo .carta-fechar { position: fixed; top: max(10px, env(safe-area-inset-top)); right: 12px; z-index: 2; width: 46px; height: 46px; border: 1px solid #806a36; border-radius: 50%; background: #10251c; color: #f4ecd2; font-size: 28px; }
+@media (min-width: 760px) {
+  .carta-pagina-dialogo { padding: 28px 32px 40px; }
+  .carta-pagina-dialogo .carta-detalhe { grid-template-columns: minmax(280px, 340px) minmax(260px, 1fr); align-items: start; gap: 28px; }
+  .carta-pagina-dialogo .carta-info { margin-top: 0; }
+  .carta-pagina-dialogo .carta-dica { grid-column: 1 / -1; }
+}
