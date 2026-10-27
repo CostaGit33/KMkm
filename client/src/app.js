@@ -588,8 +588,10 @@ let sincronizando = false;
 let cartoesAtuais = [];
 let colecaoAtual = null;
 let ultimaSincronizacao = 0;
-async function sincronizarComServidor() {
-  if (sincronizando || !isSignedIn(state) || Date.now() - ultimaSincronizacao < 15000) return;
+async function sincronizarComServidor({ forcar = false } = {}) {
+  // Ao voltar do leitor NFC/QR, não respeitar a janela de 15 s: o carimbo pode ter sido
+  // registrado em outra página enquanto esta ficou suspensa ou no cache de navegação.
+  if (sincronizando || !isSignedIn(state) || (!forcar && Date.now() - ultimaSincronizacao < 15000)) return;
   sincronizando = true;
   try {
     try {
@@ -627,7 +629,12 @@ async function sincronizarComServidor() {
   }
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") sincronizarComServidor();
+  if (document.visibilityState === "visible") sincronizarComServidor({ forcar: true });
+});
+// O Android/Chrome pode restaurar a página pelo BFCache sem recarregar o módulo.
+// pageshow cobre esse retorno mesmo quando visibilitychange não dispara.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) sincronizarComServidor({ forcar: true });
 });
 sincronizarComServidor();
 
