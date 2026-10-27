@@ -33,10 +33,19 @@ export function progressFor(state, ids = null) {
   }
 
   const uniqueIds = isCity ? POINTS.map((point) => point.id) : [...new Set(ids)];
-  const servidor = Array.isArray(colecaoServidor?.itens)
-    ? new Set(colecaoServidor.itens.filter((item) => item.capturada).map((item) => getPoint(item.codigo)?.id).filter(Boolean))
+  // Os códigos vêm do banco e podem ter diferenças de caixa/espaços entre ambientes.
+  // Comparar códigos normalizados evita que um carimbo válido deixe de contar no circuito.
+  const normalizarCodigo = (value) => String(value ?? "").trim().toUpperCase();
+  const codigosCapturados = Array.isArray(colecaoServidor?.itens)
+    ? new Set(colecaoServidor.itens
+      .filter((item) => item?.capturada === true)
+      .map((item) => normalizarCodigo(item.codigo)))
     : null;
-  const count = uniqueIds.filter((id) => (servidor ? servidor.has(id) : state.conquered.includes(id))).length;
+  const servidor = codigosCapturados
+    ? new Set(POINTS.filter((point) => codigosCapturados.has(normalizarCodigo(point.id))).map((point) => point.id))
+    : null;
+  const conquistados = servidor ?? new Set(state.conquered);
+  const count = uniqueIds.filter((id) => conquistados.has(id)).length;
   const total = isCity ? CITY.totalPoints : uniqueIds.length;
   return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
 }
