@@ -18,8 +18,24 @@ export function escapeHtml(value) {
 
 export function progressFor(state, ids = null) {
   const isCity = ids === null;
+
+  // Para a cidade, o catálogo publicado do servidor é a fonte de verdade.
+  // POINTS é apenas o subconjunto de pontos que esta versão do frontend conhece;
+  // usá-lo para contar conquistas escondia cartas válidas existentes no backend.
+  if (isCity && colecaoServidor) {
+    const total = Number.isFinite(Number(colecaoServidor.total))
+      ? Math.max(0, Number(colecaoServidor.total))
+      : (Array.isArray(colecaoServidor.itens) ? colecaoServidor.itens.length : 0);
+    const count = Number.isFinite(Number(colecaoServidor.capturadas))
+      ? Math.max(0, Math.min(total, Number(colecaoServidor.capturadas)))
+      : (Array.isArray(colecaoServidor.itens) ? colecaoServidor.itens.filter((item) => item?.capturada === true).length : 0);
+    return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
+  }
+
   const uniqueIds = isCity ? POINTS.map((point) => point.id) : [...new Set(ids)];
-  const servidor = Array.isArray(colecaoServidor?.itens) ? new Set(colecaoServidor.itens.filter((item) => item.capturada).map((item) => getPoint(item.codigo)?.id).filter(Boolean)) : null;
+  const servidor = Array.isArray(colecaoServidor?.itens)
+    ? new Set(colecaoServidor.itens.filter((item) => item.capturada).map((item) => getPoint(item.codigo)?.id).filter(Boolean))
+    : null;
   const count = uniqueIds.filter((id) => (servidor ? servidor.has(id) : state.conquered.includes(id))).length;
   const total = isCity ? CITY.totalPoints : uniqueIds.length;
   return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
