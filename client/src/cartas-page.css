@@ -34,8 +34,8 @@
 .carta-pagina-cabecalho p:last-child { margin: 8px 0 0; color: #c4c8bd; font-size: 12px; }
 .carta-pagina-dialogo .carta-detalhe { width: min(100%, 560px); margin: 0 auto; gap: 22px; }
 .carta-pagina-dialogo .carta-detalhe > .carta {
-  width: min(100%, 340px);
-  max-width: 340px;
+  width: min(100%, 380px);
+  max-width: 380px;
   min-height: 0;
   padding-bottom: 16px;
   border-radius: 18px;
@@ -54,7 +54,7 @@
 .carta-pagina-dialogo .carta-fechar { position: fixed; top: max(10px, env(safe-area-inset-top)); right: 12px; z-index: 2; width: 46px; height: 46px; border: 1px solid #806a36; border-radius: 50%; background: #10251c; color: #f4ecd2; font-size: 28px; }
 @media (min-width: 760px) {
   .carta-pagina-dialogo { padding: 28px 32px 40px; }
-  .carta-pagina-dialogo .carta-detalhe { grid-template-columns: minmax(280px, 340px) minmax(260px, 1fr); align-items: start; gap: 28px; }
+  .carta-pagina-dialogo .carta-detalhe { grid-template-columns: minmax(300px, 380px) minmax(260px, 1fr); align-items: start; gap: 28px; }
   .carta-pagina-dialogo .carta-info { margin-top: 0; }
   .carta-pagina-dialogo .carta-dica { grid-column: 1 / -1; }
 }
