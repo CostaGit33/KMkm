@@ -517,7 +517,7 @@ app.get('/api/caderneta', auth, wrap(async (req, res) => {
        FROM carimbos c1
        JOIN (
          SELECT tag_id, MAX(id) AS id
-         FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id
+         FROM carimbos WHERE usuario_id = ? GROUP BY tag_id
        ) latest ON latest.id = c1.id
      ) c ON c.tag_id = t.id
      WHERE r.status <> 'arquivado'
