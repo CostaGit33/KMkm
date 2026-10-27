@@ -24,7 +24,7 @@ async function classificar(janela, geral) {
     SELECT a.usuario_id, a.placar_apelido AS alias, COUNT(*) AS unique_points,
       MAX(f.first_at) AS reached_at, COALESCE(MAX(r.xp), 0) AS bonus_xp
     FROM contas a
-    JOIN (SELECT usuario_id, tag_id, MIN(criado_em) AS first_at FROM carimbos ${filtro} GROUP BY usuario_id, tag_id) f
+    JOIN (SELECT usuario_id, tag_id, MIN(criado_em) AS first_at FROM carimbos WHERE evento_id IS NULL ${janela ? 'AND criado_em >= ? AND criado_em < ?' : ''} GROUP BY usuario_id, tag_id) f
       ON f.usuario_id = a.usuario_id
     LEFT JOIN (SELECT usuario_id, SUM(xp) AS xp FROM gamificacao_recompensas WHERE tipo = 'rota' GROUP BY usuario_id) r
       ON r.usuario_id = a.usuario_id
@@ -72,7 +72,7 @@ async function concederCircuitosConcluidos(usuarioId) {
     JOIN circuito_pontos cp ON cp.circuito_id = ci.id
     JOIN tags t ON t.id = cp.tag_id
     JOIN rotas r ON r.id = t.rota_id
-    LEFT JOIN carimbos c ON c.tag_id = t.id AND c.usuario_id = ?
+    LEFT JOIN carimbos c ON c.tag_id = t.id AND c.usuario_id = ? AND c.evento_id IS NULL
     WHERE ci.status = 'publicado' AND t.status = 'publicado' AND r.status = 'publicado'
     GROUP BY ci.id, ci.slug, ci.nome
     HAVING COUNT(DISTINCT cp.tag_id) > 0
@@ -128,7 +128,7 @@ export function gamificacaoRouter({ auth, limit, wrap }) {
     // Recompensas de circuitos são gravadas uma única vez: edições futuras do catálogo não apagam XP conquistado.
     await concederCircuitosConcluidos(usuarioId);
     const carimbos = await q(`SELECT tag_id, MIN(criado_em) AS earned_at
-      FROM carimbos WHERE usuario_id = ? GROUP BY tag_id ORDER BY earned_at, tag_id`, [usuarioId]);
+      FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id ORDER BY earned_at, tag_id`, [usuarioId]);
     const rotas = await q(`SELECT referencia, criado_em AS earned_at, xp
       FROM gamificacao_recompensas WHERE usuario_id = ? AND tipo = 'rota' ORDER BY criado_em, chave`, [usuarioId]);
     const [conta] = await q('SELECT placar_opt_in, placar_apelido FROM contas WHERE id = ? AND usuario_id = ?', [req.conta.id, usuarioId]);
@@ -164,7 +164,7 @@ export function gamificacaoRouter({ auth, limit, wrap }) {
     // Pontuação própria, mesmo para quem não participa do pódio público.
     if (geral) await concederCircuitosConcluidos(req.u.id);
     const [proprio] = await q(`SELECT COUNT(DISTINCT tag_id) AS unique_points FROM carimbos
-      WHERE usuario_id = ?${janela ? ' AND criado_em >= ? AND criado_em < ?' : ''}`,
+      WHERE usuario_id = ? AND evento_id IS NULL${janela ? ' AND criado_em >= ? AND criado_em < ?' : ''}`,
     janela ? [req.u.id, janela.start, janela.end] : [req.u.id]);
     const [bonus] = geral
       ? await q("SELECT COALESCE(SUM(xp), 0) AS xp FROM gamificacao_recompensas WHERE usuario_id = ? AND tipo = 'rota'", [req.u.id])
