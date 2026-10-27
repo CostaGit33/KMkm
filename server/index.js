@@ -503,7 +503,7 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
     throw error;
   } finally { connection.release(); }
   const [carimbo] = await q('SELECT * FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id = ?', [req.u.id, tag.id, card.id]);
-  res.json({ repetido, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
+  res.json({ repetido, carimbo_rota_criado: carimboRotaCriado, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
 }));
 
 app.get('/api/caderneta', auth, wrap(async (req, res) => {
