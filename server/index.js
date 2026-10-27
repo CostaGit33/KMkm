@@ -468,6 +468,13 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   if (bloqueioEvento) return res.status(bloqueioEvento.status).json(bloqueioEvento.corpo);
   const [liga] = await q('SELECT 1 FROM evento_tags WHERE evento_id = ? AND tag_id = ?', [card.id, tag.id]);
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
+
+  // O endpoint de evento também cria a visita-base da rota; por isso deve aplicar
+  // o mesmo limite de ritmo do endpoint normal, evitando contornar a proteção antifraude.
+  const [{ recentes }] = await q('SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE', [req.u.id]);
+  const ritmo = avaliarRitmo(recentes);
+  if (ritmo.bloquear) return res.status(429).json({ erro: 'muitos_carimbos' });
+
   let repetido = false;
   let edicao = null;
   let carimboRotaCriado = false;
@@ -483,9 +490,19 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
       [req.u.id, tag.id],
     );
     if (!visitaBase.length) {
+      // Mantém também no caminho de evento a sinalização de deslocamento suspeito.
+      const [anteriores] = await connection.query(
+        `SELECT t.lat, t.lng, TIMESTAMPDIFF(SECOND, c.criado_em, NOW()) AS segundos
+         FROM carimbos c JOIN tags t ON t.id = c.tag_id
+         WHERE c.usuario_id = ? AND c.evento_id IS NULL AND c.tag_id <> ? AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+         ORDER BY c.id DESC LIMIT 1`,
+        [req.u.id, tag.id],
+      );
+      const suspeito = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
+      if (suspeito) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: req.u.id, ponto: tag.codigo, motivo: suspeito, origem: 'evento' }));
       await connection.query(
-        'INSERT INTO carimbos (usuario_id, tag_id, seed) VALUES (?, ?, ?)',
-        [req.u.id, tag.id, crypto.randomInt(2 ** 31)],
+        'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
+        [req.u.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
       );
       carimboRotaCriado = true;
     }
