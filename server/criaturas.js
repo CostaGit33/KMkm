@@ -91,7 +91,7 @@ export async function albumDaPessoa(usuarioId) {
     `SELECT t.codigo, t.nome AS ponto, t.criatura, t.raridade, t.ordem, t.carta, t.arte, t.frase, t.historia, t.oculto, t.categorias, t.categoria_carta,
             r.cor, c.primeira
      FROM tags t JOIN rotas r ON r.id = t.rota_id
-     LEFT JOIN (SELECT tag_id, MIN(criado_em) AS primeira FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id) c ON c.tag_id = t.id
+     LEFT JOIN (SELECT tag_id, MIN(criado_em) AS primeira FROM carimbos WHERE usuario_id = ? GROUP BY tag_id) c ON c.tag_id = t.id
      WHERE t.status = 'publicado' AND r.status = 'publicado' ORDER BY t.carta, t.id`,
     [usuarioId],
   );
