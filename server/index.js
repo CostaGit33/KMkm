@@ -300,11 +300,9 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   const bloqueio = conferirAcessoAoPonto(tag, req.body || {});
   if (bloqueio) return res.status(bloqueio.status).json(bloqueio.corpo);
   const usuario = req.u;
-  // Ritmo: carimbos novos nos últimos 10 minutos (toques repetidos no mesmo ponto não criam linha nova).
-  const [{ recentes }] = await q('SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE', [usuario.id]);
-  const ritmo = avaliarRitmo(recentes);
-  if (ritmo.bloquear) return res.status(429).json({ erro: 'muitos_carimbos' });
-
+  // A contagem de ritmo é refeita dentro da transação, depois do lock da conta,
+  // para que requisições simultâneas não passem todas usando o mesmo contador antigo.
+  let ritmo;
   const connection = await pool.getConnection();
   let carimbo;
   let repetido = false;
@@ -315,6 +313,15 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [usuario.id]);
+    const [[ritmoAtual]] = await connection.query(
+      'SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      [usuario.id],
+    );
+    ritmo = avaliarRitmo(ritmoAtual.recentes);
+    if (ritmo.bloquear) {
+      await connection.rollback();
+      return res.status(429).json({ erro: 'muitos_carimbos' });
+    }
     const [recent] = await connection.query(
       `SELECT * FROM carimbos
        WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL
@@ -469,12 +476,8 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   const [liga] = await q('SELECT 1 FROM evento_tags WHERE evento_id = ? AND tag_id = ?', [card.id, tag.id]);
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
 
-  // O endpoint de evento também cria a visita-base da rota; por isso deve aplicar
-  // o mesmo limite de ritmo do endpoint normal, evitando contornar a proteção antifraude.
-  const [{ recentes }] = await q('SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE', [req.u.id]);
-  const ritmo = avaliarRitmo(recentes);
-  if (ritmo.bloquear) return res.status(429).json({ erro: 'muitos_carimbos' });
-
+  // O endpoint de evento também cria a visita-base da rota e usa o mesmo limite de ritmo.
+  let ritmo;
   let repetido = false;
   let edicao = null;
   let carimboRotaCriado = false;
@@ -482,6 +485,16 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [req.u.id]);
+    // Recalcular sob o lock impede que pedidos concorrentes contornem o limite de ritmo.
+    const [[ritmoAtual]] = await connection.query(
+      'SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      [req.u.id],
+    );
+    ritmo = avaliarRitmo(ritmoAtual.recentes);
+    if (ritmo.bloquear) {
+      await connection.rollback();
+      return res.status(429).json({ erro: 'muitos_carimbos' });
+    }
 
     // Um achado confirmado em evento também registra a primeira visita da rota.
     // Assim, coleção, circuitos e conquistas recebem a mesma descoberta, sem duplicar a visita-base.
