@@ -470,10 +470,26 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
   let repetido = false;
   let edicao = null;
+  let carimboRotaCriado = false;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [req.u.id]);
+
+    // Um achado confirmado em evento também registra a primeira visita da rota.
+    // Assim, coleção, circuitos e conquistas recebem a mesma descoberta, sem duplicar a visita-base.
+    const [visitaBase] = await connection.query(
+      'SELECT id FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE',
+      [req.u.id, tag.id],
+    );
+    if (!visitaBase.length) {
+      await connection.query(
+        'INSERT INTO carimbos (usuario_id, tag_id, seed) VALUES (?, ?, ?)',
+        [req.u.id, tag.id, crypto.randomInt(2 ** 31)],
+      );
+      carimboRotaCriado = true;
+    }
+
     try {
       await connection.query('INSERT INTO carimbos (usuario_id, tag_id, seed, evento_id) VALUES (?, ?, ?, ?)', [req.u.id, tag.id, crypto.randomInt(2 ** 31), card.id]);
     } catch (error) {
