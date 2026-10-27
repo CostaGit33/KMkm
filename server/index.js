@@ -396,7 +396,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   const [{ feitos }] = await q(
     `SELECT COUNT(DISTINCT c.tag_id) AS feitos
      FROM carimbos c JOIN tags x ON x.id = c.tag_id
-     WHERE c.usuario_id = ? AND x.rota_id = ? AND c.evento_id IS NULL`,
+     WHERE c.usuario_id = ? AND x.rota_id = ?`,
     [usuario.id, tag.rota_id],
   );
   const [{ passagens }] = await q('SELECT COUNT(*) AS passagens FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL', [usuario.id, tag.id]);
