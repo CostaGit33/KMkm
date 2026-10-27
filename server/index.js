@@ -314,7 +314,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [usuario.id]);
     const [[ritmoAtual]] = await connection.query(
-      'SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      'SELECT COUNT(DISTINCT tag_id) AS recentes FROM carimbos WHERE usuario_id = ? AND criado_em > NOW() - INTERVAL 10 MINUTE',
       [usuario.id],
     );
     ritmo = avaliarRitmo(ritmoAtual.recentes);
@@ -487,7 +487,7 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [req.u.id]);
     // Recalcular sob o lock impede que pedidos concorrentes contornem o limite de ritmo.
     const [[ritmoAtual]] = await connection.query(
-      'SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      'SELECT COUNT(DISTINCT tag_id) AS recentes FROM carimbos WHERE usuario_id = ? AND criado_em > NOW() - INTERVAL 10 MINUTE',
       [req.u.id],
     );
     ritmo = avaliarRitmo(ritmoAtual.recentes);
