@@ -41,11 +41,13 @@ export function progressFor(state, ids = null) {
       .filter((item) => item?.capturada === true)
       .map((item) => normalizarCodigo(item.codigo)))
     : null;
-  const servidor = codigosCapturados
-    ? new Set(POINTS.filter((point) => codigosCapturados.has(normalizarCodigo(point.id))).map((point) => point.id))
-    : null;
-  const conquistados = servidor ?? new Set(state.conquered);
-  const count = uniqueIds.filter((id) => conquistados.has(id)).length;
+  // Os IDs dos circuitos são códigos de ponto. Compare diretamente com os códigos
+  // devolvidos pela API; não dependa do catálogo estático POINTS para reconhecer
+  // um carimbo válido (o catálogo local pode estar atrás do catálogo do servidor).
+  const conquistados = codigosCapturados
+    ? codigosCapturados
+    : new Set((state.conquered || []).map(normalizarCodigo));
+  const count = uniqueIds.filter((id) => conquistados.has(normalizarCodigo(id))).length;
   const total = isCity ? CITY.totalPoints : uniqueIds.length;
   return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
 }
