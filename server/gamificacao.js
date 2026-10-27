@@ -19,7 +19,6 @@ function nivelPublico(xp) {
 // Participantes do pódio público (opt-in) com XP e desempate: quem chegou primeiro à pontuação fica na frente.
 // janela = intervalo do mês; sem janela é o ranking geral (XP permanente = pontos + bônus de circuitos já concedidos).
 async function classificar(janela, geral) {
-  const filtro = janela ? 'WHERE criado_em >= ? AND criado_em < ?' : '';
   const rows = await q(`
     SELECT a.usuario_id, a.placar_apelido AS alias, COUNT(*) AS unique_points,
       MAX(f.first_at) AS reached_at, COALESCE(MAX(r.xp), 0) AS bonus_xp
