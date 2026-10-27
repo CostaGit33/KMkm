@@ -1,5 +1,5 @@
 // Troque o nome do cache a cada versão publicada para renovar os aparelhos sem apagar o estado local.
-const CACHE_NAME = "mais1km-v34-home-tres-cartas";
+const CACHE_NAME = "mais1km-v35-cartas-sem-lacunas";
 const APP_SHELL = [
   "/",
   "/index.html",
