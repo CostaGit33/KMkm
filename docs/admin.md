@@ -57,3 +57,8 @@ O app lê `/api/catalogo` ao abrir. O que você cria, renomeia, arquiva ou reord
 - **Link da tag:** ativa, gira ou desativa a chave (`?k=`) do link do ponto e mostra o link para gravar na tag/QR. **Exportar links (CSV)** gera todos de uma vez; **Ativar chave em todos** liga a chave nos pontos que ainda têm link aberto. Veja `docs/seguranca.md`.
 - **Aba Piloto:** funil (primeiro carimbo, segundo ponto, retorno em 7 dias, conclusão), prontidão dos pontos, carimbos por ponto, suspeitos e os sinais de parada.
 - Variáveis novas: `TAG_KEY_SECRET`, `APP_PUBLIC_URL` (para o CSV), `GEOFENCE_RAIO_PADRAO_M`, `EXIGIR_AUTORIZACAO`.
+
+## 8. Fotos dos pontos (V8.14)
+- Em **Pontos**, o botão **Fotos (aprovadas/total)** abre a galeria do ponto: enviar foto (JPEG, PNG ou WebP até 15 MB), editar título, legenda, período, autor e fonte, **aprovar**, arquivar, reordenar (alça ⠿), baixar o **original** e excluir (só foto não aprovada).
+- A foto entra *aguardando aprovação* e só aparece no app depois de aprovada. Histórica ou restaurada precisa de autor ou fonte; aprovar sem crédito pede confirmação e fica no Registro.
+- Variáveis, regras e o script de console estão em [midia.md](midia.md).

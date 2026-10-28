@@ -49,6 +49,23 @@ const ERROS = {
   origem_nao_permitida: 'O pedido foi bloqueado por segurança (origem diferente). Recarregue a página.',
   interno: 'Erro interno do servidor. Tente de novo.',
   rede: 'Sem conexão com o servidor.',
+  foto_inexistente: 'Foto não encontrada.',
+  imagem_ja_enviada: 'Esta foto já foi enviada para este ponto.',
+  imagem_grande_demais: 'Arquivo grande demais (máximo 15 MB ou 80 megapixels).',
+  corpo_grande_demais: 'Arquivo grande demais (máximo 15 MB).',
+  formato_nao_aceito: 'Formato não aceito. Use JPEG, PNG ou WebP.',
+  imagem_invalida: 'Não foi possível ler a imagem (arquivo corrompido ou incompleto).',
+  imagem_pequena: 'Imagem pequena demais: o lado menor precisa ter ao menos 400 px.',
+  imagem_animada: 'Imagens animadas não são aceitas.',
+  imagem_vazia: 'O arquivo está vazio.',
+  credito_pendente: 'Foto histórica ou restaurada precisa de autor ou fonte para ser aprovada.',
+  foto_aprovada: 'Foto aprovada não pode ser excluída. Arquive antes.',
+  tem_fotos: 'Este ponto tem fotos. Exclua as fotos antes (ou arquive o ponto).',
+  midia_sem_armazenamento: 'O servidor ainda não tem onde guardar fotos (configure o R2 ou um volume persistente).',
+  midia_falha_armazenamento: 'Falha ao gravar no armazenamento de fotos. Tente de novo; se repetir, verifique as credenciais do R2.',
+  arquivo_ausente: 'O arquivo desta foto não foi encontrado no armazenamento.',
+  tipo_registro_invalido: 'Tipo de registro inválido.',
+  derivada_invalida: 'A foto de origem precisa ser outra foto deste mesmo ponto.',
 };
 export function mensagem(erro) {
   const base = ERROS[erro?.code] || `Erro: ${erro?.code || 'desconhecido'}`;
@@ -62,6 +79,18 @@ export async function req(metodo, caminho, corpo) {
   let r;
   try {
     r = await fetch(`/api${caminho}`, { method: metodo, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: corpo === undefined ? undefined : JSON.stringify(corpo) });
+  } catch { throw Object.assign(new Error('rede'), { code: 'rede' }); }
+  let dados = null;
+  try { dados = await r.json(); } catch { /* corpo vazio */ }
+  if (!r.ok) throw Object.assign(new Error(dados?.erro || 'erro'), { status: r.status, code: dados?.erro || 'erro', dados });
+  return dados;
+}
+
+// Envia um arquivo cru (a foto) no corpo; os metadados vão na consulta do caminho.
+export async function enviarArquivo(caminho, arquivo) {
+  let r;
+  try {
+    r = await fetch(`/api${caminho}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': arquivo.type }, body: arquivo });
   } catch { throw Object.assign(new Error('rede'), { code: 'rede' }); }
   let dados = null;
   try { dados = await r.json(); } catch { /* corpo vazio */ }

@@ -15,6 +15,7 @@
 | `SENTRY_ENVIRONMENT` | rótulo do ambiente no Sentry (padrão `production`) | opcional |
 | `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |
 | `TAG_KEY_SECRET` | segredo (32+ caracteres aleatórios) das chaves dos links das tags. Segredo de execução; **guarde uma cópia fora do servidor**: sem ele os links já gravados nas tags deixam de funcionar | sim, antes de gravar as tags |
+| `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | armazenamento das fotos dos pontos (bucket privado `mais1km-media`; token R2 só com leitura e gravação nesse bucket). Segredos de execução, só no Easypanel. Alternativa: `MEDIA_DIR` apontando para um volume persistente. Veja [midia.md](midia.md) | para usar a galeria de fotos |
 | `GEOFENCE_RAIO_PADRAO_M` | raio padrão (m) para exigir localização no carimbo; `0` desliga. Só ligue com coordenadas conferidas em campo | opcional (padrão 0) |
 | `EXIGIR_AUTORIZACAO` | `true` (padrão) exige responsável, autorização e vistoria para publicar um ponto | opcional |
 | `CSP_LEGADO` | `true` reabre `unsafe-inline`/`unsafe-eval` em scripts; só como saída temporária se a CSP estrita quebrar algo | não |
@@ -36,6 +37,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 
 ## 3. Conferência pós-deploy
 - [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; "desconhecida" significa que a variável não foi definida).
+- [ ] Galeria de fotos: `npm --prefix server run midia -- verificar` responde OK (ou `/api/saude` com `midia: "r2"`), e uma foto de teste enviada em Admin → Fotos aparece no app depois de aprovada.
 - [ ] `GET /api/config-mapa` mostra a chave (e não `null`).
 - [ ] Mapa abre com Google; se não, aparece aviso e o mapa aberto assume.
 - [ ] Rodar `BASE_URL=https://seu-app node server/scripts/smoke.mjs` (e `--profundo` com `ADMIN_EMAIL`/`ADMIN_SENHA` de teste).

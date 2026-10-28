@@ -38,6 +38,7 @@ function aplicar(catalogo) {
     if (Number.isFinite(p.lat) && Number.isFinite(p.lng)) { ponto.lat = p.lat; ponto.lng = p.lng; }
     if (p.fonte_mapa) ponto.mapSource = p.fonte_mapa;
     if (p.endereco) ponto.address = p.endereco;
+    if (p.fotos > 0) { ponto.fotos = Number(p.fotos); if (p.capa) ponto.capa = p.capa; }
     return ponto;
   });
   POINTS.splice(0, POINTS.length, ...novos);

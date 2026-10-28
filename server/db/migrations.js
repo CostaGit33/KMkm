@@ -237,6 +237,39 @@ async function ensureAcessoSchema() {
   await ensureColumn('carimbos', 'suspeito', 'VARCHAR(32) NULL');
   if (!(await hasIndex('carimbos', 'idx_carimbos_suspeito'))) await q('CREATE INDEX idx_carimbos_suspeito ON carimbos (suspeito)');
 }
+// Galeria de fotos por ponto (V8.14). O arquivo fica no armazenamento de objetos (R2 ou pasta); aqui ficam só as chaves
+// e os dados descritivos. O original é preservado tal como foi enviado; as cópias para exibição são geradas pelo servidor.
+// tipo_registro: historica | atual | restauracao | outra (restauração aponta para o original em derivada_de).
+// status: pendente (só o admin vê) | aprovado (aparece no app) | arquivado.
+async function ensureMidiaSchema() {
+  await q(`CREATE TABLE IF NOT EXISTS ponto_imagens (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    tag_id INT NOT NULL,
+    arquivo_original VARCHAR(200) NOT NULL,
+    arquivo_otimizado VARCHAR(200) NOT NULL,
+    miniatura VARCHAR(200) NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    mime_original VARCHAR(40) NOT NULL,
+    bytes_original INT UNSIGNED NOT NULL,
+    largura INT UNSIGNED NOT NULL,
+    altura INT UNSIGNED NOT NULL,
+    titulo VARCHAR(120) NULL,
+    legenda VARCHAR(400) NULL,
+    periodo_historico VARCHAR(60) NULL,
+    tipo_registro VARCHAR(16) NOT NULL DEFAULT 'atual',
+    autor VARCHAR(120) NULL,
+    fonte VARCHAR(200) NULL,
+    derivada_de INT NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pendente',
+    ordem INT NOT NULL DEFAULT 0,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ponto_imagens_sha (tag_id, sha256),
+    KEY idx_ponto_imagens_galeria (tag_id, status, ordem),
+    CONSTRAINT ponto_imagens_tag_fk FOREIGN KEY (tag_id) REFERENCES tags(id),
+    CONSTRAINT ponto_imagens_derivada_fk FOREIGN KEY (derivada_de) REFERENCES ponto_imagens(id) ON DELETE SET NULL
+  )`);
+}
 // Igreja Matriz: a pesquisa do projeto já listava a Matriz no Circuito Cultural Central, mas ela nunca entrou no catálogo.
 // Entra como ponto próprio, "pendente" (sem tag física e sem coordenada até a vistoria), com a carta Comum (foto atual,
 // arquivo em client/public/cartas). A carta Rara (foto de antes da reforma) é um card de evento e as fotos entram na
@@ -305,4 +338,5 @@ export async function runMigrations() {
   await ensureGamificationSchema();
   await ensureColecaoEdicaoSchema();
   await ensureAcessoSchema();
+  await ensureMidiaSchema();
 }

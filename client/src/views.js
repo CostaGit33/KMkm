@@ -2,6 +2,7 @@ import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, g
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
 import { secaoColecao, cartaHtml } from "./cartas.js";
+import { galeriaHtml } from "./galeria.js";
 import { analyticsAvailable, getAnalyticsConsent } from "./telemetry.js";
 
 const NAV_ITEMS = [
@@ -420,7 +421,8 @@ function renderPoint(state, pointId) {
       <p class="detail-description">${escapeHtml(status === "mystery" ? "Uma página ainda escondida na cidade. Revele para descobrir o que ela guarda." : point.note)}</p><div class="tag-list">${categoryTags}<span class="tag">${point.id}</span></div>${action}
       ${history ? `<div class="detail-stamp">${stamp(point, number, "", { state, entry: history, plus: true })}</div>` : ""}
       ${history ? `<p class="small muted" style="margin:11px 0 0;text-align:center">Carimbado em ${formatDate(history.at)} · salvo nesta caderneta</p>` : ""}
-    </article>`;
+    </article>
+    ${status === "mystery" ? "" : galeriaHtml(point)}`;
 }
 
 function renderCollection(state) {

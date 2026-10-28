@@ -10,14 +10,17 @@
     "pontos": "node scripts/pontos.js",
     "admin": "node scripts/admin.js",
     "chaves": "node scripts/chaves.js",
+    "midia": "node scripts/midia.js",
     "relatorio-piloto": "node scripts/relatorio-piloto.js",
     "teste-podio": "node scripts/teste-podio.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@sentry/node": "11.8.0",
+    "aws4fetch": "1.0.20",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mysql2": "^3.11.3"
+    "mysql2": "^3.11.3",
+    "sharp": "0.35.5"
   }
 }

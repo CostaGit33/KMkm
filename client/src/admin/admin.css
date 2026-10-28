@@ -97,3 +97,7 @@ label.campo > span b { color: var(--verm); }
 .rel { display: grid; gap: 6px; }
 .rel .par { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--linha); padding: 4px 0; }
 code { background: #1e1e20; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+
+/* Galeria de fotos do ponto */
+.foto-mini { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; background: #111; flex: none; display: block; border: 1px solid var(--linha); }
+[data-derivada][hidden] { display: none; }
