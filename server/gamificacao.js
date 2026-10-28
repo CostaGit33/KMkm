@@ -19,12 +19,11 @@ function nivelPublico(xp) {
 // Participantes do pódio público (opt-in) com XP e desempate: quem chegou primeiro à pontuação fica na frente.
 // janela = intervalo do mês; sem janela é o ranking geral (XP permanente = pontos + bônus de circuitos já concedidos).
 async function classificar(janela, geral) {
-  const filtro = janela ? 'WHERE criado_em >= ? AND criado_em < ?' : '';
   const rows = await q(`
     SELECT a.usuario_id, a.placar_apelido AS alias, COUNT(*) AS unique_points,
       MAX(f.first_at) AS reached_at, COALESCE(MAX(r.xp), 0) AS bonus_xp
     FROM contas a
-    JOIN (SELECT usuario_id, tag_id, MIN(criado_em) AS first_at FROM carimbos ${filtro} GROUP BY usuario_id, tag_id) f
+    JOIN (SELECT usuario_id, tag_id, MIN(criado_em) AS first_at FROM carimbos WHERE ${janela ? 'criado_em >= ? AND criado_em < ?' : '1 = 1'} GROUP BY usuario_id, tag_id) f
       ON f.usuario_id = a.usuario_id
     LEFT JOIN (SELECT usuario_id, SUM(xp) AS xp FROM gamificacao_recompensas WHERE tipo = 'rota' GROUP BY usuario_id) r
       ON r.usuario_id = a.usuario_id
@@ -164,7 +163,7 @@ export function gamificacaoRouter({ auth, limit, wrap }) {
     // Pontuação própria, mesmo para quem não participa do pódio público.
     if (geral) await concederCircuitosConcluidos(req.u.id);
     const [proprio] = await q(`SELECT COUNT(DISTINCT tag_id) AS unique_points FROM carimbos
-      WHERE usuario_id = ?${janela ? ' AND criado_em >= ? AND criado_em < ?' : ''}`,
+      WHERE usuario_id = ? ${janela ? 'AND criado_em >= ? AND criado_em < ?' : ''}`,
     janela ? [req.u.id, janela.start, janela.end] : [req.u.id]);
     const [bonus] = geral
       ? await q("SELECT COALESCE(SUM(xp), 0) AS xp FROM gamificacao_recompensas WHERE usuario_id = ? AND tipo = 'rota'", [req.u.id])

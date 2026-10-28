@@ -561,7 +561,11 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .collection-spotlight p:not(.eyebrow) { max-width: 560px; margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 .spotlight-action { position: relative; z-index: 1; flex: 0 0 auto; min-height: 44px; padding: 10px 14px; border: 1px solid var(--red); border-radius: 999px; background: var(--red); color: var(--on-accent); font-weight: 800; cursor: pointer; box-shadow: 0 6px 18px -10px var(--glow-red); transition: transform .18s ease, box-shadow .18s ease; }
 .spotlight-action:hover, .spotlight-action:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 22px -10px var(--glow-red); }
-.home-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+/* Cartas da home encostadas: sem colunas residuais nem intervalos entre cards. */
+.home-stamps.home-cards { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 !important; width: 100%; max-width: 480px; align-items: stretch; }
+.home-stamps.home-cards > .home-card { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: none; margin: 0; padding: 0; border-radius: 0; }
+.home-stamps.home-cards > .home-card + .home-card { border-left-width: 0; }
+.home-stamps.home-cards > .home-card .carta { display: flex; box-sizing: border-box; width: 100%; min-width: 0; margin: 0; }
 .home-card { width: auto; height: auto; min-height: 126px; padding: 0; border-color: color-mix(in srgb, var(--red) 55%, var(--rule)); background: var(--card); overflow: hidden; }
 .home-card .carta { width: 100%; min-height: 124px; border: 0; border-radius: 0; box-shadow: none; }
 .home-card .carta-arte { width: 100%; height: 76px; }
@@ -915,3 +919,8 @@ body.view-map .mk.is-next { box-shadow: 0 0 0 2px #e9c36b, 0 1px 4px rgb(0 0 0 /
   body.view-map .map-hud { top: 6px !important; left: 6px !important; right: 6px !important; gap: 4px; }
   body.view-map .map-fab { min-height: 28px; padding: 4px 7px; font-size: 9px; }
 }
+
+/* Página inicial: apenas três cartas recentes e acesso explícito à coleção completa. */
+.home-collection-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.home-collection-link > span { color: var(--muted); font-size: 12px; }
+.home-collection-link .route-card-button { min-height: 44px; }

@@ -19,9 +19,36 @@ export function escapeHtml(value) {
 
 export function progressFor(state, ids = null) {
   const isCity = ids === null;
+
+  // Para a cidade, o catálogo publicado do servidor é a fonte de verdade.
+  // POINTS é apenas o subconjunto de pontos que esta versão do frontend conhece;
+  // usá-lo para contar conquistas escondia cartas válidas existentes no backend.
+  if (isCity && colecaoServidor) {
+    const total = Number.isFinite(Number(colecaoServidor.total))
+      ? Math.max(0, Number(colecaoServidor.total))
+      : (Array.isArray(colecaoServidor.itens) ? colecaoServidor.itens.length : 0);
+    const count = Number.isFinite(Number(colecaoServidor.capturadas))
+      ? Math.max(0, Math.min(total, Number(colecaoServidor.capturadas)))
+      : (Array.isArray(colecaoServidor.itens) ? colecaoServidor.itens.filter((item) => item?.capturada === true).length : 0);
+    return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
+  }
+
   const uniqueIds = isCity ? POINTS.map((point) => point.id) : [...new Set(ids)];
-  const servidor = Array.isArray(colecaoServidor?.itens) ? new Set(colecaoServidor.itens.filter((item) => item.capturada).map((item) => getPoint(item.codigo)?.id).filter(Boolean)) : null;
-  const count = uniqueIds.filter((id) => (servidor ? servidor.has(id) : state.conquered.includes(id))).length;
+  // Os códigos vêm do banco e podem ter diferenças de caixa/espaços entre ambientes.
+  // Comparar códigos normalizados evita que um carimbo válido deixe de contar no circuito.
+  const normalizarCodigo = (value) => String(value ?? "").trim().toUpperCase();
+  const codigosCapturados = Array.isArray(colecaoServidor?.itens)
+    ? new Set(colecaoServidor.itens
+      .filter((item) => item?.capturada === true)
+      .map((item) => normalizarCodigo(item.codigo)))
+    : null;
+  // Os IDs dos circuitos são códigos de ponto. Compare diretamente com os códigos
+  // devolvidos pela API; não dependa do catálogo estático POINTS para reconhecer
+  // um carimbo válido (o catálogo local pode estar atrás do catálogo do servidor).
+  const conquistados = codigosCapturados
+    ? codigosCapturados
+    : new Set((state.conquered || []).map(normalizarCodigo));
+  const count = uniqueIds.filter((id) => conquistados.has(normalizarCodigo(id))).length;
   const total = isCity ? CITY.totalPoints : uniqueIds.length;
   return { count, total, percent: total ? Math.min(100, Math.round((count / total) * 100)) : 0 };
 }
@@ -198,9 +225,16 @@ function renderCartoes(state) {
 
 // Cartas conquistadas em miniatura e mapa reduzido. A carta é a única coleção do usuário.
 function homeCards(state) {
-  const cards = Array.isArray(colecaoServidor?.itens) ? colecaoServidor.itens.filter((item) => item.capturada) : POINTS.filter((point) => state.conquered.includes(point.id)).map((point) => ({ codigo: point.id, ponto: point.name, carta: POINTS.indexOf(point) + 1, categoria: "cultura", raridade: "comum", capturada: true, criatura: point.name }));
+  const cards = Array.isArray(colecaoServidor?.itens)
+    ? colecaoServidor.itens.filter((item) => item.capturada).sort((a, b) => {
+      const dateA = Date.parse(a.capturada_em || a.primeira_captura || "") || 0;
+      const dateB = Date.parse(b.capturada_em || b.primeira_captura || "") || 0;
+      return dateB - dateA;
+    })
+    : POINTS.filter((point) => state.conquered.includes(point.id)).map((point) => ({ codigo: point.id, ponto: point.name, carta: POINTS.indexOf(point) + 1, categoria: "cultura", raridade: "comum", capturada: true, criatura: point.name }));
   if (!cards.length) return `<div class="home-empty-state"><p class="home-empty">Sua coleção está começando. Visite um ponto publicado e encoste na tag NFC para desbloquear sua primeira carta.</p><button class="outline-button" type="button" data-action="switch-view" data-view="map">Encontrar um ponto →</button></div>`;
-  return `<div class="home-stamps home-cards" role="list" aria-label="Cartas conquistadas">${cards.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96 })}</button>`; }).join("")}</div>`;
+  const recentes = cards.slice(0, 3);
+  return `<div class="home-stamps home-cards" role="list" aria-label="Últimas três cartas conquistadas">${recentes.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96, tag: "div" })}</button>`; }).join("")}</div><div class="home-collection-link"><span>Mostrando ${recentes.length} de ${cards.length} cartas conquistadas</span><button class="route-card-button" type="button" data-action="switch-view" data-view="collection">Ver coleção completa →</button></div>`;
 }
 
 function collectionSpotlight(state, city) {

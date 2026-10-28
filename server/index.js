@@ -108,7 +108,16 @@ function limit({ windowMs, max, name, chave }) {
     bucket.count += 1;
     rateBuckets.set(identity, bucket);
     if (rateBuckets.size > 4000) {
-      for (const [key, value] of rateBuckets) if (value.expiresAt <= now) rateBuckets.delete(key);
+      for (const [key, value] of rateBuckets) {
+        if (value.expiresAt <= now) rateBuckets.delete(key);
+      }
+      // O mapa é por processo: sob tráfego distribuído, milhares de IPs/alvos diferentes
+      // não podem fazê-lo crescer sem limite. Mantém o limite de memória mesmo se nenhum bucket expirou.
+      while (rateBuckets.size > 4000) {
+        const oldest = rateBuckets.keys().next().value;
+        if (oldest === undefined) break;
+        rateBuckets.delete(oldest);
+      }
     }
     if (bucket.count > max) {
       res.setHeader('Retry-After', String(Math.ceil((bucket.expiresAt - now) / 1000)));
@@ -302,11 +311,9 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   const bloqueio = conferirAcessoAoPonto(tag, req.body || {});
   if (bloqueio) return res.status(bloqueio.status).json(bloqueio.corpo);
   const usuario = req.u;
-  // Ritmo: carimbos novos nos últimos 10 minutos (toques repetidos no mesmo ponto não criam linha nova).
-  const [{ recentes }] = await q('SELECT COUNT(*) AS recentes FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL AND criado_em > NOW() - INTERVAL 10 MINUTE', [usuario.id]);
-  const ritmo = avaliarRitmo(recentes);
-  if (ritmo.bloquear) return res.status(429).json({ erro: 'muitos_carimbos' });
-
+  // A contagem de ritmo é refeita dentro da transação, depois do lock da conta,
+  // para que requisições simultâneas não passem todas usando o mesmo contador antigo.
+  let ritmo;
   const connection = await pool.getConnection();
   let carimbo;
   let repetido = false;
@@ -317,6 +324,15 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [usuario.id]);
+    const [[ritmoAtual]] = await connection.query(
+      'SELECT COUNT(DISTINCT tag_id) AS recentes FROM carimbos WHERE usuario_id = ? AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      [usuario.id],
+    );
+    ritmo = avaliarRitmo(ritmoAtual.recentes);
+    if (ritmo.bloquear) {
+      await connection.rollback();
+      return res.status(429).json({ erro: 'muitos_carimbos' });
+    }
     const [recent] = await connection.query(
       `SELECT * FROM carimbos
        WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL
@@ -398,7 +414,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   const [{ feitos }] = await q(
     `SELECT COUNT(DISTINCT c.tag_id) AS feitos
      FROM carimbos c JOIN tags x ON x.id = c.tag_id
-     WHERE c.usuario_id = ? AND x.rota_id = ? AND c.evento_id IS NULL`,
+     WHERE c.usuario_id = ? AND x.rota_id = ?`,
     [usuario.id, tag.rota_id],
   );
   const [{ passagens }] = await q('SELECT COUNT(*) AS passagens FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL', [usuario.id, tag.id]);
@@ -470,12 +486,51 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   if (bloqueioEvento) return res.status(bloqueioEvento.status).json(bloqueioEvento.corpo);
   const [liga] = await q('SELECT 1 FROM evento_tags WHERE evento_id = ? AND tag_id = ?', [card.id, tag.id]);
   if (!liga) return res.status(409).json({ erro: 'ponto_fora_do_evento' });
+
+  // O endpoint de evento também cria a visita-base da rota e usa o mesmo limite de ritmo.
+  let ritmo;
   let repetido = false;
   let edicao = null;
+  let carimboRotaCriado = false;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [req.u.id]);
+    // Recalcular sob o lock impede que pedidos concorrentes contornem o limite de ritmo.
+    const [[ritmoAtual]] = await connection.query(
+      'SELECT COUNT(DISTINCT tag_id) AS recentes FROM carimbos WHERE usuario_id = ? AND criado_em > NOW() - INTERVAL 10 MINUTE',
+      [req.u.id],
+    );
+    ritmo = avaliarRitmo(ritmoAtual.recentes);
+    if (ritmo.bloquear) {
+      await connection.rollback();
+      return res.status(429).json({ erro: 'muitos_carimbos' });
+    }
+
+    // Um achado confirmado em evento também registra a primeira visita da rota.
+    // Assim, coleção, circuitos e conquistas recebem a mesma descoberta, sem duplicar a visita-base.
+    const [visitaBase] = await connection.query(
+      'SELECT id FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE',
+      [req.u.id, tag.id],
+    );
+    if (!visitaBase.length) {
+      // Mantém também no caminho de evento a sinalização de deslocamento suspeito.
+      const [anteriores] = await connection.query(
+        `SELECT t.lat, t.lng, TIMESTAMPDIFF(SECOND, c.criado_em, NOW()) AS segundos
+         FROM carimbos c JOIN tags t ON t.id = c.tag_id
+         WHERE c.usuario_id = ? AND c.evento_id IS NULL AND c.tag_id <> ? AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+         ORDER BY c.id DESC LIMIT 1`,
+        [req.u.id, tag.id],
+      );
+      const suspeito = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
+      if (suspeito) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: req.u.id, ponto: tag.codigo, motivo: suspeito, origem: 'evento' }));
+      await connection.query(
+        'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
+        [req.u.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
+      );
+      carimboRotaCriado = true;
+    }
+
     try {
       await connection.query('INSERT INTO carimbos (usuario_id, tag_id, seed, evento_id) VALUES (?, ?, ?, ?)', [req.u.id, tag.id, crypto.randomInt(2 ** 31), card.id]);
     } catch (error) {
@@ -489,7 +544,7 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
     throw error;
   } finally { connection.release(); }
   const [carimbo] = await q('SELECT * FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id = ?', [req.u.id, tag.id, card.id]);
-  res.json({ repetido, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
+  res.json({ repetido, carimbo_rota_criado: carimboRotaCriado, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
 }));
 
 app.get('/api/caderneta', auth, wrap(async (req, res) => {
@@ -503,7 +558,7 @@ app.get('/api/caderneta', auth, wrap(async (req, res) => {
        FROM carimbos c1
        JOIN (
          SELECT tag_id, MAX(id) AS id
-         FROM carimbos WHERE usuario_id = ? AND evento_id IS NULL GROUP BY tag_id
+         FROM carimbos WHERE usuario_id = ? GROUP BY tag_id
        ) latest ON latest.id = c1.id
      ) c ON c.tag_id = t.id
      WHERE r.status <> 'arquivado'

@@ -54,7 +54,7 @@ export function detalheHtml(i) {
   const dica = !i.capturada
     ? 'Encoste na tag deste ponto para desbloquear esta carta única.'
     : 'Carta conquistada. Esta edição não evolui com o tempo nem exige retorno em outros dias.';
-  return `<div class="carta-detalhe">${cartaHtml(i, { size: 140, tag: 'div' })}<div class="carta-info">`
+  return `<div class="carta-pagina-cabecalho"><p class="eyebrow">ARQUIVO DE EUNÁPOLIS · CARTA ${num(i.carta)}</p><h2>${esc(i.capturada ? i.criatura : 'Carta ainda bloqueada')}</h2><p>Uma lembrança colecionável da cidade.</p></div><div class="carta-detalhe">${cartaHtml(i, { size: 300, tag: 'div' })}<div class="carta-info">`
     + `<dl><dt>Número</dt><dd>${num(i.carta)}</dd><dt>Personagem</dt><dd>${i.capturada ? esc(i.criatura) : '???'}</dd><dt>Local</dt><dd>${esc(i.ponto)}</dd>`
     + `<dt>Categoria</dt><dd>${esc(rotuloCategoria(i.categoria))}</dd><dt>Raridade</dt><dd>${estrelas(i.raridade)} ${esc(rotuloRaridade(i.raridade))}</dd></dl>`
     + (i.capturada && i.historia ? `<p class="carta-historia">${esc(i.historia)}</p>` : '')
@@ -94,11 +94,11 @@ if (typeof document !== 'undefined' && !window.__cartasOuvinte) {
     if (!dlg) {
       dlg = document.createElement('dialog');
       dlg.id = 'carta-dialogo';
-      dlg.className = 'carta-dialogo';
+      dlg.className = 'carta-dialogo carta-pagina-dialogo';
       dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-fechar]')) dlg.close(); });
       document.body.appendChild(dlg);
     }
-    dlg.innerHTML = `<button type="button" class="carta-fechar" data-fechar aria-label="Fechar">×</button>${detalheHtml(item)}`;
+    dlg.innerHTML = `<button type="button" class="carta-fechar" data-fechar aria-label="Voltar à coleção">×</button><div class="carta-pagina-voltar"><span aria-hidden="true">←</span> Sua coleção</div>${detalheHtml(item)}`;
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   });
 }
