@@ -6,6 +6,7 @@ Estado atual do projeto: [README](../README.md) · pendências: [TODO](../TODO.m
 - [DEPLOY-CHECKLIST](DEPLOY-CHECKLIST.md): variáveis, segurança e conferência pós-deploy.
 - [seguranca](seguranca.md): o que cada proteção garante e não garante; rotina de chaves.
 - [admin](admin.md): uso do `/admin`.
+- [midia](midia.md): fotos dos pontos (galeria, armazenamento R2, regras de crédito).
 - [PLAY-STORE](PLAY-STORE.md): publicação na Google Play.
 - [recuperacao-senha-resend](recuperacao-senha-resend.md): e-mail de recuperação.
 

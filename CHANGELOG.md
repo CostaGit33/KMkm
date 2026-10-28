@@ -2,7 +2,13 @@
 
 Movido do README para o README ficar curto e atual. Cada seção descreve o que aquela versão entregou; para o estado de hoje, leia o [README](README.md) e [docs/INDEX.md](docs/INDEX.md).
 
-## V8.14 · Igreja Matriz
+## V8.14 · Igreja Matriz e galeria de fotos
+- **Galeria de fotos por ponto** (`docs/midia.md`): tabela `ponto_imagens`; envio em Admin → Pontos → *Fotos* ou `scripts/midia.js`. O original fica intacto num bucket privado (R2, ou volume em `MEDIA_DIR`); o servidor gera WebP de 1400 px e miniatura de 320 px **sem EXIF/GPS** e entrega por `/midia/…` com cache imutável. Tudo entra *pendente* e só aparece no app depois de aprovado.
+- **Crédito e restauração**: foto histórica ou restaurada exige autor ou fonte para aprovar (forçar fica na auditoria); restauração é marcada como derivada de outra foto e aparece com selo. Sem colorização ou "melhoria" por IA.
+- **No app**: faixa de fotos no ponto, ampliação com legenda e crédito e comparador "Antes / Hoje" quando há uma histórica e uma atual aprovadas. O catálogo traz `capa` e `fotos`.
+- **API**: `GET /api/pontos/:codigo/imagens`, `GET /midia/:arquivo` e rotas `/api/admin/…/imagens` (OpenAPI atualizado). Testes: unitários de processamento/armazenamento e `scripts/e2e-midia.mjs` (disco e R2 simulado).
+- Variáveis novas: `R2_ACCOUNT_ID`/`R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `MEDIA_DIR`. `/api/saude` informa `midia`. Cache do service worker: `mais1km-v30-galeria`.
+
 - **Ponto Igreja Matriz** (`eu-015`, ou o próximo código livre): entra no catálogo como `pendente`, sem coordenada nem tag, no Circuito Cultural Central. A pesquisa do projeto já a listava nesse circuito, mas ela nunca tinha sido cadastrada. A migração `008_igreja_matriz` roda uma vez, não duplica se a administração já cadastrou uma Matriz e não sobrescreve campos já preenchidos.
 - **Carta Comum da Matriz**: personagem "Torre da Matriz", categoria História, arte `matriz-comum.webp` (foto atual, 800×800). Textos neutros, editáveis no painel admin. Falta no painel: coordenada, endereço, responsável, autorização e vistoria antes de publicar.
 

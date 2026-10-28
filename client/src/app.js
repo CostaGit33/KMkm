@@ -6,6 +6,7 @@ import { applyFieldMarks } from "./geo.js";
 import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
 import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
+import { montarGaleria } from "./galeria.js";
 import { startIntro } from "./intro.js";
 import { api, mensagemErro, atualizarContaServidor, criarContaServidor, entrarContaServidor, sessaoContaServidor, sairContaServidor } from "./api.js";
 import { createElement } from "react";
@@ -145,6 +146,7 @@ function render({ preserveFocus = false } = {}) {
       podiumRoot.render(createElement(PodiumPage));
     }
   }
+  if (view === "point") montarGaleria(app);
   if (view === "map") {
     activeMap = mountRealMap({ element: document.getElementById("real-map"), city: CITY, points: getFilteredPoints(state, filters), state, onOpenPoint: goToPoint });
   }

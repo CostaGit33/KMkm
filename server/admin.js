@@ -8,6 +8,8 @@ import { instanteLocal } from './time.js';
 import { CATEGORIAS_CARTA, RARIDADES, atribuirCriaturas } from './criaturas.js';
 import { segredoDasChaves, urlDoPonto } from './tag-acesso.js';
 import { relatorioPiloto } from './relatorio.js';
+import { FalhaMidia, capasPorPonto } from './midia/servico.js';
+import { rotasAdminMidia } from './midia/rotas-admin.js';
 import { MAX_PONTOS_PATROCINIO, MIN_PONTOS_PATROCINIO, TIPOS, conflitosDeJanela, relatorioAgregado } from './eventos.js';
 
 const FUSO = process.env.APP_TZ || 'America/Bahia';
@@ -166,9 +168,10 @@ async function gravarPatrocinador(conn, nome) {
 
 // Catálogo público: o app usa isto no lugar do catálogo fixo do front-end (pontos e circuitos publicados no admin).
 export async function catalogoPublico() {
-  const pontos = await q(`SELECT t.codigo, t.nome, t.status, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.oculto
+  const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.oculto
     FROM tags t JOIN rotas r ON r.id = t.rota_id WHERE t.status <> 'arquivado' AND r.status <> 'arquivado' ORDER BY t.codigo`);
   const circuitos = await q("SELECT id, slug, nome, subtitulo, icone, cor FROM circuitos WHERE status = 'publicado' ORDER BY ordem, id");
+  const capas = await capasPorPonto();
   const ligacoes = circuitos.length ? await q(`SELECT cp.circuito_id, t.codigo FROM circuito_pontos cp JOIN tags t ON t.id = cp.tag_id
     WHERE t.status <> 'arquivado' AND cp.circuito_id IN (${circuitos.map(() => '?').join(',')}) ORDER BY cp.circuito_id, cp.ordem`, circuitos.map((c) => c.id)) : [];
   return {
@@ -177,6 +180,7 @@ export async function catalogoPublico() {
       lat: p.lat == null ? null : Number(p.lat), lng: p.lng == null ? null : Number(p.lng),
       endereco: p.endereco, nota: p.nota, categorias: String(p.categorias || '').split(',').filter(Boolean),
       icone: p.icone, fonte_mapa: p.fonte_mapa, oculto: Boolean(p.oculto),
+      capa: capas.get(p.id)?.capa ?? null, fotos: capas.get(p.id)?.fotos ?? 0,
     })),
     circuitos: circuitos.map((c) => ({
       slug: c.slug, nome: c.nome, subtitulo: c.subtitulo, icone: c.icone, cor: c.cor,
@@ -198,7 +202,7 @@ export function adminRouter({ limit, wrap }) {
   const router = express.Router();
   const h = (fn) => wrap(async (req, res, next) => {
     try { await fn(req, res, next); } catch (error) {
-      if (error instanceof Falha) return res.status(error.status).json({ erro: error.erro, ...error.extra });
+      if (error instanceof Falha || error instanceof FalhaMidia) return res.status(error.status).json({ erro: error.erro, ...error.extra });
       throw error;
     }
   });
@@ -209,6 +213,8 @@ export function adminRouter({ limit, wrap }) {
     next();
   });
 
+  rotasAdminMidia(router, { h, registrar, texto, opcional, limit });
+
   router.get('/eu', (req, res) => res.json({ admin: true, nome: req.conta.nome, email: req.conta.email, conta_id: req.conta.id }));
 
   // Tudo que as telas de catálogo precisam, numa chamada só.
@@ -216,7 +222,8 @@ export function adminRouter({ limit, wrap }) {
     const rotas = await q(`SELECT r.id, r.nome, r.tipo, r.cor, r.km, r.status, r.subtitulo, (SELECT COUNT(*) FROM tags t WHERE t.rota_id = r.id) AS pontos FROM rotas r ORDER BY r.id`);
     const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.ordem, t.forma, t.parceiro, t.oculto, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.criatura, t.raridade, t.categoria_carta, t.frase, t.historia, t.arte, t.carta,
       t.chave_versao, t.raio_m, t.responsavel_nome, t.responsavel_contato, DATE_FORMAT(t.autorizado_em, '%Y-%m-%d') AS autorizado_em, DATE_FORMAT(t.vistoriado_em, '%Y-%m-%d') AS vistoriado_em,
-      t.rota_id, (SELECT COUNT(*) FROM carimbos c WHERE c.tag_id = t.id) AS carimbos, (SELECT COUNT(*) FROM evento_tags et WHERE et.tag_id = t.id) AS eventos
+      t.rota_id, (SELECT COUNT(*) FROM carimbos c WHERE c.tag_id = t.id) AS carimbos, (SELECT COUNT(*) FROM evento_tags et WHERE et.tag_id = t.id) AS eventos,
+      (SELECT COUNT(*) FROM ponto_imagens pi WHERE pi.tag_id = t.id AND pi.status <> 'arquivado') AS fotos, (SELECT COUNT(*) FROM ponto_imagens pi WHERE pi.tag_id = t.id AND pi.status = 'aprovado') AS fotos_aprovadas
       FROM tags t ORDER BY t.rota_id, t.ordem, t.id`);
     const circuitos = await q('SELECT id, slug, nome, subtitulo, icone, cor, ordem, status FROM circuitos ORDER BY ordem, id');
     const ligacoes = await q('SELECT cp.circuito_id, t.codigo FROM circuito_pontos cp JOIN tags t ON t.id = cp.tag_id ORDER BY cp.circuito_id, cp.ordem');
@@ -233,7 +240,7 @@ export function adminRouter({ limit, wrap }) {
       rotas: rotas.map((r) => ({ ...r, km: r.km == null ? null : Number(r.km), pontos: Number(r.pontos) })),
       pontos: pontos.map((p) => ({
         ...p, lat: p.lat == null ? null : Number(p.lat), lng: p.lng == null ? null : Number(p.lng), parceiro: Boolean(p.parceiro), oculto: Boolean(p.oculto),
-        categorias: String(p.categorias || '').split(',').filter(Boolean), carimbos: Number(p.carimbos), eventos: Number(p.eventos),
+        categorias: String(p.categorias || '').split(',').filter(Boolean), carimbos: Number(p.carimbos), eventos: Number(p.eventos), fotos: Number(p.fotos), fotos_aprovadas: Number(p.fotos_aprovadas),
       })),
       circuitos: circuitos.map((c) => ({ ...c, codigos: ligacoes.filter((l) => l.circuito_id === c.id).map((l) => l.codigo) })),
       eventos: eventos.map((e) => ({ ...e, tiragem: e.tiragem == null ? null : Number(e.tiragem), emitidos: Number(e.emitidos), carimbos: Number(e.carimbos), codigos: ev.filter((x) => x.evento_id === e.id).map((x) => x.codigo) })),
@@ -313,6 +320,8 @@ export function adminRouter({ limit, wrap }) {
     if (Number(carimbos)) falha(409, 'tem_carimbos', { carimbos: Number(carimbos) });
     const [{ n: eventos }] = await q('SELECT COUNT(*) AS n FROM evento_tags WHERE tag_id = ?', [tag.id]);
     if (Number(eventos)) falha(409, 'em_eventos', { eventos: Number(eventos) });
+    const [{ n: fotos }] = await q('SELECT COUNT(*) AS n FROM ponto_imagens WHERE tag_id = ?', [tag.id]);
+    if (Number(fotos)) falha(409, 'tem_fotos', { fotos: Number(fotos) });
     await tx(async (c) => {
       await c.query('DELETE FROM tags WHERE id = ?', [tag.id]);
       await renumerar(c, tag.rota_id);

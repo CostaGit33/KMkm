@@ -1,5 +1,6 @@
 // Página /admin do +1 KM: pontos, rotas, eventos, pessoas e registro. Só abre para conta com papel "admin".
 import { CATEGORIES } from '../data.js';
+import { abrirFotos } from './fotos.js';
 import { $, $$, esc, req, mensagem, avisar, dialogo, confirmar, arrastavel, paraCampoLocal, legivel } from './ui.js';
 
 const raiz = $('#raiz');
@@ -119,7 +120,7 @@ function linhaPonto(p, n, travado) {
         <span class="${sem ? 'alerta' : ''}">${sem ? 'sem coordenadas' : `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`}</span>
         ${p.responsavel_nome && p.autorizado_em && p.vistoriado_em ? '' : '<span class="alerta" title="Falta responsável, autorização ou vistoria">sem autorização/vistoria</span>'}<span class="${p.chave_versao > 0 ? '' : 'alerta'}">${p.chave_versao > 0 ? `link com chave v${p.chave_versao}` : 'link aberto'}</span>
         <span>${p.carimbos} carimbo(s)</span>${p.eventos ? `<span>${p.eventos} evento(s)</span>` : ''}<span>${p.categorias.map(nomeCategoria).join(' · ')}</span></div></div>
-    <div class="acoes"><button class="btn mini" data-act="editar-ponto" data-id="${esc(p.codigo)}">Editar</button><button class="btn mini" data-act="chave-ponto" data-id="${esc(p.codigo)}">Link da tag</button>
+    <div class="acoes"><button class="btn mini" data-act="editar-ponto" data-id="${esc(p.codigo)}">Editar</button><button class="btn mini" data-act="chave-ponto" data-id="${esc(p.codigo)}">Link da tag</button><button class="btn mini" data-act="fotos-ponto" data-id="${esc(p.codigo)}">Fotos${p.fotos ? ` (${p.fotos_aprovadas}/${p.fotos})` : ''}</button>
       ${p.status === 'publicado' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="pendente">Despublicar</button>` : p.status === 'pendente' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="publicado">Publicar</button>` : `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="pendente">Restaurar</button>`}
       ${p.status !== 'arquivado' ? `<button class="btn mini" data-act="status-ponto" data-id="${esc(p.codigo)}" data-valor="arquivado">Arquivar</button>` : ''}
       <button class="btn mini perigo" data-act="excluir-ponto" data-id="${esc(p.codigo)}">Excluir</button></div></li>`;
@@ -470,6 +471,7 @@ function ligarEventos(el) {
     if (act === 'novo-ponto') formularioPonto(null);
     else if (act === 'editar-ponto') formularioPonto(ponto());
     else if (act === 'chave-ponto') dialogoChave(ponto());
+    else if (act === 'fotos-ponto') abrirFotos(ponto(), async () => { try { await recarregar(); conteudo(); } catch { /* sem rede */ } });
     else if (act === 'chaves-todos') {
       if (await confirmar('Ativar chave em todos os pontos?', 'Os links antigos (sem ?k=) deixam de funcionar. Exporte os links novos em CSV e regrave as tags NFC / reimprima os QR antes de abrir ao público.', { rotulo: 'Ativar em todos' })) {
         await executar(async () => { const r = await req('POST', '/admin/chaves/ativar-todos'); avisar(`${r.ativados} ponto(s) agora exigem chave.`); }, null);

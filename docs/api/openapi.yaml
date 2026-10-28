@@ -113,6 +113,40 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Catalogo' }
+  /api/pontos/{codigo}/imagens:
+    get:
+      operationId: pontoImagens
+      tags: [Sistema]
+      security: []
+      summary: Fotos aprovadas de um ponto
+      description: |
+        Só fotos com `status = aprovado`, na ordem definida pela administração. Não expõe hash, status nem caminhos de armazenamento.
+        `url` (1400 px) e `miniatura_url` (320 px) são endereços imutáveis em `/midia/...`. Limite de 120 por minuto por IP.
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Galeria
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GaleriaPublica' }
+        '404': { description: '`ponto_inexistente`' }
+        '429': { $ref: '#/components/responses/MuitasTentativas' }
+  /midia/{arquivo}:
+    get:
+      operationId: midiaArquivo
+      tags: [Sistema]
+      security: []
+      summary: Cópia pública de uma foto aprovada (WebP, sem EXIF/GPS)
+      description: |
+        Nome no formato `<id>.<hash16>.<g|m>.webp` (g = 1400 px, m = 320 px). Devolve `image/webp` com
+        `Cache-Control: public, max-age=31536000, immutable`. Foto pendente, arquivada, hash errado ou variante inexistente: `404`.
+        O original nunca sai por aqui.
+      parameters:
+        - { name: arquivo, in: path, required: true, schema: { type: string, pattern: '^\d+\.[0-9a-f]{16}\.(g|m)\.webp$' } }
+      responses:
+        '200': { description: Imagem WebP, content: { image/webp: { schema: { type: string, format: binary } } } }
+        '404': { description: Não existe ou não está aprovada }
   /api/conta/criar:
     post:
       operationId: contaCriar
@@ -564,6 +598,136 @@ paths:
         '404': { description: '`ponto_inexistente`' }
         '409': { description: '`ponto_em_evento`' }
         '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/midia/estado:
+    get:
+      operationId: adminMidiaEstado
+      tags: [Administração]
+      summary: Situação do armazenamento de fotos
+      description: Com `?verificar=1` grava, lê e apaga um objeto de teste (registra na auditoria). Credenciais nunca aparecem na resposta.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: verificar, in: query, required: false, schema: { type: string, enum: ['1'] } }
+      responses:
+        '200': { description: '`tipo` (r2, local, desligado, r2-incompleto), `pronto`, `duravel`, `limite_mb` e, com verificar, `verificacao.ok`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/pontos/{codigo}/imagens:
+    get:
+      operationId: adminImagensDoPonto
+      tags: [Administração]
+      summary: Todas as fotos de um ponto (qualquer status)
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Fotos com status, hash, tamanhos e `original_url` }
+        '404': { description: '`ponto_inexistente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+    post:
+      operationId: adminImagemEnviar
+      tags: [Administração]
+      summary: Enviar foto (corpo = o arquivo)
+      description: |
+        `Content-Type` `image/jpeg`, `image/png` ou `image/webp`; metadados na query. Até 15 MB, 80 megapixels, lado menor de 400 px.
+        O original é guardado intacto; a cópia pública (WebP 1400 px e miniatura 320 px) sai sem EXIF/GPS. Entra sempre `pendente`.
+        Limite de 40 envios por 10 minutos por conta. Erros: `imagem_ja_enviada` (409), `imagem_grande_demais` (413),
+        `formato_nao_aceito` (415), `imagem_invalida`, `imagem_pequena`, `imagem_animada`, `imagem_vazia`, `tipo_registro_invalido` (400),
+        `midia_sem_armazenamento` (503), `midia_falha_armazenamento` (502).
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+        - { name: tipo_registro, in: query, schema: { type: string, enum: [atual, historica, restauracao, outra], default: atual } }
+        - { name: titulo, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: legenda, in: query, schema: { type: string, maxLength: 400 } }
+        - { name: periodo_historico, in: query, schema: { type: string, maxLength: 60 } }
+        - { name: autor, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: fonte, in: query, schema: { type: string, maxLength: 200 } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        '201': { description: Foto criada (`imagem`) }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/pontos/{codigo}/imagens/ordem:
+    put:
+      operationId: adminImagensOrdem
+      tags: [Administração]
+      summary: Reordenar as fotos de um ponto
+      description: 'Corpo `{ "ids": [..] }` com todas as fotos do ponto; a primeira aprovada vira a capa. Lista incompleta: `400 ordem_invalida`.'
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: codigo, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Ordem salva }
+        '400': { description: '`ordem_invalida`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/imagens/{id}:
+    put:
+      operationId: adminImagemEditar
+      tags: [Administração]
+      summary: Editar metadados da foto
+      description: 'Campos: titulo, legenda, periodo_historico, tipo_registro, autor, fonte e `derivada_de` (id de outra foto do mesmo ponto; só vale para `restauracao`).'
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Foto atualizada }
+        '400': { description: '`tipo_registro_invalido` ou `derivada_invalida`' }
+        '404': { description: '`foto_inexistente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+    delete:
+      operationId: adminImagemExcluir
+      tags: [Administração]
+      summary: Excluir foto definitivamente
+      description: Só foto que não está aprovada (`409 foto_aprovada`). Os arquivos saem do armazenamento primeiro; se o armazenamento falhar, a foto continua listada.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Excluída }
+        '409': { description: '`foto_aprovada`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/imagens/{id}/status:
+    post:
+      operationId: adminImagemStatus
+      tags: [Administração]
+      summary: Aprovar, arquivar ou voltar a pendente
+      description: 'Foto `historica` ou `restauracao` exige autor ou fonte para ser aprovada (`409 credito_pendente`); `{ "forcar": true }` libera e fica na auditoria.'
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Status atualizado }
+        '400': { description: '`status_invalido`' }
+        '409': { description: '`credito_pendente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/imagens/{id}/original:
+    get:
+      operationId: adminImagemOriginal
+      tags: [Administração]
+      summary: Baixar o original (com os dados da câmera)
+      description: Download byte a byte idêntico ao arquivo enviado. Só administrador.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Arquivo original, content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+        '404': { description: '`foto_inexistente` ou `arquivo_ausente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/imagens/{id}/arquivo:
+    get:
+      operationId: adminImagemPrevia
+      tags: [Administração]
+      summary: Prévia de qualquer foto (inclusive pendente)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: v, in: query, schema: { type: string, enum: [g, m], default: m } }
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Imagem WebP, content: { image/webp: { schema: { type: string, format: binary } } } }
+        '403': { $ref: '#/components/responses/SemPermissao' }
   /api/admin/usuarios:
     get:
       operationId: adminUsuarios
@@ -778,6 +942,8 @@ components:
               icone: { type: string, nullable: true }
               fonte_mapa: { type: string, nullable: true }
               oculto: { type: boolean }
+              capa: { type: string, nullable: true, description: 'Miniatura (`/midia/...`) da primeira foto aprovada' }
+              fotos: { type: integer, description: 'Quantidade de fotos aprovadas' }
         circuitos:
           type: array
           items:
@@ -789,6 +955,26 @@ components:
               icone: { type: string, nullable: true }
               cor: { type: string }
               codigos: { type: array, items: { type: string } }
+    GaleriaPublica:
+      type: object
+      properties:
+        imagens:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              titulo: { type: string, nullable: true }
+              legenda: { type: string, nullable: true }
+              periodo_historico: { type: string, nullable: true }
+              tipo_registro: { type: string, enum: [atual, historica, restauracao, outra] }
+              autor: { type: string, nullable: true }
+              fonte: { type: string, nullable: true }
+              derivada: { type: boolean, description: 'true para versão restaurada de outra foto' }
+              largura: { type: integer }
+              altura: { type: integer }
+              url: { type: string, example: /midia/12.0123456789abcdef.g.webp }
+              miniatura_url: { type: string, example: /midia/12.0123456789abcdef.m.webp }
     Colecao:
       type: object
       description: Álbum de cartas da pessoa (uma carta por ponto publicado)
