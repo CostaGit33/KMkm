@@ -2,6 +2,11 @@
 
 Estado atual do projeto: [README](../README.md) · pendências: [TODO](../TODO.md) · versões: [CHANGELOG](../CHANGELOG.md)
 
+## Arquitetura e funcionamento
+- [MAPA-ARQUITETURA](MAPA-ARQUITETURA.md): arquitetura lógica, camadas, módulos, dados, integrações, build e observabilidade.
+- [FLUXOS-SISTEMA](FLUXOS-SISTEMA.md): jornadas de participante, conta, carimbo NFC/QR, eventos, administração, mídia e exclusão.
+- [MAPA-SEGURANCA-INFRA](MAPA-SEGURANCA-INFRA.md): fronteiras de confiança, controles, variáveis, segredos, continuidade e incidentes.
+
 ## Operar
 - [DEPLOY-CHECKLIST](DEPLOY-CHECKLIST.md): variáveis, segurança e conferência pós-deploy.
 - [seguranca](seguranca.md): o que cada proteção garante e não garante; rotina de chaves.
