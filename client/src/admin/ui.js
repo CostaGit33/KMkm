@@ -65,6 +65,7 @@ const ERROS = {
   midia_falha_armazenamento: 'Falha ao gravar no armazenamento de fotos. Tente de novo; se repetir, verifique as credenciais do R2.',
   arquivo_ausente: 'O arquivo desta foto não foi encontrado no armazenamento.',
   tipo_registro_invalido: 'Tipo de registro inválido.',
+  foto_nao_aprovada: 'Aprove a foto antes de usá-la na carta.',
   derivada_invalida: 'A foto de origem precisa ser outra foto deste mesmo ponto.',
 };
 export function mensagem(erro) {

@@ -148,6 +148,36 @@ ok(ordem.status === 200, 'reordena');
 ok((await chamar(`/api/pontos/${codigo}/imagens`)).dados.imagens.map((i) => i.id).join() === `${b.id},${a.id}`, 'galeria pública segue a nova ordem');
 ok((await chamar(`${base}/ordem`, { metodo: 'PUT', cookie: cookieAdmin, json: { ids: [a.id] } })).status === 400, 'ordem incompleta -> 400');
 
+// ---- arte da carta (foto da galeria) ----
+const listaAdmin = async () => (await chamar(base, { cookie: cookieAdmin })).dados;
+const rotaPublicada = dados.dados.rotas.find((r) => r.status === 'publicado');
+ok(Boolean(rotaPublicada), 'há uma rota publicada para o teste da carta');
+const cartaA = await chamar(`/api/admin/imagens/${a.id}/carta`, { metodo: 'POST', cookie: cookieAdmin, json: { usar: true } });
+ok(cartaA.status === 200 && (await listaAdmin()).carta_imagem_id === a.id, 'foto aprovada vira a arte da carta');
+ok((await chamar(`/api/admin/imagens/${a.id}/carta`, { metodo: 'POST', cookie: cookieComum, json: { usar: true } })).status === 403, 'conta comum não escolhe a arte da carta -> 403');
+sql(`UPDATE tags SET rota_id=${rotaPublicada.id}, ordem=900, status='publicado' WHERE codigo='${codigo}'`);
+const itemDaCarta = async () => ((await chamar('/api/caderneta', { cookie: cookieComum })).dados?.colecao?.itens || []).find((i) => i.codigo === codigo);
+const fechada = await itemDaCarta();
+ok(fechada && fechada.capturada === false && fechada.arte_foto === null, 'carta ainda bloqueada não entrega a foto (nem a arte)');
+const carimbo = await chamar(`/api/tags/${codigo}/carimbar`, { metodo: 'POST', cookie: cookieComum, json: {} });
+ok(carimbo.status === 200 || carimbo.status === 201, `carimbo do ponto de teste (${carimbo.status})`);
+const aberta = await itemDaCarta();
+ok(aberta?.capturada === true && aberta.arte_foto?.m === urlM && aberta.arte_foto?.g === urlG, 'carta desbloqueada usa a foto da galeria (miniatura e grande)');
+ok((await chamar(aberta.arte_foto.m)).status === 200, 'a arte da carta é entregue pelo /midia');
+await chamar(`/api/admin/imagens/${a.id}/status`, { metodo: 'POST', cookie: cookieAdmin, json: { status: 'arquivado' } });
+ok((await listaAdmin()).carta_imagem_id === null && (await itemDaCarta()).arte_foto === null, 'foto arquivada deixa de ser a arte da carta');
+await chamar(`/api/admin/imagens/${a.id}/status`, { metodo: 'POST', cookie: cookieAdmin, json: { status: 'aprovado' } });
+ok((await listaAdmin()).carta_imagem_id === null, 'aprovar de novo não devolve a foto à carta sozinha');
+await chamar(`/api/admin/imagens/${b.id}/status`, { metodo: 'POST', cookie: cookieAdmin, json: { status: 'pendente' } });
+const cartaPendente = await chamar(`/api/admin/imagens/${b.id}/carta`, { metodo: 'POST', cookie: cookieAdmin, json: { usar: true } });
+ok(cartaPendente.status === 409 && cartaPendente.dados?.erro === 'foto_nao_aprovada', 'foto não aprovada não vai para a carta -> 409');
+await chamar(`/api/admin/imagens/${b.id}/status`, { metodo: 'POST', cookie: cookieAdmin, json: { status: 'aprovado' } });
+await chamar(`/api/admin/imagens/${a.id}/carta`, { metodo: 'POST', cookie: cookieAdmin, json: { usar: true } });
+await chamar(`/api/admin/imagens/${a.id}/carta`, { metodo: 'POST', cookie: cookieAdmin, json: { usar: false } });
+ok((await listaAdmin()).carta_imagem_id === null && (await itemDaCarta()).arte_foto === null, 'tirar da carta volta à arte anterior');
+sql(`DELETE FROM carimbos WHERE tag_id=(SELECT id FROM tags WHERE codigo='${codigo}')`);
+sql(`UPDATE tags SET status='pendente' WHERE codigo='${codigo}'`);
+
 // ---- exclusão ----
 const antes = await objetosNoArmazenamento();
 ok((await chamar(`/api/admin/pontos/${codigo}`, { metodo: 'DELETE', cookie: cookieAdmin })).dados?.erro === 'tem_fotos', 'não exclui ponto que tem fotos (409 tem_fotos)');
