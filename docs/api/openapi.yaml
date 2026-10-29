@@ -619,7 +619,7 @@ paths:
       parameters:
         - { name: codigo, in: path, required: true, schema: { type: string } }
       responses:
-        '200': { description: Fotos com status, hash, tamanhos e `original_url` }
+        '200': { description: 'Fotos com status, hash, tamanhos e `original_url`, e `carta_imagem_id` (foto usada na carta, ou null)' }
         '404': { description: '`ponto_inexistente`' }
         '403': { $ref: '#/components/responses/SemPermissao' }
     post:
@@ -702,6 +702,19 @@ paths:
         '200': { description: Status atualizado }
         '400': { description: '`status_invalido`' }
         '409': { description: '`credito_pendente`' }
+        '403': { $ref: '#/components/responses/SemPermissao' }
+  /api/admin/imagens/{id}/carta:
+    post:
+      operationId: adminImagemCarta
+      tags: [Administração]
+      summary: Usar (ou deixar de usar) a foto como arte da carta do ponto
+      description: 'Corpo `{ "usar": true|false }` (padrão true). Só foto aprovada (`409 foto_nao_aprovada`). A arte aparece na carta só depois do desbloqueio (`arte_foto` no álbum).'
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: '`{ ok, carta_imagem_id }`' }
+        '409': { description: '`foto_nao_aprovada`' }
         '403': { $ref: '#/components/responses/SemPermissao' }
   /api/admin/imagens/{id}/original:
     get:

@@ -2,6 +2,7 @@
 // O desbloqueio não tem tabela própria: ele é o primeiro carimbo de rota (evento_id NULL) da pessoa naquele ponto,
 // então não cria XP, não muda o pódio e não pode ser comprada, trocada nem transferida.
 import { q } from './db/database.js';
+import { urlPublica } from './midia/servico.js';
 
 export const RARIDADES = ['comum', 'raro', 'epico', 'lendario'];
 
@@ -89,8 +90,9 @@ export async function atribuirCriaturas(consulta = q) {
 export async function albumDaPessoa(usuarioId) {
   const linhas = await q(
     `SELECT t.codigo, t.nome AS ponto, t.criatura, t.raridade, t.ordem, t.carta, t.arte, t.frase, t.historia, t.oculto, t.categorias, t.categoria_carta,
-            r.cor, c.primeira
+            r.cor, c.primeira, pi.id AS foto_id, pi.sha256 AS foto_sha
      FROM tags t JOIN rotas r ON r.id = t.rota_id
+     LEFT JOIN ponto_imagens pi ON pi.id = t.arte_imagem_id AND pi.tag_id = t.id AND pi.status = 'aprovado'
      LEFT JOIN (SELECT tag_id, MIN(criado_em) AS primeira FROM carimbos WHERE usuario_id = ? GROUP BY tag_id) c ON c.tag_id = t.id
      WHERE t.status = 'publicado' AND r.status = 'publicado' ORDER BY t.carta, t.id`,
     [usuarioId],
@@ -110,6 +112,8 @@ export async function albumDaPessoa(usuarioId) {
       frase: capturada ? l.frase : null,
       historia: capturada ? l.historia : null,
       arte: capturada && l.arte ? l.arte : null,
+      // Foto escolhida na galeria (tem prioridade sobre o arquivo): só depois do desbloqueio, como o resto da carta.
+      arte_foto: capturada && l.foto_id ? { m: urlPublica({ id: l.foto_id, sha256: l.foto_sha }, 'm'), g: urlPublica({ id: l.foto_id, sha256: l.foto_sha }, 'g') } : null,
     };
   });
   const capturadas = itens.filter((i) => i.capturada).length;

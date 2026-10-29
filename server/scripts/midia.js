@@ -3,9 +3,9 @@
 //   node scripts/midia.js verificar                      testa gravar/ler/apagar no armazenamento (R2 ou disco)
 //   node scripts/midia.js listar [codigo]                fotos de um ponto (ou contagem por ponto)
 //   node scripts/midia.js importar <codigo> <arquivo> [--tipo=atual|historica|restauracao|outra] [--titulo=..] [--legenda=..]
-//                                [--periodo=..] [--autor=..] [--fonte=..] [--aprovar]
+//                                [--periodo=..] [--autor=..] [--fonte=..] [--aprovar] [--carta]
 // A foto importada entra "pendente" (como no /admin); --aprovar publica na hora, com as mesmas regras de crédito
-// (histórica ou restaurada exige --autor ou --fonte). O original é guardado intacto; a cópia pública sai sem EXIF/GPS.
+// (histórica ou restaurada exige --autor ou --fonte). --carta (junto com --aprovar) usa a foto como arte da carta do ponto. O original é guardado intacto; a cópia pública sai sem EXIF/GPS.
 import 'dotenv/config';
 import fs from 'node:fs';
 import { pool, q } from '../db/database.js';
@@ -61,6 +61,13 @@ async function importar() {
     const { imagem: aprovada } = await servico.mudarStatus(await servico.imagemPorId(imagem.id), 'aprovado', { forcar: false });
     await q('INSERT INTO auditoria_admin (conta_id, quem, acao, alvo, detalhe) VALUES (NULL, ?, ?, ?, ?)', ['console', 'foto.aprovado', `#${imagem.id}`, 'via scripts/midia.js --aprovar']);
     console.log(`Foto #${aprovada.id} aprovada: já aparece no app.`);
+    if (opcoes.carta) {
+      await servico.definirArteDaCarta(aprovada, true);
+      await q('INSERT INTO auditoria_admin (conta_id, quem, acao, alvo, detalhe) VALUES (NULL, ?, ?, ?, ?)', ['console', 'foto.carta', `#${imagem.id}`, 'via scripts/midia.js --carta']);
+      console.log(`Foto #${aprovada.id} é a arte da carta do ponto ${tag.codigo}.`);
+    }
+  } else if (opcoes.carta) {
+    falha('--carta exige --aprovar (a foto precisa estar aprovada para ilustrar a carta). A foto já foi enviada; aprove no /admin e use "Usar na carta".');
   }
 }
 

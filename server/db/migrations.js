@@ -269,6 +269,8 @@ async function ensureMidiaSchema() {
     CONSTRAINT ponto_imagens_tag_fk FOREIGN KEY (tag_id) REFERENCES tags(id),
     CONSTRAINT ponto_imagens_derivada_fk FOREIGN KEY (derivada_de) REFERENCES ponto_imagens(id) ON DELETE SET NULL
   )`);
+  // Foto da galeria usada como arte da carta do ponto (sem FK: a tabela de fotos já aponta para tags; a limpeza é feita pelo serviço).
+  await ensureColumn('tags', 'arte_imagem_id', 'INT NULL');
 }
 // Igreja Matriz: a pesquisa do projeto já listava a Matriz no Circuito Cultural Central, mas ela nunca entrou no catálogo.
 // Entra como ponto próprio, "pendente" (sem tag física e sem coordenada até a vistoria), com a carta Comum (foto atual,

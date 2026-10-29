@@ -33,6 +33,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
   let imagens = [];
   let armazenamento = null;
   let primeiraCarga = false;
+  let cartaId = null;
   const codigo = ponto.codigo;
 
   const { el, fechar } = dialogo(`<div class="caixa"><header><h3>Fotos · ${esc(ponto.nome)}</h3><button class="btn mini" type="button" data-fechar>Fechar</button></header>
@@ -77,6 +78,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
         ${i.status !== 'aprovado' ? `<button class="btn mini pri" type="button" data-foto="aprovado" data-id="${i.id}">${i.status === 'arquivado' ? 'Aprovar de novo' : 'Aprovar'}</button>` : ''}
         ${i.status === 'aprovado' ? `<button class="btn mini" type="button" data-foto="arquivado" data-id="${i.id}">Arquivar</button>` : ''}
         ${i.status === 'pendente' ? `<button class="btn mini" type="button" data-foto="arquivado" data-id="${i.id}">Arquivar</button>` : ''}
+        ${i.status === 'aprovado' ? (cartaId === i.id ? `<button class="btn mini pri" type="button" data-foto="carta-tirar" data-id="${i.id}" title="Esta foto é a arte da carta. Clique para voltar à arte anterior.">✓ Na carta</button>` : `<button class="btn mini" type="button" data-foto="carta" data-id="${i.id}" title="Usar esta foto como arte da carta do ponto">Usar na carta</button>`) : ''}
         <button class="btn mini" type="button" data-foto="editar" data-id="${i.id}">Editar</button>
         <a class="btn mini" href="${esc(i.original_url)}" download>Original ↓</a>
         <button class="btn mini perigo" type="button" data-foto="excluir" data-id="${i.id}" ${i.status === 'aprovado' ? 'disabled title="Arquive antes de excluir"' : ''}>Excluir</button></div></li>`;
@@ -86,7 +88,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
     const alvo = $('[data-lista]', el);
     const aprovadas = imagens.filter((i) => i.status === 'aprovado').length;
     alvo.innerHTML = `<h4 style="margin:4px 0 6px">${imagens.length ? `${imagens.length} foto(s) · ${aprovadas} no app` : 'Ainda sem fotos'}</h4>
-      ${imagens.length ? `<p class="ajuda" style="margin-top:0">Arraste a alça ⠿ para mudar a ordem (a primeira aprovada vira a capa). Fotos históricas ou restauradas precisam de autor ou fonte para serem aprovadas.</p>
+      ${imagens.length ? `<p class="ajuda" style="margin-top:0">Arraste a alça ⠿ para mudar a ordem (a primeira aprovada vira a capa). Em “Usar na carta” você escolhe a foto que ilustra a carta do ponto (aparece depois do carimbo). Fotos históricas ou restauradas precisam de autor ou fonte para serem aprovadas.</p>
       <ul class="lista" data-fotos>${imagens.map(linha).join('')}</ul>` : ''}`;
     const ul = $('[data-fotos]', alvo);
     if (ul) {
@@ -100,7 +102,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
   async function carregar() {
     try {
       const r = await req('GET', caminhoPonto(codigo));
-      imagens = r.imagens; armazenamento = r.armazenamento;
+      imagens = r.imagens; armazenamento = r.armazenamento; cartaId = r.carta_imagem_id ?? null;
     } catch (erro) { $('[data-lista]', el).innerHTML = `<div class="erro-form">${esc(mensagem(erro))}</div>`; return; }
     desenharArmazenamento();
     desenharLista();
@@ -172,6 +174,10 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
     if (acao === 'aprovado' || acao === 'arquivado') {
       if (acao === 'arquivado' && imagem.status === 'aprovado' && !(await confirmar('Arquivar foto?', 'Ela sai do app imediatamente. O original continua guardado.', { rotulo: 'Arquivar' }))) return;
       b.disabled = true; await mudarStatus(imagem, acao);
+    } else if (acao === 'carta' || acao === 'carta-tirar') {
+      b.disabled = true;
+      try { await req('POST', `/admin/imagens/${imagem.id}/carta`, { usar: acao === 'carta' }); avisar(acao === 'carta' ? 'Esta foto agora é a arte da carta do ponto.' : 'A carta voltou à arte anterior.'); await carregar(); aoMudar(); }
+      catch (erro) { avisar(mensagem(erro), 'erro'); b.disabled = false; }
     } else if (acao === 'editar') editar(imagem);
     else if (acao === 'excluir') {
       if (!(await confirmar('Excluir foto?', 'O original e as cópias saem do armazenamento de vez. Não dá para desfazer; arquivar guarda a foto sem mostrá-la.', { rotulo: 'Excluir', perigo: true }))) return;

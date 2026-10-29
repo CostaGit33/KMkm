@@ -30,9 +30,11 @@ export const CATEGORIAS = [
 export const rotuloCategoria = (id) => (CATEGORIAS.find((c) => c.id === id) || { nome: 'Cultura' }).nome;
 const num = (n) => String(n || 0).padStart(3, '0');
 
-// Arte: arquivo definido no admin (em /cartas/) ou, sem ele, o desenho gerado do nome.
+// Arte: foto da galeria escolhida no admin (/midia/), ou arquivo definido no admin (em /cartas/) ou, sem eles, o desenho gerado do nome.
 function arteHtml(i, size) {
   if (!i.capturada) return emblemaSvg(i.categoria, true, size);
+  // Foto da galeria escolhida no admin: tem prioridade; miniatura nas cartas pequenas, versão grande no detalhe.
+  if (i.arte_foto?.m && /^\/midia\/[\w.]+\.webp$/.test(i.arte_foto.m)) return `<img class="carta-img" src="${esc(size > 140 && i.arte_foto.g ? i.arte_foto.g : i.arte_foto.m)}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" decoding="async" />`;
   if (i.arte && /^[\w.-]{1,80}$/.test(i.arte)) return `<img class="carta-img" src="/cartas/${esc(i.arte)}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" />`;
   return emblemaSvg(i.categoria, false, size);
 }

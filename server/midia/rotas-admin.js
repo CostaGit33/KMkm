@@ -45,7 +45,7 @@ export function rotasAdminMidia(router, { h, registrar, texto, opcional, limit }
 
   router.get('/pontos/:codigo/imagens', h(async (req, res) => {
     const tag = await tagPorCodigo(req.params.codigo);
-    res.json({ ponto: { codigo: tag.codigo, nome: tag.nome }, armazenamento: { tipo: armazenamentoDeMidia().tipo, pronto: ['r2', 'local'].includes(armazenamentoDeMidia().tipo) }, imagens: await servico.imagensDoPonto(tag.id) });
+    res.json({ ponto: { codigo: tag.codigo, nome: tag.nome }, armazenamento: { tipo: armazenamentoDeMidia().tipo, pronto: ['r2', 'local'].includes(armazenamentoDeMidia().tipo) }, carta_imagem_id: await servico.arteDaCartaDoPonto(tag.id), carta_imagem_id: await servico.arteDaCartaDoPonto(tag.id), imagens: await servico.imagensDoPonto(tag.id) });
   }));
 
   router.post('/pontos/:codigo/imagens', limit({ windowMs: 10 * 60 * 1000, max: 40, name: 'midia-envio', chave: (req) => req.conta?.id }), corpoFoto, h(async (req, res) => {
@@ -78,6 +78,15 @@ export function rotasAdminMidia(router, { h, registrar, texto, opcional, limit }
     const { forcado, imagem: atualizada } = await servico.mudarStatus(imagem, String(req.body.status || ''), { forcar: req.body.forcar === true });
     await registrar(req, forcado ? 'foto.aprovada_sem_credito' : `foto.${atualizada.status}`, `#${imagem.id}`, forcado ? `faltava: ${servico.pendenciasDeAprovacao(imagem).join(', ')}` : atualizada.titulo || atualizada.tipo_registro);
     res.json({ imagem: atualizada });
+  }));
+
+  // Usar (ou deixar de usar) a foto aprovada como arte da carta do ponto.
+  router.post('/imagens/:id/carta', h(async (req, res) => {
+    const imagem = await imagemOuErro(req.params.id);
+    const usar = req.body.usar !== false;
+    await servico.definirArteDaCarta(imagem, usar);
+    await registrar(req, usar ? 'foto.carta' : 'foto.carta_removida', `#${imagem.id}`, imagem.titulo || imagem.tipo_registro);
+    res.json({ ok: true, carta_imagem_id: usar ? imagem.id : null });
   }));
 
   router.delete('/imagens/:id', h(async (req, res) => {

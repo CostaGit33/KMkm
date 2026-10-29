@@ -156,6 +156,8 @@ export async function mudarStatus(imagem, status, { forcar = false } = {}) {
     }
   }
   await q('UPDATE ponto_imagens SET status = ? WHERE id = ?', [status, imagem.id]);
+  // Foto que sai do ar também deixa de ser a arte da carta (e não volta sozinha se for aprovada de novo).
+  if (status !== 'aprovado') await q('UPDATE tags SET arte_imagem_id = NULL WHERE arte_imagem_id = ?', [imagem.id]);
   return { forcado, imagem: admin(await imagemPorId(imagem.id)) };
 }
 
@@ -175,7 +177,19 @@ export async function excluirImagem({ armazenamento, imagem }) {
     console.error(JSON.stringify({ type: 'midia_erro', etapa: 'excluir', imagem: imagem.id, erros }));
     falha(502, 'midia_falha_armazenamento');
   }
+  await q('UPDATE tags SET arte_imagem_id = NULL WHERE arte_imagem_id = ?', [imagem.id]);
   await q('DELETE FROM ponto_imagens WHERE id = ?', [imagem.id]);
+}
+
+// Arte da carta do ponto: uma foto aprovada da própria galeria (ou nenhuma, voltando ao arquivo/desenho de antes).
+export async function definirArteDaCarta(imagem, usar) {
+  if (usar && imagem.status !== 'aprovado') falha(409, 'foto_nao_aprovada');
+  if (usar) await q('UPDATE tags SET arte_imagem_id = ? WHERE id = ?', [imagem.id, imagem.tag_id]);
+  else await q('UPDATE tags SET arte_imagem_id = NULL WHERE id = ? AND arte_imagem_id = ?', [imagem.tag_id, imagem.id]);
+}
+export async function arteDaCartaDoPonto(tagId) {
+  const [t] = await q('SELECT arte_imagem_id FROM tags WHERE id = ?', [tagId]);
+  return t?.arte_imagem_id ?? null;
 }
 
 // Arquivo público (somente foto aprovada de ponto que não está arquivado). Devolve null para tudo o que não deve aparecer.
