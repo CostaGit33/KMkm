@@ -9,11 +9,13 @@ const SELO = { historica: "Histórica", atual: "Hoje", restauracao: "Restaurada"
 const credito = (f) => [f.autor && `Foto: ${f.autor}`, f.fonte && `Fonte: ${f.fonte}`].filter(Boolean).join(" · ");
 const alternativo = (f) => f.titulo || f.legenda || ROTULO[f.tipo_registro] || "Foto do ponto";
 
-// Espaço reservado enquanto a lista carrega (com a capa, se o catálogo já a trouxe).
+// Espaço reservado enquanto a lista carrega. A seção NÃO depende do catálogo (que pode estar velho no aparelho): ela
+// nasce escondida, busca as fotos aprovadas do ponto e só aparece se houver alguma. Com a capa do catálogo, já mostra algo.
 export function galeriaHtml(ponto) {
-  if (!ponto?.fotos) return "";
-  const capa = ponto.capa ? `<span class="galeria-item is-capa" aria-hidden="true"><img src="${esc(ponto.capa)}" alt="" width="160" height="160" /></span>` : "";
-  return `<section class="galeria" data-galeria="${esc(String(ponto.id).toLowerCase())}" aria-label="Fotos deste ponto"><div class="section-heading"><div><h2>Fotos do lugar</h2><p>${ponto.fotos} ${ponto.fotos === 1 ? "foto" : "fotos"}</p></div></div><div class="galeria-faixa" data-galeria-faixa>${capa}<span class="galeria-carregando small muted">Carregando…</span></div></section>`;
+  if (!ponto) return "";
+  const conhecida = Number(ponto.fotos) > 0;
+  const capa = conhecida && ponto.capa ? `<span class="galeria-item is-capa" aria-hidden="true"><img src="${esc(ponto.capa)}" alt="" width="160" height="160" /></span>` : "";
+  return `<section class="galeria" data-galeria="${esc(String(ponto.id).toLowerCase())}" aria-label="Fotos deste ponto" ${conhecida ? "" : "hidden"}><div class="section-heading"><div><h2>Fotos do lugar</h2><p>${conhecida ? `${ponto.fotos} ${ponto.fotos === 1 ? "foto" : "fotos"}` : ""}</p></div></div><div class="galeria-faixa" data-galeria-faixa>${capa}<span class="galeria-carregando small muted">Carregando…</span></div></section>`;
 }
 
 async function carregar(codigo) {
@@ -21,7 +23,7 @@ async function carregar(codigo) {
   const r = await fetch(`/api/pontos/${encodeURIComponent(codigo)}/imagens`);
   if (!r.ok) throw new Error(`galeria_${r.status}`);
   const fotos = (await r.json()).imagens || [];
-  cache.set(codigo, fotos);
+  if (fotos.length) cache.set(codigo, fotos); // lista vazia não fica guardada: aprovada depois, aparece na próxima abertura
   return fotos;
 }
 
@@ -45,12 +47,14 @@ export async function montarGaleria(raiz = document) {
   const codigo = secao.dataset.galeria;
   let fotos;
   try { fotos = await carregar(codigo); } catch {
+    if (secao.hidden) { secao.remove(); return; }
     const faixa = secao.querySelector("[data-galeria-faixa]");
     if (faixa) faixa.innerHTML = `<span class="small muted">Não foi possível carregar as fotos agora.</span>`;
     return;
   }
   if (!secao.isConnected) return;
   if (!fotos.length) { secao.remove(); return; }
+  secao.hidden = false;
   secao.querySelector(".section-heading p").textContent = `${fotos.length} ${fotos.length === 1 ? "foto" : "fotos"}`;
   secao.querySelector("[data-galeria-faixa]").innerHTML = fotos.map((f, i) => `<button class="galeria-item" type="button" data-foto="${i}" aria-label="Ampliar: ${esc(alternativo(f))}">
       <img src="${esc(f.miniatura_url)}" alt="" loading="lazy" decoding="async" width="${Math.round(160 * f.largura / Math.max(f.largura, f.altura))}" height="${Math.round(160 * f.altura / Math.max(f.largura, f.altura))}" />
