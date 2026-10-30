@@ -65,7 +65,7 @@ const temCoordenada = (tag) => tag?.lat != null && tag?.lng != null
 export function raioDoPonto(tag, raioPadraoM = 100) {
   const proprio = tag?.raio_m == null ? 0 : Number(tag.raio_m);
   const bruto = Number.isFinite(proprio) && proprio > 0 ? proprio : Number(raioPadraoM || 0);
-  return bruto > 0 ? Math.min(Math.round(bruto), 5000) : 0;
+  return bruto > 0 ? Math.min(Math.round(bruto), 100) : 0;
 }
 
 export function avaliarLocalizacao(tag, pos, raioPadraoM = 100) {
