@@ -7,7 +7,7 @@
 | `CONTATO_EMAIL` | e-mail exibido em /privacidade e /excluir-conta (exigido pela Google Play) | sim |
 | `GOOGLE_MAPS_API_KEY` | chave `AIza...` do Maps JavaScript API | recomendada |
 | `GOOGLE_MAP_ID` | Map ID para estilo próprio (verde e dourado) | opcional |
-| `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou `v8.13`), devolvido em `/api/saude` e útil para achar qual deploy gerou um erro | recomendada |
+| `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou versão semântica), devolvido em `/api/saude`; se ausente, o código usa `V8.14` como fallback até a próxima versão | recomendada |
 | `RESEND_API_KEY` | chave de envio do Resend (segredo: só variável de execução, nunca Build Args nem `VITE_*`). Liga a recuperação de senha | para recuperar senha |
 | `RESEND_FROM` | remetente de um domínio verificado no Resend, ex.: `Mais1km <conta@seudominio.com.br>` | para recuperar senha |
 | `APP_PUBLIC_URL` | URL pública HTTPS do app, sem barra final; base do link do e-mail e dos links das tags (CSV/QR) | para recuperar senha e exportar links |
@@ -16,7 +16,7 @@
 | `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |
 | `TAG_KEY_SECRET` | segredo (32+ caracteres aleatórios) das chaves dos links das tags. Segredo de execução; **guarde uma cópia fora do servidor**: sem ele os links já gravados nas tags deixam de funcionar | sim, antes de gravar as tags |
 | `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | armazenamento das fotos dos pontos (bucket privado `mais1km-media`; token R2 só com leitura e gravação nesse bucket). Segredos de execução, só no Easypanel. Alternativa: `MEDIA_DIR` apontando para um volume persistente. Veja [midia.md](midia.md) | para usar a galeria de fotos |
-| `GEOFENCE_RAIO_PADRAO_M` | raio padrão (m) para exigir localização no carimbo; `0` desliga. Só ligue com coordenadas conferidas em campo | opcional (padrão 0) |
+| `GEOFENCE_RAIO_PADRAO_M` | raio padrão (m) para exigir localização no carimbo. O padrão é 100 m; valores positivos podem reduzir o raio, sempre limitado a 100 m. `0` não desliga a validação | opcional (padrão 100) |
 | `EXIGIR_AUTORIZACAO` | `true` (padrão) exige responsável, autorização e vistoria para publicar um ponto | opcional |
 | `CSP_LEGADO` | `true` reabre `unsafe-inline`/`unsafe-eval` em scripts; só como saída temporária se a CSP estrita quebrar algo | não |
 | `FRAME_ANCESTORS` / `ORIGENS_PERMITIDAS` / `COOKIE_SAMESITE` | só se o app for embutido em outro site ou servido por mais de um domínio (padrões seguros: nenhum / só o próprio host / `Lax`) | não |
@@ -36,7 +36,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Rodar `npm --prefix server run relatorio-piloto` uma vez para conferir que o relatório abre.
 
 ## 3. Conferência pós-deploy
-- [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; "desconhecida" significa que a variável não foi definida).
+- [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; se a variável não estiver definida, retorna `V8.14`).
 - [ ] Galeria de fotos: `npm --prefix server run midia -- verificar` responde OK (ou `/api/saude` com `midia: "r2"`), e uma foto de teste enviada em Admin → Fotos aparece no app depois de aprovada.
 - [ ] `GET /api/config-mapa` mostra a chave (e não `null`).
 - [ ] Mapa abre com Google; se não, aparece aviso e o mapa aberto assume.
@@ -62,7 +62,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [x] Monitores criados em 21/10/2026: `+1 KM · API (saúde + banco)` (procura `"banco":"ok"` em `/api/saude`) e `+1 KM · App (página inicial)`, a cada 3 minutos, com alerta por e-mail e push.
 - [ ] Sentry: definir `SENTRY_DSN` no Easypanel, reimplantar e conferir no log a linha `{"type":"monitoramento","sentry":"ligado"}`. Para monitorar latência, definir `SENTRY_TRACES_SAMPLE_RATE=0.05` ou `0.1`; `0` mantém traces desligados.
 - [ ] Apagar o monitor de exemplo `google.com` que veio com a conta.
-- [ ] Definir `RELEASE_VERSION` (hoje `/api/saude` devolve `"versao":"desconhecida"`), para saber qual deploy está no ar.
+- [ ] Definir `RELEASE_VERSION` com o identificador exato do deploy (sem ela, `/api/saude` usa o fallback `V8.14`, que identifica a versão funcional, mas não distingue commits).
 
 
 ## Google Analytics 4 (consentimento)
