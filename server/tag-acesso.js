@@ -3,8 +3,8 @@
 // O que cada camada realmente garante (leia antes de confiar nela):
 //  - CHAVE DO LINK (?k=): impede adivinhar códigos (eu-001, eu-002…) e carimbar de longe. NÃO prova presença:
 //    quem fotografa o QR ou lê a tag NFC consegue o link. Se vazar, gire a chave do ponto (revoga o link antigo).
-//  - RAIO (geofence): confere a posição enviada pelo aparelho. Reduz carimbo à distância, mas o GPS pode ser
-//    falsificado e depende de coordenadas validadas em campo. Desligado por padrão.
+//  - RAIO (geofence): confere a posição enviada pelo aparelho. Padrão de 100 m, com precisão GPS até 50 m.
+//    Reduz carimbo à distância, mas o GPS pode ser falsificado e depende de coordenadas validadas em campo.
 //  - SUSPEITA: marca (sem bloquear) carimbos com deslocamento fisicamente impossível entre dois pontos.
 //  - Prova criptográfica de presença exige tag com contador assinado (NTAG 424 DNA); não está implementada aqui.
 import crypto from 'node:crypto';
