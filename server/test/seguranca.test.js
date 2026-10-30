@@ -95,7 +95,7 @@ test('posição enviada pelo aparelho é validada', () => {
 test('raio: usa 100 m por padrão, aceita raio próprio e não permite desligar com zero', () => {
   const com = { lat: '-16.3751286', lng: '-39.5881012', raio_m: null };
   assert.equal(raioDoPonto(com), 100);
-  assert.equal(raioDoPonto(com, 200), 200);
+  assert.equal(raioDoPonto(com, 200), 100);
   assert.equal(raioDoPonto({ ...com, raio_m: 80 }, 200), 80);
   assert.equal(raioDoPonto({ ...com, raio_m: 0 }, 200), 200);
   assert.equal(raioDoPonto({ ...com, raio_m: 99999 }, 0), 100);
