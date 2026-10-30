@@ -1,5 +1,6 @@
 // Coleção de cartas de Eunápolis: uma carta única numerada por ponto, com personagem, categoria e raridade.
 // A carta é desbloqueada no primeiro carimbo de rota; não evolui com o tempo, não gera XP nem pode ser trocada.
+import { galeriaHtml, montarGaleria } from "./galeria.js";
 const RARIDADE = { comum: ['Comum', 1], raro: ['Rara', 2], epico: ['Épica', 3], lendario: ['Lendária', 4] };
 const rotuloRaridade = (r) => (RARIDADE[r] || RARIDADE.comum)[0];
 const estrelas = (r) => '★'.repeat((RARIDADE[r] || RARIDADE.comum)[1]);
@@ -61,7 +62,8 @@ export function detalheHtml(i) {
     + `<dt>Categoria</dt><dd>${esc(rotuloCategoria(i.categoria))}</dd><dt>Raridade</dt><dd>${estrelas(i.raridade)} ${esc(rotuloRaridade(i.raridade))}</dd></dl>`
     + (i.capturada && i.historia ? `<p class="carta-historia">${esc(i.historia)}</p>` : '')
     + (i.capturada && i.frase ? `<blockquote class="carta-frase">“${esc(i.frase)}”</blockquote>` : '')
-    + `</div><p class="carta-dica">${esc(dica)}</p></div>`;
+    + `</div><p class="carta-dica">${esc(dica)}</p></div>`
+    + (i.capturada ? galeriaHtml({ id: i.codigo }) : '');
 }
 
 let itensAtuais = [];
@@ -102,5 +104,6 @@ if (typeof document !== 'undefined' && !window.__cartasOuvinte) {
     }
     dlg.innerHTML = `<button type="button" class="carta-fechar" data-fechar aria-label="Voltar à coleção">×</button><div class="carta-pagina-voltar"><span aria-hidden="true">←</span> Sua coleção</div>${detalheHtml(item)}`;
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    if (item.capturada) montarGaleria(dlg);
   });
 }

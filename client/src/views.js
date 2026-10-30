@@ -2,7 +2,7 @@ import { CITY, CATEGORIES, POINTS, ROUTES, COLLECTIONS, EUNAPOLIS_DESTINATION, g
 import { stampHtml } from "./stamp-kit.js";
 import { iniciais } from "./auth.js";
 import { secaoColecao, cartaHtml } from "./cartas.js";
-import { galeriaHtml } from "./galeria.js";
+import { galeriaHtml, miniaturaHtml } from "./galeria.js";
 import { analyticsAvailable, getAnalyticsConsent } from "./telemetry.js";
 
 const NAV_ITEMS = [
@@ -274,7 +274,7 @@ function nextStepCard(state, city) {
   const next = POINTS.find((p) => pointStatus(state, p) !== "conquered" && pointStatus(state, p) !== "mystery");
   if (!next) return city.total && city.count >= city.total ? `<article class="card next-step is-done" role="status"><strong>Caderneta completa!</strong><span>Você carimbou todos os pontos disponíveis.</span></article>` : "";
   const falta = city.total - city.count;
-  return `<article class="card next-step" aria-label="Próximo passo"><div class="next-step-copy"><span class="eyebrow">Próximo ponto · faltam ${falta}</span><strong>${escapeHtml(next.name)}</strong></div><button class="primary-button" type="button" data-action="switch-view" data-view="map">Ver no mapa</button></article>`;
+  return `<article class="card next-step" aria-label="Próximo passo">${miniaturaHtml(next, { tamanho: 56 })}<div class="next-step-copy"><span class="eyebrow">Próximo ponto · faltam ${falta}</span><strong>${escapeHtml(next.name)}</strong></div><button class="primary-button" type="button" data-action="switch-view" data-view="map">Ver no mapa</button></article>`;
 }
 
 function renderHome(state) {
@@ -297,7 +297,7 @@ function renderHome(state) {
       ${progressBar(city, "green", `Progresso da coleção: ${city.count} de ${city.total} cartas`)}
       <div class="home-progress-foot"><span>${city.percent}% concluído</span><button type="button" data-action="switch-view" data-view="collection">Ver coleção →</button></div>
     </section>
-    ${next ? `<section class="home-next-point" aria-labelledby="home-next-title"><div class="home-section-title"><div><p class="eyebrow">Continue sua jornada</p><h2 id="home-next-title">Próximo ponto para descobrir</h2></div><button type="button" data-action="switch-view" data-view="map">Ver todos</button></div><button class="home-next-card" type="button" data-action="open-point" data-id="${escapeHtml(next.id)}"><span class="home-next-symbol" aria-hidden="true">${escapeHtml(next.icon || "⌖")}</span><span class="home-next-copy"><strong>${escapeHtml(next.name)}</strong><small>${escapeHtml(next.note || "Ponto participante da cidade")}</small><span class="home-published-note">Consulte o mapa para confirmar disponibilidade</span></span><span class="home-next-arrow" aria-hidden="true">›</span></button></section>` : `<article class="home-complete-note"><strong>Parabéns pela jornada!</strong><span>Explore outros circuitos e continue conhecendo a cidade.</span></article>`}
+    ${next ? `<section class="home-next-point" aria-labelledby="home-next-title"><div class="home-section-title"><div><p class="eyebrow">Continue sua jornada</p><h2 id="home-next-title">Próximo ponto para descobrir</h2></div><button type="button" data-action="switch-view" data-view="map">Ver todos</button></div><button class="home-next-card" type="button" data-action="open-point" data-id="${escapeHtml(next.id)}">${miniaturaHtml(next, { tamanho: 50, classe: "ponto-foto home-next-foto" }) || `<span class="home-next-symbol" aria-hidden="true">${escapeHtml(next.icon || "⌖")}</span>`}<span class="home-next-copy"><strong>${escapeHtml(next.name)}</strong><small>${escapeHtml(next.note || "Ponto participante da cidade")}</small><span class="home-published-note">Consulte o mapa para confirmar disponibilidade</span></span><span class="home-next-arrow" aria-hidden="true">›</span></button></section>` : `<article class="home-complete-note"><strong>Parabéns pela jornada!</strong><span>Explore outros circuitos e continue conhecendo a cidade.</span></article>`}
     <section class="home-shortcuts" aria-label="Explorar o aplicativo">
       <button class="home-shortcut" type="button" data-action="switch-view" data-view="map"><span aria-hidden="true">⌖</span><strong>Mapa</strong><small>Explore a cidade</small></button>
       <button class="home-shortcut" type="button" data-action="switch-view" data-view="routes"><span aria-hidden="true">⌁</span><strong>Rotas</strong><small>Siga circuitos</small></button>
@@ -333,7 +333,7 @@ function pointRow(state, point, ordinal) {
   const statusLabel = { conquered: "conquistado", discovered: "descoberto", available: "disponível", mystery: "mistério" }[status];
   const categoryNames = point.categoryIds.map((id) => getCategory(id)?.name).filter(Boolean).join(" · ");
   const mapStatus = Number.isFinite(point.lat) && Number.isFinite(point.lng) ? "coordenada no mapa" : "sem coordenada";
-  return `<button class="point-row" type="button" data-action="open-point" data-id="${point.id}" aria-label="Abrir ${escapeHtml(getVisibleName(state, point))}, ${statusLabel}"><span class="point-number">${String(ordinal).padStart(2, "0")}</span><span class="point-main"><span class="point-name">${escapeHtml(getVisibleName(state, point))}</span><span class="point-meta">${escapeHtml(categoryNames)} · ${point.id} · ${mapStatus}</span></span><span class="status-pill ${status}">${statusLabel}</span></button>`;
+  return `<button class="point-row" type="button" data-action="open-point" data-id="${point.id}" aria-label="Abrir ${escapeHtml(getVisibleName(state, point))}, ${statusLabel}"><span class="point-number">${String(ordinal).padStart(2, "0")}</span>${status === "mystery" ? "" : miniaturaHtml(point)}<span class="point-main"><span class="point-name">${escapeHtml(getVisibleName(state, point))}</span><span class="point-meta">${escapeHtml(categoryNames)} · ${point.id} · ${mapStatus}</span></span><span class="status-pill ${status}">${statusLabel}</span></button>`;
 }
 
 function mapCanvas(state, filters) {

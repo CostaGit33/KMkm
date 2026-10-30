@@ -9,6 +9,14 @@ const SELO = { historica: "Histórica", atual: "Hoje", restauracao: "Restaurada"
 const credito = (f) => [f.autor && `Foto: ${f.autor}`, f.fonte && `Fonte: ${f.fonte}`].filter(Boolean).join(" · ");
 const alternativo = (f) => f.titulo || f.legenda || ROTULO[f.tipo_registro] || "Foto do ponto";
 
+// Miniatura do ponto (capa do catálogo) para listas, cartões e o mapa. Vazia se o ponto não tem foto aprovada.
+// Quem chama decide não usar em ponto-mistério (a foto estragaria a surpresa).
+export function miniaturaHtml(ponto, { tamanho = 52, classe = "ponto-foto" } = {}) {
+  const url = ponto?.capa;
+  if (!url || !/^\/midia\/[\w.]+\.webp$/.test(url)) return "";
+  return `<img class="${classe}" src="${esc(url)}" alt="" width="${tamanho}" height="${tamanho}" loading="lazy" decoding="async" />`;
+}
+
 // Espaço reservado enquanto a lista carrega. A seção NÃO depende do catálogo (que pode estar velho no aparelho): ela
 // nasce escondida, busca as fotos aprovadas do ponto e só aparece se houver alguma. Com a capa do catálogo, já mostra algo.
 export function galeriaHtml(ponto) {

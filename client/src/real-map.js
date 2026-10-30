@@ -1,5 +1,6 @@
 import { carregarConfigMapa, createGoogleEngine, createLeafletEngine } from "./map-engines.js";
 import { ROUTES, POINTS, CATEGORIES } from "./data.js";
+import { miniaturaHtml } from "./galeria.js";
 import { ARRIVAL_M, clearMark, directionsUrl, streetViewUrl, distanceMeters, formatDistance, hasCoords, marksCsv, saveMark } from "./geo.js";
 
 const EUNAPOLIS_VIEW = { center: [-16.3766, -39.5864], zoom: 14 };
@@ -163,7 +164,7 @@ export function mountRealMap({ element, city, points, state, onOpenPoint }) {
     const arrived = dist != null && dist <= ARRIVAL_M;
     const mapped = hasCoords(point);
     return `<div class="map-sheet ${arrived ? "is-arrived" : ""}">
-      <div class="map-sheet-top"><span class="map-sheet-num">${ordinal(point)}</span><div><strong>${esc(name)}</strong><small>${point.id} · ${STATUS_TEXT[status]}</small></div>${dist != null ? `<span class="map-dist">${arrived ? "Você chegou" : `a ${formatDistance(dist)}`}</span>` : ""}</div>
+      <div class="map-sheet-top"><span class="map-sheet-num">${ordinal(point)}</span>${status === "mystery" ? "" : miniaturaHtml(point, { tamanho: 44 })}<div><strong>${esc(name)}</strong><small>${point.id} · ${STATUS_TEXT[status]}</small></div>${dist != null ? `<span class="map-dist">${arrived ? "Você chegou" : `a ${formatDistance(dist)}`}</span>` : ""}</div>
       <p class="map-sheet-src">${esc(sourceText(point))}</p>
       <div class="map-sheet-actions">
         <button type="button" class="map-btn primary" data-map="open" data-id="${point.id}">${arrived ? "Abrir e carimbar" : "Abrir ficha"}</button>

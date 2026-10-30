@@ -1266,3 +1266,12 @@ body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { displa
 .galeria-nav.is-prox { right: 8px; }
 .galeria-nav[hidden] { display: none; }
 .galeria-fechar:focus-visible, .galeria-nav:focus-visible { outline: 3px solid #8bb8d8; outline-offset: 2px; }
+
+/* Miniatura do ponto (capa da galeria) em listas, mapa e início */
+.ponto-foto { width: 52px; height: 52px; flex: 0 0 auto; object-fit: cover; border-radius: 8px; border: 1px solid var(--rule); background: var(--card-strong); display: block; }
+.next-step .ponto-foto { width: 56px; height: 56px; }
+.map-sheet-top .ponto-foto { width: 44px; height: 44px; }
+.carta-pagina-dialogo .galeria { margin: 18px 0 6px; }
+.tag-card ~ .galeria, #tag-content .galeria { margin-top: 14px; }
+
+.home-next-card .ponto-foto { width:50px; height:50px; flex:0 0 50px; border-radius:12px; }
