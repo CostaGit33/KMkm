@@ -57,24 +57,29 @@ export function validarPosicao(pos) {
   return { lat, lng, acc: Number.isFinite(acc) && acc >= 0 ? Math.min(acc, 1000) : 0 };
 }
 
-const temCoordenada = (tag) => tag?.lat != null && tag?.lng != null && Number.isFinite(Number(tag.lat)) && Number.isFinite(Number(tag.lng));
+const temCoordenada = (tag) => tag?.lat != null && tag?.lng != null
+  && Number.isFinite(Number(tag.lat)) && Number.isFinite(Number(tag.lng))
+  && Math.abs(Number(tag.lat)) <= 90 && Math.abs(Number(tag.lng)) <= 180;
 
-// Raio efetivo do ponto: o do próprio ponto, ou o padrão do servidor; 0 = não exigir localização.
-export function raioDoPonto(tag, raioPadraoM = 0) {
-  if (!temCoordenada(tag)) return 0;
-  const bruto = tag.raio_m != null ? Number(tag.raio_m) : Number(raioPadraoM || 0);
+// Raio próprio positivo vence o padrão. Zero/nulo usa o padrão para não deixar ponto publicado sem proteção.
+export function raioDoPonto(tag, raioPadraoM = 100) {
+  const proprio = tag?.raio_m == null ? 0 : Number(tag.raio_m);
+  const bruto = Number.isFinite(proprio) && proprio > 0 ? proprio : Number(raioPadraoM || 0);
   return bruto > 0 ? Math.min(Math.round(bruto), 5000) : 0;
 }
 
-export function avaliarLocalizacao(tag, pos, raioPadraoM = 0) {
+export function avaliarLocalizacao(tag, pos, raioPadraoM = 100) {
   const raio = raioDoPonto(tag, raioPadraoM);
   if (!raio) return { exigida: false, ok: true };
+  if (!temCoordenada(tag)) return { exigida: true, ok: false, motivo: 'ponto_sem_coordenadas', raio };
   const posicao = validarPosicao(pos);
   if (!posicao) return { exigida: true, ok: false, motivo: 'localizacao_necessaria', raio };
+  if (posicao.acc <= 0 || posicao.acc > 50) {
+    return { exigida: true, ok: false, motivo: 'gps_impreciso', raio, precisao: Math.round(posicao.acc) };
+  }
   const distancia = distanciaM(posicao, { lat: Number(tag.lat), lng: Number(tag.lng) });
-  const folga = Math.min(posicao.acc, 150); // aparelho com GPS ruim ganha folga, limitada
-  if (distancia > raio + folga) return { exigida: true, ok: false, motivo: 'fora_do_raio', raio, distancia: Math.round(distancia) };
-  return { exigida: true, ok: true, raio };
+  if (distancia > raio) return { exigida: true, ok: false, motivo: 'fora_do_raio', raio, distancia: Math.round(distancia) };
+  return { exigida: true, ok: true, raio, distancia: Math.round(distancia) };
 }
 
 // Dois carimbos de pontos distantes em tempo curto demais para serem fisicamente possíveis.
