@@ -87,7 +87,10 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
   function desenharLista() {
     const alvo = $('[data-lista]', el);
     const aprovadas = imagens.filter((i) => i.status === 'aprovado').length;
-    alvo.innerHTML = `<h4 style="margin:4px 0 6px">${imagens.length ? `${imagens.length} foto(s) · ${aprovadas} no app` : 'Ainda sem fotos'}</h4>
+    const aviso = !imagens.length ? '' : aprovadas
+      ? `<p class="ajuda" style="margin:0 0 8px">✓ ${aprovadas} foto(s) aparecem no app, na página do ponto (Rotas → circuito → ${esc(ponto.nome)}), na seção “Fotos do lugar”.${ponto.status === 'publicado' ? '' : ' Este ponto ainda não está publicado: as fotos aparecem na página do ponto, mas ele não recebe carimbo.'}</p>`
+      : '<div class="erro-form" style="margin-bottom:8px">Nenhuma foto está aprovada, por isso <b>nada aparece no app</b>. Use <b>Aprovar</b> na foto (histórica ou restaurada pede autor ou fonte).</div>';
+    alvo.innerHTML = `<h4 style="margin:4px 0 6px">${imagens.length ? `${imagens.length} foto(s) · ${aprovadas} no app` : 'Ainda sem fotos'}</h4>${aviso}
       ${imagens.length ? `<p class="ajuda" style="margin-top:0">Arraste a alça ⠿ para mudar a ordem (a primeira aprovada vira a capa). Em “Usar na carta” você escolhe a foto que ilustra a carta do ponto (aparece depois do carimbo). Fotos históricas ou restauradas precisam de autor ou fonte para serem aprovadas.</p>
       <ul class="lista" data-fotos>${imagens.map(linha).join('')}</ul>` : ''}`;
     const ul = $('[data-fotos]', alvo);
