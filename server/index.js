@@ -293,9 +293,11 @@ const guardiao = async (tagId) => (await q(
 ))[0] ?? null;
 
 const SEGREDO_CHAVES = segredoDasChaves();
-// Geofence obrigatório por padrão: valores ausentes, vazios ou 0 não desligam a proteção.
+// Geofence padrão de 100 m. A configuração pode reduzir o raio por operação, nunca ampliá-lo nem desligá-lo.
 const raioConfigurado = Number(process.env.GEOFENCE_RAIO_PADRAO_M);
-const RAIO_PADRAO_M = 100;
+const RAIO_PADRAO_M = Number.isFinite(raioConfigurado) && raioConfigurado > 0
+  ? Math.min(Math.round(raioConfigurado), 100)
+  : 100;
 
 // Confere a chave do link da tag (?k=) e, se o ponto exigir, a localização. Devolve null quando liberado
 // ou { status, corpo } com o motivo. As camadas e seus limites estão explicados em tag-acesso.js.
