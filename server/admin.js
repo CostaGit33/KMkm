@@ -41,7 +41,7 @@ function dataOpcional(valor) {
 function raioOpcional(valor) {
   if (valor === undefined || valor === null || String(valor).trim() === '') return null;
   const n = Number(valor);
-  if (!Number.isInteger(n) || n < 0 || n > 5000) falha(400, 'raio_invalido', { maximo: 5000 });
+  if (!Number.isInteger(n) || n < 0 || n > 100) falha(400, 'raio_invalido', { maximo: 100 });
   return n;
 }
 // O que falta para um ponto poder ser publicado com segurança operacional.
@@ -191,6 +191,12 @@ export async function catalogoPublico() {
 
 // Gate de publicação. Devolve true quando foi liberado "à força" (fica registrado na auditoria).
 function exigirPublicacaoSegura(ponto, corpo, codigo) {
+  // Um ponto sem coordenadas não pode ser publicado: o carimbo exige geofence.
+  const lat = Number(ponto?.lat);
+  const lng = Number(ponto?.lng);
+  if (ponto?.lat == null || ponto?.lng == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    falha(409, 'coordenadas_pendentes', { codigos: [codigo] });
+  }
   if (!EXIGIR_AUTORIZACAO) return false;
   const faltas = pendenciasDePublicacao(ponto);
   if (!faltas.length) return false;

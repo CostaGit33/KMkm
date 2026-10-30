@@ -92,17 +92,17 @@ test('posição enviada pelo aparelho é validada', () => {
   assert.deepEqual(validarPosicao({ lat: -16.37, lng: -39.58 }), { lat: -16.37, lng: -39.58, acc: 0 });
 });
 
-test('raio: ponto sem coordenada nunca exige localização; raio próprio vence o padrão; 0 desliga', () => {
+test('raio: usa 100 m por padrão, aceita raio próprio e não permite desligar com zero', () => {
   const com = { lat: '-16.3751286', lng: '-39.5881012', raio_m: null };
-  assert.equal(raioDoPonto({ ...com, lat: null }, 200), 0);
-  assert.equal(raioDoPonto(com, 0), 0);
-  assert.equal(raioDoPonto(com, 200), 200);
+  assert.equal(raioDoPonto(com), 100);
+  assert.equal(raioDoPonto(com, 200), 100);
   assert.equal(raioDoPonto({ ...com, raio_m: 80 }, 200), 80);
-  assert.equal(raioDoPonto({ ...com, raio_m: 0 }, 200), 0);
-  assert.equal(raioDoPonto({ ...com, raio_m: 99999 }, 0), 5000);
+  assert.equal(raioDoPonto({ ...com, raio_m: 0 }, 200), 100);
+  assert.equal(raioDoPonto({ ...com, raio_m: 99999 }, 0), 100);
+  assert.equal(raioDoPonto({ ...com, lat: null }, 100), 100);
 });
 
-test('localização: exigida quando há raio; dentro passa, fora falha, sem posição pede localização', () => {
+test('localização: exige GPS preciso, respeita 100 m exatos e bloqueia pontos sem coordenadas', () => {
   const tag = { lat: -16.3751286, lng: -39.5881012, raio_m: 100 };
   assert.deepEqual(avaliarLocalizacao({ ...tag, raio_m: null }, null, 0), { exigida: false, ok: true });
   assert.equal(avaliarLocalizacao(tag, null).motivo, 'localizacao_necessaria');
@@ -111,9 +111,12 @@ test('localização: exigida quando há raio; dentro passa, fora falha, sem posi
   assert.equal(longe.ok, false);
   assert.equal(longe.motivo, 'fora_do_raio');
   assert.ok(longe.distancia > 100 && longe.raio === 100);
-  // GPS ruim ganha folga (limitada a 150 m), mas não infinita
-  assert.equal(avaliarLocalizacao(tag, { lat: -16.3741286, lng: -39.5881012, acc: 40 }).ok, true);
-  assert.equal(avaliarLocalizacao(tag, { lat: -16.3651286, lng: -39.5881012, acc: 1000 }).ok, false);
+  const dentroComGpsRuim = avaliarLocalizacao(tag, { lat: -16.3751286, lng: -39.5881012, acc: 80 });
+  assert.equal(dentroComGpsRuim.ok, false);
+  assert.equal(dentroComGpsRuim.motivo, 'gps_impreciso');
+  assert.equal(avaliarLocalizacao(tag, { lat: -16.3751286, lng: -39.5881012, acc: 0 }).motivo, 'gps_impreciso');
+  assert.equal(avaliarLocalizacao({ ...tag, lat: null, lng: null }, { lat: tag.lat, lng: tag.lng, acc: 10 }).motivo, 'ponto_sem_coordenadas');
+  assert.equal(avaliarLocalizacao(tag, { lat: -16.3651286, lng: -39.5881012, acc: 1000 }).motivo, 'gps_impreciso');
 });
 
 test('deslocamento impossível é marcado; deslocamento plausível ou curto, não', () => {

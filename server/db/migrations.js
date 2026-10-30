@@ -224,7 +224,7 @@ async function ensureColecaoEdicaoSchema() {
 // Acesso ao carimbo, operação dos pontos e antifraude.
 // - chave_versao: 0 = link aberto (legado); >= 1 = o link da tag precisa da chave ?k= (HMAC, veja tag-acesso.js).
 //   Girar a chave do ponto = somar 1; o link antigo deixa de valer.
-// - raio_m: raio em metros para exigir localização no carimbo (NULL = usa GEOFENCE_RAIO_PADRAO_M; 0 = desligado).
+// - raio_m: raio em metros para exigir localização (NULL/0 = padrão; valor positivo = raio próprio, limitado a 100 m).
 // - responsável, autorização e vistoria: o ponto só é publicado com esses dados (ou com confirmação explícita).
 // - carimbos.suspeito: motivo da suspeita (não bloqueia; serve para revisão e para o relatório do piloto).
 async function ensureAcessoSchema() {

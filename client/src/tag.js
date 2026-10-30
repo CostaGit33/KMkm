@@ -28,7 +28,7 @@ function obterPosicao() {
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
       reject,
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
     );
   });
 }
@@ -39,6 +39,12 @@ function mensagemErroTag(error) {
   }
   if (error?.code === 'localizacao_necessaria') {
     return { titulo: 'Confirme que você está no local', texto: 'Este ponto pede a sua localização no momento do carimbo. Ela não é guardada: só conferimos a distância até o ponto.', localizar: true };
+  }
+  if (error?.code === 'gps_impreciso') {
+    return { titulo: 'Precisamos de um GPS mais preciso', texto: 'A precisão atual está acima de 50 metros. Ative a localização precisa, aguarde alguns segundos em uma área aberta e tente novamente.', localizar: true };
+  }
+  if (error?.code === 'ponto_sem_coordenadas') {
+    return { titulo: 'Localização do ponto pendente', texto: 'Este ponto ainda não possui coordenadas válidas cadastradas. O carimbo foi bloqueado para evitar uma confirmação incorreta. Avise a organização.', tentar: false };
   }
   if (error?.code === 'fora_do_raio') {
     const { raio, distancia } = error.dados || {};
