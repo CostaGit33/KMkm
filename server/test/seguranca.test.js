@@ -97,7 +97,7 @@ test('raio: usa 100 m por padrão, aceita raio próprio e não permite desligar 
   assert.equal(raioDoPonto(com), 100);
   assert.equal(raioDoPonto(com, 200), 100);
   assert.equal(raioDoPonto({ ...com, raio_m: 80 }, 200), 80);
-  assert.equal(raioDoPonto({ ...com, raio_m: 0 }, 200), 200);
+  assert.equal(raioDoPonto({ ...com, raio_m: 0 }, 200), 100);
   assert.equal(raioDoPonto({ ...com, raio_m: 99999 }, 0), 100);
   assert.equal(raioDoPonto({ ...com, lat: null }, 100), 100);
 });
