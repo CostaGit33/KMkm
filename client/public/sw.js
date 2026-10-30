@@ -1,5 +1,5 @@
 // Troque o nome do cache a cada versão publicada para renovar os aparelhos sem apagar o estado local.
-const CACHE_NAME = "mais1km-v39-galeria-visivel";
+const CACHE_NAME = "mais1km-v40-geofence-100m";
 const APP_SHELL = [
   "/",
   "/index.html",
