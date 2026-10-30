@@ -149,12 +149,12 @@ function formularioPonto(p) {
       <label class="campo"><span>Fonte da coordenada</span><input type="text" name="fonte_mapa" value="${esc(d.fonte_mapa)}" maxlength="80" placeholder="Ex.: conferido em campo em 12/10" /></label>
       <label class="campo"><span>Descrição curta (aparece na página do ponto)</span><textarea name="nota" maxlength="400">${esc(d.nota)}</textarea></label>
       <h4 style="margin:14px 0 4px">Operação e segurança do ponto</h4>
-      <p class="ajuda" style="margin-top:0">Para publicar: responsável, autorização do local e vistoria registrados. O raio só vale com coordenada conferida em campo.</p>
+      <p class="ajuda" style="margin-top:0">Para publicar: responsável, autorização do local e vistoria registrados. Ponto sem coordenada válida não pode ser publicado nem carimbado: confira a coordenada em campo antes.</p>
       <div class="dois"><label class="campo"><span>Responsável pelo local</span><input type="text" name="responsavel_nome" value="${esc(d.responsavel_nome || '')}" maxlength="120" /></label>
         <label class="campo"><span>Contato do responsável</span><input type="text" name="responsavel_contato" value="${esc(d.responsavel_contato || '')}" maxlength="120" /></label></div>
       <div class="dois"><label class="campo"><span>Autorização recebida em</span><input type="date" name="autorizado_em" value="${esc(d.autorizado_em || '')}" /></label>
         <label class="campo"><span>Vistoria feita em</span><input type="date" name="vistoriado_em" value="${esc(d.vistoriado_em || '')}" /></label></div>
-      <label class="campo"><span>Raio para exigir localização (metros; vazio = padrão do servidor, 0 = desligado)</span><input type="number" name="raio_m" min="0" max="5000" step="10" inputmode="numeric" value="${d.raio_m ?? ''}" /></label>
+      <label class="campo"><span>Raio do carimbo (metros; vazio = 100, o máximo permitido; não dá para desligar)</span><input type="number" name="raio_m" min="0" max="100" step="5" inputmode="numeric" value="${d.raio_m ?? ''}" /></label>
       <h4 style="margin:14px 0 4px">Carta do personagem</h4>
       <div class="dois"><label class="campo"><span>Personagem (vazio = automático)</span><input type="text" name="criatura" value="${esc(d.criatura || '')}" maxlength="60" /></label>
         <label class="campo"><span>Categoria da carta</span><select name="categoria_carta">${[['natureza', 'Natureza'], ['historia', 'História'], ['cultura', 'Cultura'], ['trabalho', 'Trabalho'], ['litoral', 'Litoral'], ['misterio', 'Mistério']].map(([v, n]) => `<option value="${v}" ${(d.categoria_carta || '') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>

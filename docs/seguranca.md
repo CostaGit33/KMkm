@@ -7,7 +7,7 @@ Este documento diz o que está protegido, **o que não está** e como operar. Es
 | Camada | O que impede | O que **não** impede |
 |---|---|---|
 | **Chave no link** (`/t/eu-001?k=…`) | Adivinhar códigos (`eu-001`, `eu-002`…) e carimbar de longe sem nunca ter visto a tag. Girar a chave revoga links vazados. | Quem fotografa o QR ou lê a tag NFC tem o link e pode compartilhá-lo. |
-| **Localização** (raio por ponto) | Carimbar a quilômetros do ponto. A coordenada não é guardada. | GPS pode ser falsificado; exige coordenada conferida em campo; GPS ruim em ambiente fechado gera falso bloqueio (por isso é opcional e desligado por padrão). |
+| **Localização** (raio por ponto) | Carimbar a quilômetros do ponto. A coordenada não é guardada. | GPS pode ser falsificado; exige coordenada conferida em campo; GPS ruim em ambiente fechado gera falso bloqueio (precisão pior que 50 m é recusada). Ligado sempre: raio padrão e máximo de 100 m; ponto sem coordenada não carimba. |
 | **Marcação de suspeitos** | Não bloqueia; **registra** deslocamento impossível entre dois pontos e ritmo alto, para revisão antes de premiar ou prestar contas a patrocinador. | Fraude lenta e plausível. |
 | **Limite de ritmo** | Mais de 15 carimbos novos em 10 minutos são bloqueados. | Fraude em ritmo humano. |
 
