@@ -1,5 +1,13 @@
 # Histórico de versões do +1 KM
 
+## V8.15 · Eventos operacionais e integração com n8n
+- **Outbox transacional**: cadastro e carimbos confirmados registram eventos na mesma transação MySQL, sem alterar as regras de autenticação, geofence, pontuação ou emissão de carimbos.
+- **Entrega resiliente ao n8n**: worker em segundo plano, webhook HTTPS autenticado por segredo, lote de até 10 eventos, recuperação de envios interrompidos e retentativas com backoff (até 12 tentativas).
+- **Eventos operacionais**: nova conta, novo carimbo de rota, carimbo de evento e sinalização de carimbo suspeito. Payload mínimo, sem e-mail, nome, tokens, cookies ou coordenadas GPS.
+- **Telegram pelo n8n**: configuração do webhook, Code node e Telegram Send Message documentada em `docs/n8n-eventos.md`; depende da configuração das credenciais e variáveis no EasyPanel.
+- **Diagnóstico**: fila persistente `integracao_eventos` com status, tentativas e último erro.
+
+
 Movido do README para o README ficar curto e atual. Cada seção descreve o que aquela versão entregou; para o estado de hoje, leia o [README](README.md) e [docs/INDEX.md](docs/INDEX.md).
 
 ## V8.14 · Igreja Matriz e galeria de fotos
