@@ -5,7 +5,8 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 ## Antes de abrir ao público
 - [ ] Definir `TAG_KEY_SECRET`, ativar chaves e gravar as tags com `?k=` (`docs/seguranca.md`).
 - [ ] Autorização, responsável e vistoria registrados para cada ponto a publicar (`docs/comercial/`).
-- [ ] Backup do MySQL **restaurado** em banco de teste; trocar a senha do MySQL exposta em log de build.
+- [ ] Backup do MySQL **restaurado** em banco de teste.
+- [x] Senha do MySQL exposta em log de build trocada (31/10/2026).
 - [ ] Conferir CSP no celular (mapa, fontes, GA4 após consentimento).
 - [ ] Coordenadas validadas em campo antes de ligar localização por raio.
 - [ ] `CONTATO_EMAIL`, `RELEASE_VERSION`, limpar carimbos de teste (`teste-podio limpar`).
