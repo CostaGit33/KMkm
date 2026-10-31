@@ -69,7 +69,7 @@ async function reivindicarLote() {
       await connection.query(
         `UPDATE integracao_eventos
          SET status = 'processando', tentativas = tentativas + 1,
-             bloqueado_ate = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 SECOND)
+             bloqueado_ate = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 60 SECOND)
          WHERE id = ?`,
         [row.id],
       );
@@ -140,7 +140,7 @@ async function entregar(row, env) {
         'X-Event-Id': row.evento_id,
       },
       body: JSON.stringify(envelope),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(20000),
     });
     if (!response.ok) {
       await reagendar(row, `http_${response.status}`);
