@@ -26,7 +26,7 @@ Eventos repetidos não geram notificação de novo carimbo. E-mail, nome de usu�
    - Authentication: `Header Auth`
    - Header Name: `X-Mais1km-Secret`
    - Header Value: o mesmo segredo configurado no serviço da API.
-   - Respond: `Immediately`
+   - Respond: `When Last Node Finishes` (assim a API só considera entregue depois que o Telegram concluir o envio)
 3. Copie a **Production URL** do Webhook. Não use a URL de teste.
 4. Adicione um nó **Code** depois do Webhook, em modo *Run Once for All Items*, com o código:
 
@@ -39,16 +39,16 @@ return $input.all().flatMap((item) => {
   const mensagens = {
     'account.created': () => '🆕 Nova conta criada no Mais1km.',
     'stamp.created': () =>
-      `📍 Novo carimbo: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\\nRota: ${dados.route_name ?? 'não informada'}`,
+      `📍 Novo carimbo: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\nRota: ${dados.route_name ?? 'não informada'}`,
     'event.stamp.created': () =>
-      `🎟️ Carimbo de evento: ${dados.event_name ?? dados.event_slug ?? 'evento'}\\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})`,
+      `🎟️ Carimbo de evento: ${dados.event_name ?? dados.event_slug ?? 'evento'}\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})`,
     'security.stamp_suspicious': () =>
-      `⚠️ ATENÇÃO · Carimbo suspeito\\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\\nMotivo: ${dados.reason ?? 'não informado'}\\nOrigem: ${dados.origin ?? 'rota'}`,
+      `⚠️ ATENÇÃO · Carimbo suspeito\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\nMotivo: ${dados.reason ?? 'não informado'}\nOrigem: ${dados.origin ?? 'rota'}`,
   };
 
   const montar = mensagens[evento.type];
   if (!montar) return [];
-  return [{ json: { text: `${montar()}\\nEvento: ${id || 'sem id'}` } }];
+  return [{ json: { text: `${montar()}\nEvento: ${id || 'sem id'}` } }];
 });
 ```
 
@@ -58,7 +58,7 @@ return $input.all().flatMap((item) => {
    - Text: `={{ $json.text }}`
 6. Conecte Code → Telegram, salve e ative o workflow.
 
-O webhook deve responder HTTP 2xx assim que aceitar a chamada. A opção **Respond Immediately** evita manter a conexão da API aberta enquanto o Telegram envia a mensagem.
+O webhook deve responder HTTP 2xx assim que aceitar a chamada. A opção **When Last Node Finishes** mantém a chamada aberta até o nó Telegram terminar. Se o envio falhar, a API recebe uma resposta de erro e tenta entregar o evento novamente.
 
 ## 2. Configurar o serviço da API no EasyPanel
 
