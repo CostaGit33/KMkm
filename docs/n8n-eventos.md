@@ -28,26 +28,28 @@ Eventos repetidos não geram notificação de novo carimbo. E-mail, nome de usu�
    - Header Value: o mesmo segredo configurado no serviço da API.
    - Respond: `Immediately`
 3. Copie a **Production URL** do Webhook. Não use a URL de teste.
-4. Adicione um nó **Code** depois do Webhook, em modo *Run Once for Each Item*, com o código:
+4. Adicione um nó **Code** depois do Webhook, em modo *Run Once for All Items*, com o código:
 
 ```javascript
-const evento = $json.body ?? $json;
-const dados = evento.data ?? {};
-const id = String(evento.id ?? '').slice(0, 8);
+return $input.all().flatMap((item) => {
+  const evento = item.json.body ?? item.json;
+  const dados = evento.data ?? {};
+  const id = String(evento.id ?? '').slice(0, 8);
 
-const mensagens = {
-  'account.created': () => '🆕 Nova conta criada no Mais1km.',
-  'stamp.created': () =>
-    `📍 Novo carimbo: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\nRota: ${dados.route_name ?? 'não informada'}`,
-  'event.stamp.created': () =>
-    `🎟️ Carimbo de evento: ${dados.event_name ?? dados.event_slug ?? 'evento'}\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})`,
-  'security.stamp_suspicious': () =>
-    `⚠️ ATENÇÃO · Carimbo suspeito\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\nMotivo: ${dados.reason ?? 'não informado'}\nOrigem: ${dados.origin ?? 'rota'}`,
-};
+  const mensagens = {
+    'account.created': () => '🆕 Nova conta criada no Mais1km.',
+    'stamp.created': () =>
+      `📍 Novo carimbo: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\\nRota: ${dados.route_name ?? 'não informada'}`,
+    'event.stamp.created': () =>
+      `🎟️ Carimbo de evento: ${dados.event_name ?? dados.event_slug ?? 'evento'}\\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})`,
+    'security.stamp_suspicious': () =>
+      `⚠️ ATENÇÃO · Carimbo suspeito\\nPonto: ${dados.point_name ?? dados.point_code ?? 'ponto'} (${dados.point_code ?? 'sem código'})\\nMotivo: ${dados.reason ?? 'não informado'}\\nOrigem: ${dados.origin ?? 'rota'}`,
+  };
 
-const montar = mensagens[evento.type];
-if (!montar) return [];
-return { json: { text: `${montar()}\nEvento: ${id || 'sem id'}` } };
+  const montar = mensagens[evento.type];
+  if (!montar) return [];
+  return [{ json: { text: `${montar()}\\nEvento: ${id || 'sem id'}` } }];
+});
 ```
 
 5. Adicione o nó **Telegram → Send Message**:
