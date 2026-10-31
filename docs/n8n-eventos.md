@@ -98,7 +98,7 @@ Aguarde alguns segundos e confira a execução do workflow e a mensagem no Teleg
 ## 4. Diagnóstico
 
 - `integracao_eventos.status = 'pendente'`: aguardando envio ou nova tentativa.
-- `integracao_eventos.status = 'processando'`: em envio; um bloqueio de 30 segundos permite recuperar uma execução interrompida.
+- `integracao_eventos.status = 'processando'`: em envio; um bloqueio de 60 segundos permite recuperar uma execução interrompida.
 - `integracao_eventos.status = 'enviado'`: o webhook respondeu HTTP 2xx.
 - `integracao_eventos.status = 'falhou'`: 12 tentativas sem sucesso; requer inspeção.
 
