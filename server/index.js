@@ -384,11 +384,9 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
       }
       edicao = await emitirNumero(connection, card, usuario.id);
     }
-    if (!repetido) {
-      await registrarEventoNaTransacao(connection, 'stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
-      if (card && !cardRepetido) await registrarEventoNaTransacao(connection, 'event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
-      if (suspeita) await registrarEventoNaTransacao(connection, 'security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'rota' });
-    }
+    if (!repetido) await registrarEventoNaTransacao(connection, 'stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
+    if (card && !cardRepetido) await registrarEventoNaTransacao(connection, 'event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
+    if (suspeita) await registrarEventoNaTransacao(connection, 'security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'rota' });
     await connection.commit();
   } catch (error) {
     await connection.rollback();
