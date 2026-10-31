@@ -14,7 +14,8 @@
 | `SENTRY_DSN` | DSN do projeto Sentry (`mais1km-api`). Liga o rastreio de erros 5xx e de falhas que derrubam o processo; sem a variável nada é enviado. Ao ligar, `/privacidade` passa a citar o Sentry | opcional |
 | `SENTRY_ENVIRONMENT` | rótulo do ambiente no Sentry (padrão `production`) | opcional |
 | `SENTRY_TRACES_SAMPLE_RATE` | amostra de latência entre `0` e `1`; comece com `0.05` ou `0.1`, `0` desliga | opcional |
-| `N8N_EVENTS_WEBHOOK_URL` | Production URL HTTPS do webhook do n8n que recebe eventos operacionais | opcional |\n| `N8N_EVENTS_SECRET` | segredo compartilhado (32+ caracteres) enviado no cabeçalho `X-Mais1km-Secret`; configure o mesmo valor na credencial Header Auth do webhook n8n | opcional |
+| `N8N_EVENTS_WEBHOOK_URL` | Production URL HTTPS do webhook do n8n que recebe eventos operacionais | opcional |
+| `N8N_EVENTS_SECRET` | segredo compartilhado (32+ caracteres) enviado no cabeçalho `X-Mais1km-Secret`; configure o mesmo valor na credencial Header Auth do webhook n8n | opcional |
 | `TAG_KEY_SECRET` | segredo (32+ caracteres aleatórios) das chaves dos links das tags. Segredo de execução; **guarde uma cópia fora do servidor**: sem ele os links já gravados nas tags deixam de funcionar | sim, antes de gravar as tags |
 | `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | armazenamento das fotos dos pontos (bucket privado `mais1km-media`; token R2 só com leitura e gravação nesse bucket). Segredos de execução, só no Easypanel. Alternativa: `MEDIA_DIR` apontando para um volume persistente. Veja [midia.md](midia.md) | para usar a galeria de fotos |
 | `GEOFENCE_RAIO_PADRAO_M` | raio padrão (m) para exigir localização no carimbo. O padrão é 100 m; valores positivos podem reduzir o raio, sempre limitado a 100 m. `0` não desliga a validação | opcional (padrão 100) |
