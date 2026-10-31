@@ -3,6 +3,7 @@ import { lerChaveTag } from './tag-chave.js';
 import { findPointByCode } from './data.js';
 import { installInk, stampHtml } from './stamp-kit.js';
 import { cartaHtml } from './cartas.js';
+import { galeriaHtml, montarGaleria } from './galeria.js';
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 // Se o app já tem conta neste aparelho, o apelido vem preenchido (um toque para carimbar).
@@ -136,7 +137,8 @@ async function stamp(code, pos = null) {
         : carta
           ? 'Sua visita foi confirmada; esta carta já fazia parte da sua coleção.'
           : 'Sua visita foi confirmada e o carimbo foi salvo.';
-    content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}`;
+    content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}${galeriaHtml({ id: code })}`;
+    montarGaleria(content);
   } catch (error) {
     const falha = mensagemErroTag(error);
     const acao = falha.localizar

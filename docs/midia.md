@@ -10,6 +10,20 @@ Cada ponto pode ter fotos atuais e históricas, guardadas num lugar único, trat
 
 Os metadados ficam na tabela `ponto_imagens` (título, legenda, período, tipo de registro, autor, fonte, hash, tamanhos, `derivada_de`, status, ordem). O original só sai por download de administrador.
 
+## Onde a foto aparece no app
+Só fotos **aprovadas** aparecem. Ponto-mistério ainda não descoberto nunca mostra foto.
+
+| Tela | O que aparece |
+|---|---|
+| Ficha do ponto (também aberta pelo mapa) | Galeria completa, ampliação e comparador Antes/Hoje |
+| Tela do carimbo (`/t/<código>`) | Galeria completa, abaixo do resultado |
+| Detalhe da carta (Coleção) | Galeria completa, só se a carta foi conquistada |
+| Lista de pontos das rotas | Miniatura (capa) |
+| Início → próximo ponto | Miniatura (capa) |
+| Mapa → cartão do ponto | Miniatura (capa) |
+
+A miniatura usa `capa` do `/api/catalogo`; a galeria busca `/api/pontos/:codigo/imagens` direto.
+
 ## Arte da carta
 A carta de cada ponto pode usar uma foto da galeria: em *Fotos*, **Usar na carta** numa foto aprovada (✓ Na carta mostra a escolhida; clicar de novo volta à arte anterior). A arte da carta tem esta ordem: foto da galeria → arquivo `arte` do ponto (`client/public/cartas/`) → desenho da categoria. A foto só aparece para quem já desbloqueou a carta, como o resto dela; nas cartas pequenas vai a miniatura de 320 px e no detalhe a de 1400 px.
 Se a foto escolhida for arquivada ou excluída, a carta volta à arte anterior (e aprovar de novo não a recoloca sozinha). Pelo console: `importar … --aprovar --carta`.
