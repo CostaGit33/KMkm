@@ -18,7 +18,7 @@ import { avaliarDeslocamento, avaliarLocalizacao, avaliarRitmo, chaveConfere, se
 import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 import { rotasPublicasMidia } from './midia/rotas-publicas.js';
 import { armazenamentoDeMidia } from './midia/estado.js';
-import { iniciarEntregaEventos, registrarEvento } from './integracoes/eventos-n8n.js';
+import { iniciarEntregaEventos, registrarEventoNaTransacao } from './integracoes/eventos-n8n.js';
 
 const JANELA_REPETIDO_MIN = 30;
 const JANELA_TURMA_MIN = 4;
@@ -161,8 +161,8 @@ app.post('/api/conta/criar', limit({ windowMs: 10 * 60 * 1000, max: 8, name: 'co
     const [contaResult] = await connection.query('INSERT INTO contas (usuario_id, nome, email, senha_hash, senha_salt) VALUES (?, ?, ?, ?, ?)', [usuarioResult.insertId, nome, email, hash, salt]);
     const token = makeSessionToken();
     await connection.query('INSERT INTO sessoes (conta_id, token_hash, expira_em) VALUES (?, ?, ?)', [contaResult.insertId, hashSessionToken(token), sessionExpiry()]);
+    await registrarEventoNaTransacao(connection, 'account.created', { canal: 'email' });
     await connection.commit();
-    await registrarEvento('account.created', { canal: 'email' });
     setSessionCookie(res, token);
     return res.status(201).json({ usuario: { id: usuarioResult.insertId, conta_id: contaResult.insertId, nome, email } });
   } catch (error) {
@@ -384,6 +384,11 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
       }
       edicao = await emitirNumero(connection, card, usuario.id);
     }
+    if (!repetido) {
+      await registrarEventoNaTransacao(connection, 'stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
+      if (card && !cardRepetido) await registrarEventoNaTransacao(connection, 'event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
+      if (suspeita) await registrarEventoNaTransacao(connection, 'security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'rota' });
+    }
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -440,12 +445,6 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
      WHERE tag_id = ? AND evento_id IS NULL AND criado_em >= ?`,
     [tag.id, inicioDoDiaLocal()],
   );
-
-  if (!repetido) {
-    await registrarEvento('stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
-    if (card && !cardRepetido) await registrarEvento('event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
-    if (suspeita) await registrarEvento('security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'rota' });
-  }
 
   res.json({
     carimbo: {
@@ -552,15 +551,15 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
       repetido = true;
     }
     edicao = await emitirNumero(connection, card, req.u.id);
+    if (carimboRotaCriado) await registrarEventoNaTransacao(connection, 'stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
+    if (!repetido) await registrarEventoNaTransacao(connection, 'event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
+    if (suspeita) await registrarEventoNaTransacao(connection, 'security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'evento' });
     await connection.commit();
   } catch (error) {
     await connection.rollback();
     throw error;
   } finally { connection.release(); }
   const [carimbo] = await q('SELECT * FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id = ?', [req.u.id, tag.id, card.id]);
-  if (carimboRotaCriado) await registrarEvento('stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
-  if (!repetido) await registrarEvento('event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
-  if (suspeita) await registrarEvento('security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'evento' });
   res.json({ repetido, carimbo_rota_criado: carimboRotaCriado, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
 }));
 
