@@ -18,6 +18,7 @@ import { avaliarDeslocamento, avaliarLocalizacao, avaliarRitmo, chaveConfere, se
 import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 import { rotasPublicasMidia } from './midia/rotas-publicas.js';
 import { armazenamentoDeMidia } from './midia/estado.js';
+import { iniciarEntregaEventos, registrarEvento } from './integracoes/eventos-n8n.js';
 
 const JANELA_REPETIDO_MIN = 30;
 const JANELA_TURMA_MIN = 4;
@@ -161,6 +162,7 @@ app.post('/api/conta/criar', limit({ windowMs: 10 * 60 * 1000, max: 8, name: 'co
     const token = makeSessionToken();
     await connection.query('INSERT INTO sessoes (conta_id, token_hash, expira_em) VALUES (?, ?, ?)', [contaResult.insertId, hashSessionToken(token), sessionExpiry()]);
     await connection.commit();
+    await registrarEvento('account.created', { canal: 'email' });
     setSessionCookie(res, token);
     return res.status(201).json({ usuario: { id: usuarioResult.insertId, conta_id: contaResult.insertId, nome, email } });
   } catch (error) {
@@ -325,6 +327,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
   let cardCarimbo = null;
   let cardRepetido = false;
   let edicao = null;
+  let suspeita = null;
   try {
     await connection.beginTransaction();
     await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [usuario.id]);
@@ -355,8 +358,8 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
          ORDER BY c.id DESC LIMIT 1`,
         [usuario.id, tag.id],
       );
-      const suspeito = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
-      if (suspeito) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: usuario.id, ponto: tag.codigo, motivo: suspeito }));
+      suspeita = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
+      if (suspeita) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: usuario.id, ponto: tag.codigo, motivo: suspeita }));
       const [result] = await connection.query(
         'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
         [usuario.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
@@ -438,6 +441,12 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
     [tag.id, inicioDoDiaLocal()],
   );
 
+  if (!repetido) {
+    await registrarEvento('stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
+    if (card && !cardRepetido) await registrarEvento('event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
+    if (suspeita) await registrarEvento('security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'rota' });
+  }
+
   res.json({
     carimbo: {
       ...carimbo,
@@ -496,6 +505,7 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
   let repetido = false;
   let edicao = null;
   let carimboRotaCriado = false;
+  let suspeita = null;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -526,8 +536,8 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
          ORDER BY c.id DESC LIMIT 1`,
         [req.u.id, tag.id],
       );
-      const suspeito = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
-      if (suspeito) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: req.u.id, ponto: tag.codigo, motivo: suspeito, origem: 'evento' }));
+      suspeita = avaliarDeslocamento(anteriores[0], tag) || ritmo.suspeito || null;
+      if (suspeita) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: req.u.id, ponto: tag.codigo, motivo: suspeita, origem: 'evento' }));
       await connection.query(
         'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
         [req.u.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
@@ -548,6 +558,9 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
     throw error;
   } finally { connection.release(); }
   const [carimbo] = await q('SELECT * FROM carimbos WHERE usuario_id = ? AND tag_id = ? AND evento_id = ?', [req.u.id, tag.id, card.id]);
+  if (carimboRotaCriado) await registrarEvento('stamp.created', { point_code: tag.codigo, point_name: tag.nome, route_name: tag.rota_nome });
+  if (!repetido) await registrarEvento('event.stamp.created', { event_slug: card.slug, event_name: card.nome, event_type: card.tipo, point_code: tag.codigo, point_name: tag.nome });
+  if (suspeita) await registrarEvento('security.stamp_suspicious', { point_code: tag.codigo, point_name: tag.nome, reason: suspeita, request_id: req.requestId, origin: 'evento' });
   res.json({ repetido, carimbo_rota_criado: carimboRotaCriado, evento: { slug: card.slug, nome: card.nome, tipo: card.tipo, patrocinado_por: card.tipo === 'patrocinio' ? card.patrocinador : null, edicao }, carimbo: { ...carimbo, tag_nome: tag.nome, ordem: tag.ordem, forma: tag.forma, parceiro: Boolean(tag.parceiro), cor: tag.cor } });
 }));
 
@@ -699,6 +712,7 @@ await iniciarMonitoramento();
 
 try {
   await initializeDatabase(pool);
+  iniciarEntregaEventos();
   if (!SEGREDO_CHAVES) {
     const [{ n }] = await q('SELECT COUNT(*) AS n FROM tags WHERE chave_versao > 0');
     if (Number(n) > 0) console.error(JSON.stringify({ type: 'config', alerta: 'tags_com_chave_sem_TAG_KEY_SECRET', tags: Number(n), efeito: 'as chaves NAO estao sendo exigidas' }));
