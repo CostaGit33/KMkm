@@ -7,7 +7,7 @@
 | `CONTATO_EMAIL` | e-mail exibido em /privacidade e /excluir-conta (exigido pela Google Play) | sim |
 | `GOOGLE_MAPS_API_KEY` | chave `AIza...` do Maps JavaScript API | recomendada |
 | `GOOGLE_MAP_ID` | Map ID para estilo próprio (verde e dourado) | opcional |
-| `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou versão semântica), devolvido em `/api/saude`; se ausente, o código usa `V8.14` como fallback até a próxima versão | recomendada |
+| `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou versão semântica), devolvido em `/api/saude`; se ausente, o código usa `V8.15` como fallback até a próxima versão | recomendada |
 | `RESEND_API_KEY` | chave de envio do Resend (segredo: só variável de execução, nunca Build Args nem `VITE_*`). Liga a recuperação de senha | para recuperar senha |
 | `RESEND_FROM` | remetente de um domínio verificado no Resend, ex.: `Mais1km <conta@seudominio.com.br>` | para recuperar senha |
 | `APP_PUBLIC_URL` | URL pública HTTPS do app, sem barra final; base do link do e-mail e dos links das tags (CSV/QR) | para recuperar senha e exportar links |
@@ -39,7 +39,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Rodar `npm --prefix server run relatorio-piloto` uma vez para conferir que o relatório abre.
 
 ## 3. Conferência pós-deploy
-- [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; se a variável não estiver definida, retorna `V8.14`).
+- [ ] `GET /api/saude` responde `{"ok":true,"banco":"ok","versao":"..."}` (`versao` vem de `RELEASE_VERSION`; se a variável não estiver definida, retorna `V8.15`).
 - [ ] Galeria de fotos: `npm --prefix server run midia -- verificar` responde OK (ou `/api/saude` com `midia: "r2"`), e uma foto de teste enviada em Admin → Fotos aparece no app depois de aprovada.
 - [ ] `GET /api/config-mapa` mostra a chave (e não `null`).
 - [ ] Mapa abre com Google; se não, aparece aviso e o mapa aberto assume.
@@ -65,7 +65,7 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [x] Monitores criados em 21/10/2026: `+1 KM · API (saúde + banco)` (procura `"banco":"ok"` em `/api/saude`) e `+1 KM · App (página inicial)`, a cada 3 minutos, com alerta por e-mail e push.
 - [ ] Sentry: definir `SENTRY_DSN` no Easypanel, reimplantar e conferir no log a linha `{"type":"monitoramento","sentry":"ligado"}`. Para monitorar latência, definir `SENTRY_TRACES_SAMPLE_RATE=0.05` ou `0.1`; `0` mantém traces desligados.
 - [ ] Apagar o monitor de exemplo `google.com` que veio com a conta.
-- [ ] Definir `RELEASE_VERSION` com o identificador exato do deploy (sem ela, `/api/saude` usa o fallback `V8.14`, que identifica a versão funcional, mas não distingue commits).
+- [ ] Definir `RELEASE_VERSION` com o identificador exato do deploy (sem ela, `/api/saude` usa o fallback `V8.15`, que identifica a versão funcional, mas não distingue commits).
 
 
 ## Google Analytics 4 (consentimento)
