@@ -653,7 +653,7 @@ app.use('/api/admin', auth, adminRouter({ limit, wrap }));
 
 app.get('/api/saude', wrap(async (_req, res) => {
   await q('SELECT 1 AS ok');
-  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'V8.14', chaves: SEGREDO_CHAVES ? 'configuradas' : 'sem_segredo', geofence: { raio_padrao_m: RAIO_PADRAO_M, raio_maximo_m: 100, precisao_gps_maxima_m: 50 }, midia: armazenamentoDeMidia().tipo });
+  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'V8.15', chaves: SEGREDO_CHAVES ? 'configuradas' : 'sem_segredo', geofence: { raio_padrao_m: RAIO_PADRAO_M, raio_maximo_m: 100, precisao_gps_maxima_m: 50 }, midia: armazenamentoDeMidia().tipo });
 }));
 
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');
