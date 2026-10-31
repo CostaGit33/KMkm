@@ -23,21 +23,25 @@ export function atrasoRetry(tentativa) {
   return Math.min(3600, 5 * (2 ** (n - 1)));
 }
 
-// Registra apenas eventos operacionais mínimos. Não inclua e-mail, nome, token, cookie ou coordenadas GPS.
+// Insere na mesma transação da operação de negócio: se a gravação do evento falhar, a operação também
+// é revertida. Isso evita perder notificações entre o commit do carimbo/cadastro e a publicação no n8n.
+export async function registrarEventoNaTransacao(connection, tipo, dados = {}) {
+  if (!/^[a-z0-9_.-]{3,80}$/.test(String(tipo))) throw new Error('tipo_evento_invalido');
+  const payload = JSON.stringify(dados);
+  if (Buffer.byteLength(payload, 'utf8') > 8192) throw new Error('payload_grande');
+  const eventoId = crypto.randomUUID();
+  await connection.query(
+    'INSERT INTO integracao_eventos (evento_id, tipo, payload) VALUES (?, ?, ?)',
+    [eventoId, tipo, payload],
+  );
+  return eventoId;
+}
+
+// Para testes operacionais manuais fora de uma transação de negócio.
 export async function registrarEvento(tipo, dados = {}) {
-  if (!/^[a-z0-9_.-]{3,80}$/.test(String(tipo))) return null;
-  let payload;
   try {
-    payload = JSON.stringify(dados);
-    if (Buffer.byteLength(payload, 'utf8') > 8192) throw new Error('payload_grande');
-    const eventoId = crypto.randomUUID();
-    await pool.query(
-      'INSERT INTO integracao_eventos (evento_id, tipo, payload) VALUES (?, ?, ?)',
-      [eventoId, tipo, payload],
-    );
-    return eventoId;
+    return await registrarEventoNaTransacao(pool, tipo, dados);
   } catch (error) {
-    // A automação nunca pode derrubar ou desfazer uma operação válida do usuário.
     console.error(JSON.stringify({
       type: 'integration_event_enqueue_failed',
       event_type: String(tipo).slice(0, 80),
