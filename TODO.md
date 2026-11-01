@@ -15,7 +15,7 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Técnico
 - [ ] Teste de ponta a ponta: criar conta → carimbar → abrir em outro aparelho (hoje só testes unitários e `smoke.mjs` manual).
-- [ ] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
+- [x] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
 - [ ] Limite de tentativas fora da memória (tabela ou Redis) se houver mais de uma instância.
 - [ ] Limpeza automática de contas anônimas antigas.
 - [ ] Prova de presença com NTAG 424 DNA (validar assinatura SDM no servidor) se patrocínio pagar por visita comprovada.

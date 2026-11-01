@@ -41,18 +41,13 @@ async function digest(texto, alg) {
   return { alg: "fnv1a", hash: h.toString(16) };
 }
 
-export async function gerarSenha(senha) {
-  const bytes = new Uint8Array(16);
-  if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
-  else bytes.forEach((_, i) => { bytes[i] = Math.floor(Math.random() * 256); });
-  const salt = hex(bytes);
-  return { salt, ...(await digest(salt + ":" + senha)) };
-}
-
-export async function senhaConfere(conta, senha) {
-  if (!conta) return false;
-  const r = await digest(conta.salt + ":" + senha, conta.alg);
-  return !!r && r.hash === conta.hash;
+// Só para migrar contas antigas (criadas antes do servidor): confere o hash legado que ainda estiver no aparelho.
+// Contas novas não guardam hash; a senha é conferida apenas no servidor.
+export async function senhaLegadaConfere(conta, senha) {
+  const l = conta?.legado;
+  if (!l) return false;
+  const r = await digest(l.salt + ":" + senha, l.alg);
+  return !!r && r.hash === l.hash;
 }
 
 const campo = (nome, rotulo, tipo, dica, autocomplete, extra = "") =>

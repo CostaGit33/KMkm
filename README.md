@@ -93,4 +93,4 @@ npm --prefix server test                                        # testes
 
 ## Limites conhecidos
 
-Lista viva em [`TODO.md`](TODO.md). Os principais: o carimbo por NFC comum não prova presença (só uma tag com contador assinado, como a NTAG 424 DNA, prova); não há teste de ponta a ponta do fluxo conta → carimbo (existem e2e de mídia e de recuperação de senha, e um `smoke.mjs` manual); o limite de tentativas fica em memória (uma instância); há cópia local do hash da senha no aparelho.
+Lista viva em [`TODO.md`](TODO.md). Os principais: o carimbo por NFC comum não prova presença (só uma tag com contador assinado, como a NTAG 424 DNA, prova); não há teste de ponta a ponta do fluxo conta → carimbo (existem e2e de mídia e de recuperação de senha, e um `smoke.mjs` manual); o limite de tentativas fica em memória (uma instância).
