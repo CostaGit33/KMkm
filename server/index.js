@@ -362,7 +362,7 @@ app.post('/api/tags/:codigo/carimbar', limit({ windowMs: 60 * 1000, max: 30, nam
       if (suspeita) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: usuario.id, ponto: tag.codigo, motivo: suspeita }));
       const [result] = await connection.query(
         'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
-        [usuario.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
+        [usuario.id, tag.id, crypto.randomInt(2 ** 31), suspeita],
       );
       const [created] = await connection.query('SELECT * FROM carimbos WHERE id = ?', [result.insertId]);
       carimbo = created[0];
@@ -537,7 +537,7 @@ app.post('/api/eventos/:slug/carimbar', limit({ windowMs: 60 * 1000, max: 30, na
       if (suspeita) console.warn(JSON.stringify({ type: 'carimbo_suspeito', request_id: req.requestId, usuario_id: req.u.id, ponto: tag.codigo, motivo: suspeita, origem: 'evento' }));
       await connection.query(
         'INSERT INTO carimbos (usuario_id, tag_id, seed, suspeito) VALUES (?, ?, ?, ?)',
-        [req.u.id, tag.id, crypto.randomInt(2 ** 31), suspeito],
+        [req.u.id, tag.id, crypto.randomInt(2 ** 31), suspeita],
       );
       carimboRotaCriado = true;
     }
