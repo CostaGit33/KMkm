@@ -31,7 +31,8 @@ Segredo de assinatura de URL do Google (termina em `=`) **não** é a chave do M
 - [ ] Rodar `node server/scripts/teste-podio.js limpar` para apagar carimbos de teste.
 - [ ] Conferir que `/api/admin/dados` sem login responde 401.
 - [x] `TAG_KEY_SECRET` definido (31/10/2026).
-- [ ] Rodar `npm --prefix server run chaves -- ativar-todos` e `... urls`; gravar nas tags/QR os links **com** `?k=`. Conferir em `/api/saude` que `chaves` é `configuradas`.
+- [x] Chaves ativadas com `chaves ativar-todos` (confirmado em 31/10/2026).
+- [ ] Rodar `... urls`; gravar nas tags/QR os links **com** `?k=`. Conferir em `/api/saude` que `chaves` é `configuradas`.
 - [ ] Abrir o app no celular e conferir no console que não há violações de CSP (mapa, fontes, GA4 depois de aceitar o aviso). Se algo quebrar, `CSP_LEGADO=true` é a saída temporária.
 - [ ] Cada ponto a publicar tem responsável, autorização e vistoria registrados (`npm --prefix server run pontos -- listar` mostra `sem doc`).
 - [ ] Backup do MySQL feito **e restaurado em um banco de teste** (backup nunca restaurado não conta). Adiado por decisão do responsável em 31/10/2026.

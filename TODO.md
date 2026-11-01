@@ -4,7 +4,8 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Antes de abrir ao público
 - [x] `TAG_KEY_SECRET` definido (confirmado pelo responsável em 31/10/2026).
-- [ ] Ativar chaves (`chaves ativar-todos`) e gravar as tags com `?k=` (`docs/seguranca.md`).
+- [x] Chaves ativadas (`chaves ativar-todos`; confirmado pelo responsável em 31/10/2026).
+- [ ] Gravar nas tags/QR os links com `?k=` (`chaves urls`; `docs/seguranca.md`).
 - [ ] Autorização, responsável e vistoria registrados para cada ponto a publicar (`docs/comercial/`).
 - [ ] Backup do MySQL **restaurado** em banco de teste (adiado por decisão do responsável em 31/10/2026).
 - [x] Senha do MySQL exposta em log de build trocada (31/10/2026).
