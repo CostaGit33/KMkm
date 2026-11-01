@@ -18,7 +18,7 @@ import { avaliarDeslocamento, avaliarLocalizacao, avaliarRitmo, chaveConfere, se
 import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 import { rotasPublicasMidia } from './midia/rotas-publicas.js';
 import { armazenamentoDeMidia } from './midia/estado.js';
-import { iniciarEntregaEventos, registrarEventoNaTransacao } from './integracoes/eventos-n8n.js';
+import { iniciarEntregaEventos, registrarEventoNaTransacao, resumoDaFila } from './integracoes/eventos-n8n.js';
 
 const JANELA_REPETIDO_MIN = 30;
 const JANELA_TURMA_MIN = 4;
@@ -651,7 +651,7 @@ app.use('/api/admin', auth, adminRouter({ limit, wrap }));
 
 app.get('/api/saude', wrap(async (_req, res) => {
   await q('SELECT 1 AS ok');
-  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'V8.15', chaves: SEGREDO_CHAVES ? 'configuradas' : 'sem_segredo', geofence: { raio_padrao_m: RAIO_PADRAO_M, raio_maximo_m: 100, precisao_gps_maxima_m: 50 }, midia: armazenamentoDeMidia().tipo });
+  res.json({ ok: true, banco: 'ok', versao: process.env.RELEASE_VERSION || 'V8.15', chaves: SEGREDO_CHAVES ? 'configuradas' : 'sem_segredo', geofence: { raio_padrao_m: RAIO_PADRAO_M, raio_maximo_m: 100, precisao_gps_maxima_m: 50 }, midia: armazenamentoDeMidia().tipo, integracao: await resumoDaFila().catch(() => ({ erro: true })) });
 }));
 
 const dirPaginas = path.join(path.dirname(fileURLToPath(import.meta.url)), 'paginas');

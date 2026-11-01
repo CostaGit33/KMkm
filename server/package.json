@@ -7,6 +7,7 @@
     "dev": "node --watch index.js",
     "db:init": "node db/init.js",
     "evento": "node scripts/evento.js",
+    "eventos-fila": "node scripts/eventos-fila.js",
     "pontos": "node scripts/pontos.js",
     "admin": "node scripts/admin.js",
     "chaves": "node scripts/chaves.js",

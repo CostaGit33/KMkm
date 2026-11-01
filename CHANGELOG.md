@@ -10,6 +10,8 @@
 
 Movido do README para o README ficar curto e atual. Cada seção descreve o que aquela versão entregou; para o estado de hoje, leia o [README](README.md) e [docs/INDEX.md](docs/INDEX.md).
 
+- **n8n endurecido** (após auditoria): ritmo de 3 s entre envios, `occurred_at` real, redirecionamento recusado, limpeza de 30 dias, `eventos-fila status|reenfileirar` e fila em `/api/saude`.
+
 ## V8.14 · Igreja Matriz e galeria de fotos
 - **Fotos em todas as telas**: além da página do ponto, a foto aparece como miniatura na lista de pontos das rotas, no “próximo ponto” do início, no cartão do mapa e na tela do carimbo, e a galeria completa abre no detalhe da carta (só carta já conquistada). Ponto-mistério não mostra foto (não estraga a surpresa). Cache do service worker: `mais1km-v41-fotos-e-geofence`.
 - **Painel admin alinhado ao geofence de 100 m**: o campo de raio vai de 0 a 100 (vazio/0 = 100 m, não desliga) e a publicação sem coordenada mostra “coordenadas pendentes”.

@@ -4,6 +4,12 @@ import { pool } from '../db/database.js';
 const INTERVALO_MS = 5000;
 const LOTE = 10;
 const MAX_TENTATIVAS = 12;
+// Pausa entre envios do mesmo lote: o Telegram aceita cerca de 20 mensagens por minuto por grupo.
+const PAUSA_ENTRE_ENVIOS_MS = Number(process.env.N8N_EVENTS_PAUSA_MS ?? 3000);
+// Reserva do lote: 10 envios de até 20 s + pausas. Só vale para recuperar um processo que caiu.
+const RESERVA_SEGUNDOS = 300;
+const RETENCAO_DIAS = 30;
+let ultimaLimpeza = 0;
 let timer = null;
 let executando = false;
 
@@ -56,7 +62,7 @@ async function reivindicarLote() {
   try {
     await connection.beginTransaction();
     const [rows] = await connection.query(
-      `SELECT id, evento_id, tipo, payload, tentativas
+      `SELECT id, evento_id, tipo, payload, tentativas, criado_em
        FROM integracao_eventos
        WHERE (status = 'pendente' AND disponivel_em <= UTC_TIMESTAMP())
           OR (status = 'processando' AND bloqueado_ate <= UTC_TIMESTAMP())
@@ -69,7 +75,7 @@ async function reivindicarLote() {
       await connection.query(
         `UPDATE integracao_eventos
          SET status = 'processando', tentativas = tentativas + 1,
-             bloqueado_ate = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 60 SECOND)
+             bloqueado_ate = DATE_ADD(UTC_TIMESTAMP(), INTERVAL ${RESERVA_SEGUNDOS} SECOND)
          WHERE id = ?`,
         [row.id],
       );
@@ -127,7 +133,8 @@ async function entregar(row, env) {
   const envelope = {
     id: row.evento_id,
     type: row.tipo,
-    occurred_at: new Date().toISOString(),
+    occurred_at: (row.criado_em instanceof Date ? row.criado_em : new Date()).toISOString(),
+    sent_at: new Date().toISOString(),
     source: 'mais1km-api',
     data: payload || {},
   };
@@ -141,6 +148,8 @@ async function entregar(row, env) {
       },
       body: JSON.stringify(envelope),
       signal: AbortSignal.timeout(20000),
+      redirect: 'error', // não repassa o segredo a outro destino
+
     });
     if (!response.ok) {
       await reagendar(row, `http_${response.status}`);
@@ -153,12 +162,35 @@ async function entregar(row, env) {
   }
 }
 
+// Remove entregas antigas (no máximo uma vez por hora). Eventos 'falhou' ficam para inspeção.
+async function limparAntigos() {
+  if (Date.now() - ultimaLimpeza < 3600 * 1000) return;
+  ultimaLimpeza = Date.now();
+  await pool.query(
+    `DELETE FROM integracao_eventos WHERE status = 'enviado' AND enviado_em < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${RETENCAO_DIAS} DAY) LIMIT 5000`,
+  );
+}
+
+// Resumo para /api/saude (só contagens): fila parada aparece como atraso crescente.
+export async function resumoDaFila() {
+  const [[r]] = await pool.query(
+    `SELECT SUM(status IN ('pendente','processando')) AS pendentes, SUM(status = 'falhou') AS falhou,
+            COALESCE(TIMESTAMPDIFF(SECOND, MIN(CASE WHEN status IN ('pendente','processando') THEN criado_em END), UTC_TIMESTAMP()), 0) AS atraso_s
+     FROM integracao_eventos`,
+  );
+  return { configurado: webhookConfigurado(), pendentes: Number(r.pendentes || 0), falhou: Number(r.falhou || 0), atraso_s: Number(r.atraso_s || 0) };
+}
+
 async function processarFila(env) {
   if (executando || !webhookConfigurado(env)) return;
   executando = true;
   try {
     const lote = await reivindicarLote();
-    for (const row of lote) await entregar(row, env);
+    for (const [i, row] of lote.entries()) {
+      if (i > 0 && PAUSA_ENTRE_ENVIOS_MS > 0) await new Promise((r) => setTimeout(r, PAUSA_ENTRE_ENVIOS_MS));
+      await entregar(row, env);
+    }
+    await limparAntigos();
   } catch (error) {
     console.error(JSON.stringify({
       type: 'integration_event_worker_failed',
