@@ -3,9 +3,11 @@
 Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Antes de abrir ao público
-- [ ] Definir `TAG_KEY_SECRET`, ativar chaves e gravar as tags com `?k=` (`docs/seguranca.md`).
+- [x] `TAG_KEY_SECRET` definido (confirmado pelo responsável em 31/10/2026).
+- [x] Chaves ativadas (`chaves ativar-todos`; confirmado pelo responsável em 31/10/2026).
+- [ ] Gravar nas tags/QR os links com `?k=` (`chaves urls`; `docs/seguranca.md`).
 - [ ] Autorização, responsável e vistoria registrados para cada ponto a publicar (`docs/comercial/`).
-- [ ] Backup do MySQL **restaurado** em banco de teste.
+- [ ] Backup do MySQL **restaurado** em banco de teste (adiado por decisão do responsável em 31/10/2026).
 - [x] Senha do MySQL exposta em log de build trocada (31/10/2026).
 - [ ] Conferir CSP no celular (mapa, fontes, GA4 após consentimento).
 - [ ] Coordenadas validadas em campo antes de ligar localização por raio.
@@ -13,7 +15,7 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Técnico
 - [ ] Teste de ponta a ponta: criar conta → carimbar → abrir em outro aparelho (hoje só testes unitários e `smoke.mjs` manual).
-- [ ] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
+- [x] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
 - [ ] Limite de tentativas fora da memória (tabela ou Redis) se houver mais de uma instância.
 - [ ] Limpeza automática de contas anônimas antigas.
 - [ ] Prova de presença com NTAG 424 DNA (validar assinatura SDM no servidor) se patrocínio pagar por visita comprovada.

@@ -31,7 +31,7 @@ Scripts só do próprio site, Google Maps e GA4; **sem** script embutido nem `ev
 
 ## 4. Limites conhecidos (não resolvidos)
 - Limite de tentativas fica em memória: vale para uma instância só e zera a cada reinício.
-- O app guarda no aparelho uma cópia do hash da senha (para conferir a senha atual na tela de perfil). Planejado: remover e conferir só no servidor.
+- O aparelho não guarda mais o hash da senha: a senha é conferida só no servidor (login e troca de senha). Contas criadas antes do servidor mantêm um hash antigo só até o primeiro login confirmado, quando ele é apagado.
 - Sem teste automatizado de ponta a ponta (login → carimbar → outro aparelho).
 - O fluxo anônimo da página da tag cria contas sem e-mail; há limite por IP, mas não há limpeza automática de contas anônimas antigas.
 - Backup e restauração do banco precisam ser **testados** (checklist de deploy).

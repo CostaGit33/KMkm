@@ -117,13 +117,16 @@ function normalizeAccount(value) {
   if (!value || typeof value !== "object") return null;
   const nome = String(value.nome || "").trim().slice(0, 36);
   const email = String(value.email || "").trim().toLowerCase().slice(0, 120);
-  if (nome.length < 2 || !email || typeof value.salt !== "string" || typeof value.hash !== "string") return null;
+  if (nome.length < 2 || !email) return null;
+  // Contas antigas (anteriores ao servidor) guardavam um hash da senha no aparelho. Ele só é mantido enquanto a conta
+  // não tiver sido confirmada no servidor (para migrá-la no próximo login) e é apagado em seguida (purgeLegacyPassword).
+  const legado = typeof value.salt === "string" && typeof value.hash === "string"
+    ? { salt: value.salt, hash: value.hash, alg: value.alg === "fnv1a" ? "fnv1a" : "sha256" }
+    : undefined;
   return {
     nome,
     email,
-    salt: value.salt,
-    hash: value.hash,
-    alg: value.alg === "fnv1a" ? "fnv1a" : "sha256",
+    ...(legado ? { legado } : {}),
     criadoEm: typeof value.criadoEm === "string" ? value.criadoEm : new Date().toISOString(),
   };
 }
@@ -132,6 +135,13 @@ export const isSignedIn = (state) => !!(state.account && state.session);
 
 export function createAccount(state, account) {
   return save({ ...state, account, session: true, user: { ...state.user, name: account.nome } });
+}
+
+// Apaga do aparelho a cópia antiga do hash da senha; a conferência da senha é só do servidor.
+export function purgeLegacyPassword(state) {
+  if (!state.account || !("legado" in state.account)) return state;
+  const { legado, ...account } = state.account;
+  return save({ ...state, account });
 }
 
 export function signIn(state) {

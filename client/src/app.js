@@ -1,6 +1,6 @@
 import { CITY, POINTS, ROUTES, getPoint } from "./data.js";
-import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, signIn, signOut, updateAccount, syncServerCollection } from "./store.js";
-import { renderAuth, validarNome, validarEmail, validarSenha, gerarSenha, senhaConfere } from "./auth.js";
+import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, purgeLegacyPassword, signIn, signOut, updateAccount, syncServerCollection } from "./store.js";
+import { renderAuth, validarNome, validarEmail, validarSenha, senhaLegadaConfere } from "./auth.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
 import { applyFieldMarks } from "./geo.js";
 import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
@@ -65,8 +65,7 @@ function launchIntro() {
       onCreate: async ({ nome, email, senha }) => {
         try {
           const servidor = await criarContaServidor({ nome, email, senha });
-          const hash = await gerarSenha(senha);
-          state = createAccount(state, { nome, email, serverId: servidor.usuario.id, criadoEm: new Date().toISOString(), ...hash });
+          state = createAccount(state, { nome, email, serverId: servidor.usuario.id, criadoEm: new Date().toISOString() });
         } catch (error) {
           authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
           showToast(authMessage);
@@ -466,10 +465,10 @@ async function handleSubmit(event) {
         const resposta = await api("/conta/redefinir-senha", { method: "POST", body: { token, senha } });
         limparTokenRedefinicao();
         const emailConta = String(resposta?.email || "").toLowerCase();
-        // O servidor encerrou todas as sessões da conta. O hash local só muda se esta for a conta guardada neste aparelho.
+        // O servidor encerrou todas as sessões da conta; se for a conta guardada aqui, sai e apaga qualquer hash antigo.
         const mesmaConta = !!state.account && !!emailConta && state.account.email === emailConta;
         if (mesmaConta) {
-          state = updateAccount(state, await gerarSenha(senha));
+          state = purgeLegacyPassword(state);
           if (isSignedIn(state)) state = signOut(state);
         }
         authModo = "entrar";
@@ -496,8 +495,7 @@ async function handleSubmit(event) {
         authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : error.code === "senha_igual_ao_email" ? "A senha não pode ser igual ao e-mail." : mensagemErro(error, "Não foi possível criar a conta no servidor.");
         return render();
       }
-      const senha = await gerarSenha(v("senha"));
-      state = createAccount(state, { nome, email: v("email").trim().toLowerCase(), serverId: servidor.usuario.id, criadoEm: new Date().toISOString(), ...senha });
+      state = createAccount(state, { nome, email: v("email").trim().toLowerCase(), serverId: servidor.usuario.id, criadoEm: new Date().toISOString() });
       authMessage = "";
       authDraft = {};
       authModo = "";
@@ -514,7 +512,7 @@ async function handleSubmit(event) {
       try {
         servidor = await entrarContaServidor({ email, senha: v("senha") });
       } catch (error) {
-        const localOk = !!state.account && state.account.email === email && (await senhaConfere(state.account, v("senha")));
+        const localOk = !!state.account && state.account.email === email && (await senhaLegadaConfere(state.account, v("senha")));
         if (!localOk || v("senha").length < 8) {
           authMessage = error.status === 429 ? mensagemErro(error, "") : "E-mail ou senha não conferem.";
           return render();
@@ -526,10 +524,8 @@ async function handleSubmit(event) {
           return render();
         }
       }
-      // A senha acabou de ser confirmada pelo servidor: o hash local acompanha sempre, senão uma senha trocada
-      // ou redefinida em outro aparelho deixaria aqui a antiga valendo para a conferência local (Perfil, troca de senha).
-      const hashLocal = await gerarSenha(v("senha"));
-      state = updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email, serverId: servidor.usuario.id, ...hashLocal });
+      // A senha foi confirmada pelo servidor: nada de senha fica no aparelho (e o hash antigo, se havia, é apagado).
+      state = purgeLegacyPassword(updateAccount(state, { nome: servidor.usuario.nome, email: servidor.usuario.email, serverId: servidor.usuario.id }));
       state = signIn(state);
       authModo = "";
       authMessage = "";
@@ -561,8 +557,8 @@ async function handleSubmit(event) {
       break;
     }
     case "perfil-senha": {
-      if (!(await senhaConfere(state.account, v("atual")))) {
-        profileMessage = { texto: "A senha atual não confere.", ok: false };
+      if (!v("atual")) {
+        profileMessage = { texto: "Informe a senha atual.", ok: false };
         return render();
       }
       const erro = validarSenha(v("nova")) || (v("nova") !== v("confirma") ? "As senhas novas não são iguais." : "");
@@ -572,7 +568,7 @@ async function handleSubmit(event) {
       }
       try {
         await atualizarContaServidor({ nome: state.account.nome, email: state.account.email, senhaAtual: v("atual"), senhaNova: v("nova") });
-        state = updateAccount(state, await gerarSenha(v("nova")));
+        state = purgeLegacyPassword(state);
         profileMessage = { texto: "Senha trocada.", ok: true };
       } catch (error) {
         profileMessage = { texto: error.code === "senha_atual_invalida" ? "A senha atual não confere." : mensagemErro(error, "Não foi possível trocar a senha no servidor."), ok: false };
@@ -607,6 +603,7 @@ async function sincronizarComServidor({ forcar = false } = {}) {
         return;
       }
     }
+    state = purgeLegacyPassword(state); // sessão válida no servidor: a conta existe lá, o hash antigo não serve mais
     const caderneta = await lerCaderneta();
     ultimaSincronizacao = Date.now();
     if (!caderneta || !isSignedIn(state)) return;
