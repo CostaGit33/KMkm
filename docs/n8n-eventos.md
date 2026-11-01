@@ -112,3 +112,13 @@ FROM integracao_eventos
 ORDER BY id DESC
 LIMIT 30;
 ```
+
+## 5. Operação e limites
+
+- **Ritmo:** um evento a cada 3 s (`N8N_EVENTS_PAUSA_MS`, padrão 3000), para ficar abaixo de cerca de 20 mensagens por minuto por grupo do Telegram. Depois de uma queda, a fila drena nesse ritmo.
+- **Entrega ao menos uma vez:** se o n8n demorar mais de 20 s, a API repete a chamada e a mensagem pode chegar em dobro. Cada evento tem `id` fixo (corpo e cabeçalho `X-Event-Id`); deduplique por ele no workflow se isso incomodar.
+- **Datas:** `occurred_at` é a hora do evento; `sent_at`, a do envio. Redirecionamentos do webhook são recusados (o segredo não vai para outro destino).
+- **Falhas:** após 12 tentativas (cerca de 2,4 h) o evento fica `falhou`. Com o n8n de volta: `npm --prefix server run eventos-fila -- status` e `... -- reenfileirar`.
+- **Limpeza:** eventos `enviado` com mais de 30 dias são apagados automaticamente.
+- **Monitoramento:** `/api/saude` traz `integracao: { configurado, pendentes, falhou, atraso_s }`. Alerte no Better Stack se `atraso_s` passar de alguns minutos ou `falhou` for maior que 0.
+
