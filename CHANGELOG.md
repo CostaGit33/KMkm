@@ -1,5 +1,8 @@
 # Histórico de versões do +1 KM
 
+## Sem hash de senha no aparelho
+- O app deixou de guardar salt/hash da senha no `localStorage`; a conferência é só do servidor. O hash antigo de contas pré-servidor é usado uma vez para migrar no login e apagado em seguida (também na sincronização e na redefinição de senha).
+
 ## V8.15 · Eventos operacionais e integração com n8n
 - **Outbox transacional**: cadastro e carimbos confirmados registram eventos na mesma transação MySQL, sem alterar as regras de autenticação, geofence, pontuação ou emissão de carimbos.
 - **Entrega resiliente ao n8n**: worker em segundo plano, webhook HTTPS autenticado por segredo, lote de até 10 eventos, recuperação de envios interrompidos e retentativas com backoff (até 12 tentativas).
