@@ -1,0 +1,153 @@
+/* ==============================
+   Entrar e perfil do usuário
+   ============================== */
+body.is-auth .topbar, body.is-auth .side-rail, body.is-auth .bottom-nav { display: none !important; }
+.auth-page { max-width: 420px; margin: 0 auto; padding: 24px 2px 40px; }
+.auth-brand { text-align: center; margin-bottom: 18px; }
+.auth-brand .brand-mark { width: 72px; height: 72px; }
+.auth-title { margin: 10px 0 4px; font: 30px/1 var(--display); text-transform: uppercase; }
+.auth-sub { margin: 0; color: var(--muted); font-size: 13px; }
+.auth-card { padding: 20px; }
+.auth-h { margin: 0 0 6px; font: 18px/1.2 var(--display); text-transform: uppercase; }
+.field { display: grid; gap: 6px; margin-top: 12px; }
+.field span { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.field input { min-height: 46px; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-size: 16px; }
+.field input:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.auth-error { margin: 12px 0 0; padding: 9px 11px; border: 2px solid var(--red); border-radius: 5px; color: var(--red); font-size: 13px; }
+.auth-error.ok { border-color: var(--green); color: var(--green); }
+.auth-card .primary-button { margin-top: 18px; }
+.auth-foot { margin-top: 18px; text-align: center; }
+.auth-foot .text-link { margin-top: 6px; }
+.form-stack { display: grid; gap: 4px; }
+.form-stack .primary-button, .form-stack .outline-button { margin-top: 12px; }
+.avatar-button { width: 38px; height: 38px; border: 2px solid var(--ink); border-radius: 50%; background: var(--ink); color: var(--paper); font: 13px var(--display); cursor: pointer; }
+.profile-card { display: flex; align-items: center; gap: 14px; }
+.profile-avatar { width: 64px; height: 64px; flex: 0 0 64px; display: grid; place-items: center; border: 3px double var(--ink); border-radius: 50%; background: var(--card-strong); color: var(--red); font: 24px var(--display); }
+.danger-zone { border-color: var(--red); }
+.danger-button { width: 100%; margin-top: 12px; padding: 12px 15px; border: 2px solid var(--red); border-radius: 5px; background: transparent; color: var(--red); font: inherit; font-weight: 700; cursor: pointer; }
+
+
+/* Novo destino: cartões de referência no mesmo papel e tinta da caderneta. */
+.destination-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--red);
+  background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--ochre) 7%, var(--card)));
+}
+.destination-card-mark {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  display: grid;
+  place-items: center;
+  border: 3px double var(--red);
+  border-radius: 50%;
+  color: var(--red);
+  font: 17px/1 var(--display);
+  transform: rotate(-7deg);
+  box-shadow: 2px 2px 0 var(--rule);
+}
+.destination-card-copy { min-width: 0; flex: 1; }
+.destination-card-copy h3 { margin: 3px 0 4px; font: 18px/1.2 var(--display); text-transform: uppercase; }
+.destination-card-copy p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.destination-card-button { flex: 0 0 auto; }
+.destination-return-row { margin: -4px 0 11px; }
+.destination-hero { border: 2px solid var(--ink); border-left: 6px solid var(--red); }
+.destination-hero-top { display: flex; align-items: flex-start; gap: 15px; }
+.destination-stamp {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+  display: grid;
+  place-items: center;
+  border: 3px double var(--red);
+  border-radius: 50%;
+  color: var(--red);
+  font: 20px/1 var(--display);
+  transform: rotate(-7deg);
+  box-shadow: 3px 3px 0 var(--rule);
+}
+.destination-hero-copy { min-width: 0; }
+.destination-hero-copy h2 { margin: 4px 0 7px; font: 21px/1.2 var(--display); text-transform: uppercase; }
+.destination-hero-copy p { max-width: 720px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.destination-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 19px; }
+.destination-fact { min-width: 0; padding: 8px 5px 0 0; border-top: 1px dashed var(--rule); }
+.destination-fact > span { display: block; color: var(--muted); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+.destination-fact strong { display: block; margin-top: 3px; font: 15px/1.2 var(--display); overflow-wrap: anywhere; }
+.destination-fact small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.destination-credit { margin: 12px 0 0; color: var(--muted); font-size: 9px; }
+.destination-community { border: 2px solid var(--blue); background: color-mix(in srgb, var(--blue) 5%, var(--card)); }
+.destination-section-heading h2 { margin: 3px 0 5px; font: 18px/1.25 var(--display); text-transform: uppercase; }
+.destination-section-heading p { max-width: 760px; margin: 0 0 13px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.destination-community-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.destination-community-link {
+  min-width: 0;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--rule);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.destination-community-link:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--rule); }
+.destination-mode-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px dashed var(--blue); border-radius: 50%; color: var(--blue); font-size: 19px; }
+.destination-community-link strong, .destination-community-link small { display: block; }
+.destination-community-link strong { font: 12px/1.2 var(--display); text-transform: uppercase; }
+.destination-community-link small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.3; }
+.destination-open-mark { justify-self: end; color: var(--red); font-size: 17px; }
+.destination-instructions { margin-top: 14px; padding: 12px; border-top: 1px dashed var(--rule); background: color-mix(in srgb, var(--card) 72%, transparent); }
+.destination-instructions h3 { margin: 0 0 5px; font: 12px/1.3 var(--display); text-transform: uppercase; }
+.destination-steps { margin: 7px 0 9px; padding-left: 22px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.destination-steps li { margin: 3px 0; }
+.destination-inline-link { display: inline-block; margin: 4px 12px 3px 0; color: var(--blue); font-size: 10px; font-weight: 700; text-underline-offset: 3px; }
+.destination-caveat { margin: 13px 0 0; padding: 9px 11px; border-left: 4px solid var(--ochre); background: color-mix(in srgb, var(--ochre) 9%, var(--card)); color: var(--muted); font-size: 10px; line-height: 1.5; }
+.destination-event-card { border: 2px solid var(--ink); }
+.destination-event-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 11px; color: var(--muted); font-size: 10px; }
+.destination-historic-pill { padding: 3px 8px; border: 1px solid var(--ochre); border-radius: 999px; color: var(--red-dark); background: color-mix(in srgb, var(--ochre) 12%, var(--card)); font-size: 8px; letter-spacing: .8px; text-transform: uppercase; }
+.destination-event-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.destination-event-route { min-width: 0; padding: 12px; border: 1px solid var(--rule); border-top: 4px solid var(--red); border-radius: 4px; background: var(--card-strong); }
+.destination-event-kind, .destination-return-label { display: block; color: var(--muted); font-size: 8px; letter-spacing: .8px; text-transform: uppercase; }
+.destination-event-distance { display: block; margin: 5px 0; color: var(--red); font: 24px/1.1 var(--display); }
+.destination-event-route h3 { margin: 4px 0; font: 12px/1.3 var(--display); overflow-wrap: anywhere; }
+.destination-event-route p { margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.destination-park-card { display: flex; align-items: center; justify-content: space-between; gap: 13px; border-left: 5px solid var(--green); }
+.destination-park-card h2 { margin: 3px 0 5px; font: 16px/1.2 var(--display); text-transform: uppercase; }
+.destination-park-card p { max-width: 690px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.destination-park-card .destination-inline-link { flex: 0 0 auto; }
+.destination-sources { margin: 17px 0 4px; padding: 12px 2px 0; border-top: 1px dashed var(--rule); }
+.destination-sources > p { margin: 0 0 8px; }
+.destination-source-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.destination-source-link { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 3px; color: var(--blue); background: var(--card); font-size: 9px; line-height: 1.3; text-decoration: none; }
+.destination-source-link:hover { border-color: var(--blue); text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .destination-card { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .destination-card-mark { width: 45px; height: 45px; flex-basis: 45px; font-size: 14px; }
+  .destination-card-copy { flex-basis: calc(100% - 60px); }
+  .destination-card-copy h3 { font-size: 15px; }
+  .destination-card-copy p { font-size: 10px; }
+  .destination-card-button { width: 100%; }
+  .destination-hero-top { gap: 10px; }
+  .destination-stamp { width: 48px; height: 48px; flex-basis: 48px; font-size: 15px; }
+  .destination-hero-copy h2 { font-size: 17px; }
+  .destination-hero-copy p { font-size: 10px; }
+  .destination-facts { grid-template-columns: 1fr; gap: 6px; margin-top: 13px; }
+  .destination-fact { display: grid; grid-template-columns: minmax(90px, .8fr) minmax(0, 1fr); align-items: baseline; column-gap: 8px; padding-top: 6px; }
+  .destination-fact > span { grid-row: 1 / span 2; }
+  .destination-fact strong { font-size: 13px; }
+  .destination-fact small { margin-top: 1px; }
+  .destination-community-links, .destination-event-grid { grid-template-columns: 1fr; }
+  .destination-community-link { min-height: 52px; }
+  .destination-event-route { padding: 10px; }
+  .destination-event-distance { font-size: 21px; }
+  .destination-park-card { align-items: flex-start; flex-direction: column; gap: 5px; }
+}

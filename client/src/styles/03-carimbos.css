@@ -1,0 +1,29 @@
+/* ==============================
+   V3 · família de carimbos (SVG, textura de tinta, animação do toque)
+   ============================== */
+.stamp-wrap { display: block; width: 100%; margin: 0 auto; }
+.stamp-svg { display: block; width: 100%; height: auto; overflow: visible; stroke-linejoin: round; }
+.stamp-svg text { fill: currentColor; stroke: none; font-family: var(--display); }
+.stamp-svg path[stroke="none"] { fill: none; }
+.certificate-stamp-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.certificate-stamp-cell { display: block; width: 46px; }
+.detail-stamp { width: 150px; margin: 16px auto 0; }
+.stamp-moment { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--ink) 55%, transparent); animation: sm-in .2s ease-out both; }
+.stamp-moment.is-leaving { opacity: 0; transition: opacity .2s; }
+.stamp-moment-card { width: min(100%, 340px); padding: 22px 18px 18px; text-align: center; background: var(--card); border: 3px double var(--ink); border-radius: 9px; box-shadow: 6px 6px 0 var(--red); }
+.stamp-moment-card h2 { margin: 6px 0 2px; font: 22px/1.1 var(--display); text-transform: uppercase; }
+.stamp-moment-card p { margin: 0 0 14px; color: var(--muted); }
+.stamp-moment-page { position: relative; display: grid; place-items: center; padding: 6px 0; }
+.stamp-moment-page::after { content: ""; position: absolute; width: 62%; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 50%; opacity: 0; animation: sm-rip .7s .12s ease-out both; }
+.stamp-moment .stamp-wrap { animation: sm-thump .55s cubic-bezier(.2, .8, .2, 1) both, sm-dry 2.6s ease-out both; }
+@keyframes sm-in { from { opacity: 0; } }
+@keyframes sm-thump { 0% { transform: translateY(-26px) scale(1.9) rotate(-14deg); opacity: 0; } 45% { opacity: 1; } 62% { transform: scale(.93); } 78% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@keyframes sm-dry { 0% { filter: saturate(1.8) brightness(.8) blur(1.3px); } 35% { filter: saturate(1.4) brightness(.88) blur(0); } 100% { filter: none; } }
+@keyframes sm-rip { from { opacity: .5; transform: scale(.7); } to { opacity: 0; transform: scale(1.5); } }
+@media (prefers-reduced-motion: reduce) { .stamp-moment .stamp-wrap, .stamp-moment-page::after { animation: none !important; } }
+
+/* Selinho +1 no carimbo */
+.stamp-plus { transform-box: fill-box; transform-origin: center; transform: rotate(8deg); }
+.stamp-moment .stamp-plus { animation: sm-plus .5s .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes sm-plus { from { transform: scale(0) rotate(-25deg); opacity: 0; } to { transform: scale(1) rotate(8deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stamp-moment .stamp-plus { animation: none !important; } }

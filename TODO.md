@@ -20,7 +20,8 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 - [ ] Limpeza automática de contas anônimas antigas.
 - [ ] Prova de presença com NTAG 424 DNA (validar assinatura SDM no servidor) se patrocínio pagar por visita comprovada.
 - [ ] Carimbo offline com fila e reenvio idempotente.
-- [ ] Reduzir `styles.css`/`future.css`/`views.js` (arquivos grandes) por tela.
+- [x] Dividir `views.js` (agora fachada + `client/src/views/*.js` por tela) e `styles.css` (agora índice de `client/src/styles/*.css`, na mesma ordem da cascata).
+- [ ] Dividir `future.css` (926 linhas) por tela.
 
 ## Comercial
 - [ ] Carta de interesse ou contrato-piloto de pelo menos um comprador/patrocinador (`docs/comercial/carta-interesse.md`).
