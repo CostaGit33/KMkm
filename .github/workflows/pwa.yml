@@ -1,0 +1,44 @@
+name: PWA - Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "shared/**"
+      - ".github/workflows/pwa.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "shared/**"
+      - ".github/workflows/pwa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pwa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar PWA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci --prefix client
+
+      - name: Compilar frontend
+        run: npm run build --prefix client
