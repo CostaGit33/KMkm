@@ -1,3 +1,4 @@
+# Pipeline de validacao do aplicativo Flutter Android.
 name: Mobile - Flutter CI
 
 on:
