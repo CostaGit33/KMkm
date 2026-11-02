@@ -6,9 +6,11 @@ info:
     API do +1 KM (Express + MySQL). Contrato escrito a partir das rotas de `server/index.js`, `server/admin.js`
     e `server/gamificacao.js`; se o código mudar, atualize este arquivo e a coleção em `docs/api/`.
 
-    **Autenticação.** A conta usa um cookie de sessão `mais1km_session` (HttpOnly; `Secure; SameSite=None` em HTTPS,
-    `SameSite=Lax` em HTTP). O token fica guardado só como hash no banco e vale 30 dias. As rotas legadas de apelido
-    (`/api/entrar`, `/api/sair`, `/api/sessao`) existem apenas para tags antigas e também aceitam `Authorization: Bearer`.
+    **Autenticação.** Cadastro e login de conta definem o cookie de sessão `mais1km_session` (HttpOnly, validade de 30 dias;
+    `SameSite=Lax` por padrão e `Secure` quando a requisição é HTTPS ou `COOKIE_SECURE=true`). `COOKIE_SAMESITE` pode
+    alterar o SameSite; `None` também exige `Secure`. O token bruto não é devolvido no JSON e o banco guarda somente seu hash.
+    O middleware aceita cookie ou `Authorization: Bearer`, mas os endpoints de conta não emitem token Bearer no corpo.
+    As rotas legadas de apelido (`/api/entrar`, `/api/sair`, `/api/sessao`) existem para compatibilidade e aceitam Bearer.
 
     **Erros.** Sempre `{ "erro": "codigo_em_snake_case" }`. Limite de requisições por IP responde `429 muitas_tentativas`
     com o cabeçalho `Retry-After`. O contador fica na memória do processo (zera a cada reinício).
@@ -153,7 +155,7 @@ paths:
       tags: [Conta]
       security: []
       summary: Criar conta
-      description: Cria a conta e já abre a sessão (cookie). Limite de 8 por 10 minutos por IP.
+      description: Cria a conta e já abre a sessão por cookie. Limite de 8 por 10 minutos por IP.
       requestBody:
         required: true
         content:
@@ -163,7 +165,7 @@ paths:
         '201':
           description: Conta criada; cookie `mais1km_session` definido
           headers:
-            Set-Cookie: { schema: { type: string }, description: 'mais1km_session=...; HttpOnly' }
+            Set-Cookie: { schema: { type: string }, description: 'Cookie mais1km_session; HttpOnly; SameSite=Lax por padrão; Secure quando HTTPS ou COOKIE_SECURE=true; Max-Age de 30 dias.' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UsuarioResposta' }
@@ -181,7 +183,7 @@ paths:
       tags: [Conta]
       security: []
       summary: Entrar com e-mail e senha
-      description: Limite de 12 por 10 minutos por IP. Esqueceu a senha? Use `/api/conta/recuperar-senha`.
+      description: Limite de 12 por 10 minutos por IP e 8 por 15 minutos por e-mail normalizado. Esqueceu a senha? Use `/api/conta/recuperar-senha`.
       requestBody:
         required: true
         content:
@@ -189,9 +191,9 @@ paths:
             schema: { $ref: '#/components/schemas/ContaEntrar' }
       responses:
         '200':
-          description: Sessão aberta; cookie definido
+          description: Sessão aberta por cookie; nenhum token de sessão é devolvido no JSON
           headers:
-            Set-Cookie: { schema: { type: string } }
+            Set-Cookie: { schema: { type: string }, description: 'Cookie mais1km_session; HttpOnly; SameSite=Lax por padrão; Secure quando HTTPS ou COOKIE_SECURE=true; Max-Age de 30 dias.' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UsuarioResposta' }
@@ -333,9 +335,19 @@ paths:
       tags: [Conta]
       summary: Encerrar a sessão (revoga o token no servidor)
       security: [{ sessionCookie: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                todos: { type: boolean, description: 'true revoga todas as sessões da conta; omitido ou false revoga somente a sessão atual.' }
       responses:
         '200':
           description: Sessão encerrada e cookie removido
+          headers:
+            Set-Cookie: { schema: { type: string }, description: 'Cookie mais1km_session apagado com Max-Age=0.' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Ok' }
@@ -370,6 +382,11 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { name: codigo, in: path, required: true, schema: { type: string }, example: eu-001 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TagCarimbar' }
       responses:
         '200':
           description: Carimbo registrado
@@ -377,6 +394,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/CarimboResposta' }
         '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Chave da tag inválida quando ela é exigida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: chave_invalida }
         '404':
           description: Tag inexistente
           content:
@@ -384,11 +407,15 @@ paths:
               schema: { $ref: '#/components/schemas/Erro' }
               example: { erro: tag_inexistente }
         '409':
-          description: Ponto ainda não publicado
+          description: Ponto não publicado ou geolocalização necessária/imprecisa/fora do raio
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Erro' }
-              example: { erro: ponto_nao_publicado }
+              examples:
+                ponto: { value: { erro: ponto_nao_publicado } }
+                localizacao: { value: { erro: localizacao_necessaria, raio: 100 } }
+                gps: { value: { erro: gps_impreciso, raio: 100, precisao: 80 } }
+                distancia: { value: { erro: fora_do_raio, raio: 100, distancia: 150 } }
         '429': { $ref: '#/components/responses/MuitasTentativas' }
   /api/eventos/{slug}/carimbar:
     post:
@@ -400,22 +427,30 @@ paths:
       parameters:
         - { name: slug, in: path, required: true, schema: { type: string } }
       requestBody:
+        required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                codigo: { type: string, description: Código da tag onde a pessoa está }
+            schema: { $ref: '#/components/schemas/EventoCarimbar' }
       responses:
-        '200': { description: Carimbo do evento registrado }
+        '200':
+          description: Carimbo do evento registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CarimboEventoResposta' }
         '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Chave da tag inválida quando ela é exigida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+              example: { erro: chave_invalida }
         '404':
           description: Evento ou tag inexistente (`evento_inexistente`, `tag_inexistente`)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Erro' }
         '409':
-          description: '`evento_nao_comecou`, `fora_da_janela`, `ponto_nao_publicado` ou `ponto_fora_do_evento`'
+          description: '`evento_nao_comecou`, `fora_da_janela`, `ponto_nao_publicado`, `ponto_fora_do_evento`, `localizacao_necessaria`, `gps_impreciso`, `fora_do_raio` ou `ponto_sem_coordenadas`'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Erro' }
@@ -996,6 +1031,40 @@ components:
         capturadas: { type: integer }
         por_categoria: { type: object, additionalProperties: { type: object } }
         itens: { type: array, items: { type: object } }
+    PosicaoCarimbo:
+      type: object
+      required: [lat, lng]
+      description: Enviar somente no pedido de carimbo quando a operação exigir localização. O servidor exige acc entre 1 e 50 metros para geofence.
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        acc: { type: number, minimum: 0, description: Precisão horizontal em metros; obrigatória na prática quando a geofence estiver ativa. }
+    TagCarimbar:
+      type: object
+      properties:
+        chave: { type: string, description: Valor recebido no parâmetro k da URL da tag, quando a tag exigir chave. }
+        pos: { $ref: '#/components/schemas/PosicaoCarimbo' }
+    EventoCarimbar:
+      type: object
+      required: [codigo]
+      properties:
+        codigo: { type: string, description: Código da tag onde a pessoa está. }
+        chave: { type: string, description: Valor recebido no parâmetro k da URL da tag, quando a tag exigir chave. }
+        pos: { $ref: '#/components/schemas/PosicaoCarimbo' }
+    CarimboEventoResposta:
+      type: object
+      properties:
+        repetido: { type: boolean }
+        carimbo_rota_criado: { type: boolean }
+        evento:
+          type: object
+          properties:
+            slug: { type: string }
+            nome: { type: string }
+            tipo: { type: string }
+            patrocinado_por: { type: string, nullable: true }
+            edicao: { type: integer }
+        carimbo: { $ref: '#/components/schemas/CarimboResposta' }
     CarimboResposta:
       type: object
       properties:
