@@ -61,7 +61,7 @@ Não retornar token Bearer a qualquer execução do frontend web sem análise de
 
 ## Build, operação e segurança
 
-- Domínio da PWA informado pelo responsável: `mais1km.navaagencian8n.online` (grafia confirmada; ainda não verificado/testado por esta documentação). `applicationId` proposto: `online.navaagencian8n.mais1km` — mudar só antes da primeira publicação. Assinatura e fingerprints de release ainda não existem e não devem ir ao Git.
+- Domínio da PWA informado pelo responsável: `mais1km.novaagencian8n.online` (grafia confirmada; ainda não verificado/testado por esta documentação). `applicationId` proposto: `online.navaagencian8n.mais1km` — mudar só antes da primeira publicação. Assinatura e fingerprints de release ainda não existem e não devem ir ao Git.
 - Não gerar `assetlinks.json`, chaves de assinatura, release AAB ou publicar app até que identificadores e conta de publicação sejam confirmados.
 - CI no GitHub Actions (desde 2026-11-02): `api.yml` (testes do server) e `pwa.yml` (build do client), ambos em Node 20 e independentes. O `ci.yml` combinado foi removido. O workflow Android será adicionado quando existir `mobile/pubspec.yaml`; o scaffold é gerado pelo workflow manual `mobile-scaffold.yml`, que publica a branch `feature/mobile-scaffold` sem alterar a `main`. Builds Flutter rodam nos servidores do GitHub, não na VPS.
 - Nenhum staging/produção foi acessado. Testes de API com alteração de dados devem usar banco local ou staging autorizado.
