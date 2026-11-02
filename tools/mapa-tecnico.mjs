@@ -114,7 +114,7 @@ lines.push(
   "## Limites",
   "",
   "- A árvore é limitada a quatro níveis para manter o documento legível.",
-  "- Pastas ocultas e diretórios de dependências/build são omitidos.",
+  "- Diretórios de dependências e build são omitidos; outras pastas ocultas podem aparecer na árvore.",
   "- O mapa não faz análise estática de imports nem confirma que integrações estejam funcionando.",
   "- A estrutura é reavaliada a cada execução; este documento só muda no repositório quando o resultado gerado for commitado."
 );
