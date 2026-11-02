@@ -101,7 +101,7 @@ function cartaoEvento(result, code) {
 function cartaoCriatura(result) {
   const c = result.criatura;
   if (!c) return '';
-  const item = c.carta || { codigo: '', carta: 0, ponto: '', categoria: 'cultura', raridade: c.raridade, capturada: true, criatura: c.nome, estagio: 0 };
+  const item = c.carta || { codigo: '', carta: 0, ponto: '', categoria: 'cultura', raridade: c.raridade, capturada: true, criatura: c.nome };
   const carta = cartaHtml(item, { size: 130, tag: 'div' });
   const progresso = `${c.capturadas} de ${c.total} cartas na sua coleção`;
   if (!c.nova) return `<article class="card tag-card tag-criatura"><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">Carta já desbloqueada. ${progresso}.</p></article>`;
