@@ -1,6 +1,6 @@
 # Arquitetura proposta do cliente Android — Mais1km
 
-**Status:** arquitetura inicial para validação; não há código Flutter no baseline.
+**Status:** arquitetura inicial para validação; ainda não há código Flutter no repositório (atualizado em 2026-11-02).
 **Regra central:** o servidor existente é a fonte da verdade para conta, catálogo, carimbo, evento, coleção e gamificação.
 
 ## Visão lógica
@@ -61,15 +61,15 @@ Não retornar token Bearer a qualquer execução do frontend web sem análise de
 
 ## Build, operação e segurança
 
-- Não há `applicationId`, package name do Android, domínio verificado, assinatura ou fingerprint de release documentados no repositório.
+- Domínio da PWA informado pelo responsável: `mais1km.novaagencian8n.online` (grafia confirmada; ainda não verificado/testado por esta documentação). `applicationId` proposto: `online.navaagencian8n.mais1km` — mudar só antes da primeira publicação. Assinatura e fingerprints de release ainda não existem e não devem ir ao Git.
 - Não gerar `assetlinks.json`, chaves de assinatura, release AAB ou publicar app até que identificadores e conta de publicação sejam confirmados.
-- CI atual testa client web e server sob Node 20; não há job Flutter. Incluir job Flutter somente depois de escolher versão SDK e preparar ambiente reproduzível.
+- CI no GitHub Actions (desde 2026-11-02): `api.yml` (testes do server) e `pwa.yml` (build do client), ambos em Node 20 e independentes. O `ci.yml` combinado foi removido. O workflow Android será adicionado quando existir `mobile/pubspec.yaml`; o scaffold é gerado pelo workflow manual `mobile-scaffold.yml`, que publica a branch `feature/mobile-scaffold` sem alterar a `main`. Builds Flutter rodam nos servidores do GitHub, não na VPS.
 - Nenhum staging/produção foi acessado. Testes de API com alteração de dados devem usar banco local ou staging autorizado.
 
 ## Bloqueios técnicos atuais
 
-1. Flutter, Dart e Android SDK ausentes neste computador; não é possível provar cookie jar nem compilar APK.
-2. O domínio real, `applicationId`, assinatura e fingerprints não estão definidos/confirmados.
+1. Flutter e Android SDK existem na VPS (`/opt/flutter`, `/opt/android-sdk`), mas não no ambiente de auditoria; a prova de cookie jar ainda não foi executada e `mobile/` ainda não existe.
+2. Falta URL de homologação separada e conta de teste para a prova de autenticação (não testar contra produção); assinatura e fingerprints não existem.
 3. A escolha de SDK/plugin de mapa nativo ainda não foi feita.
 4. A matriz de privacidade para telemetria não está aprovada; por isso não implementar ingestão/persistência analítica.
-5. O OpenAPI está incompleto nos corpos de carimbo em comparação com o handler real.
+5. (Resolvido na Fase 1) OpenAPI atualizado para os corpos de carimbo; ver `02-mapa-api.md`.

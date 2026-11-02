@@ -59,3 +59,9 @@ A execução foi local, usando as dependências instaladas no clone. Não repres
 - O endpoint legado `/api/entrar` cria usuário por apelido e devolve token; não é o fluxo recomendado de conta para o novo app.
 - A PWA não persiste coordenadas enviadas para validação do carimbo. O Android deve continuar enviando GPS somente quando necessário para aquela operação.
 - Nenhuma migração de banco, alteração de regra, alteração de segredo ou deploy foi executado nesta fase.
+
+## Atualização de 2026-11-02
+
+- A `main` foi atualizada pelo PR #33 (commit `5c5883c`), que adicionou o workflow manual `mobile-scaffold.yml`, além dos workflows `api.yml` e `pwa.yml`. Ainda não há `mobile/`; o scaffold será criado em branch própria pelo workflow.
+- A tabela de ferramentas acima descreve o ambiente da auditoria. A VPS do projeto tem Flutter (`/opt/flutter`) e Android SDK (`/opt/android-sdk`); builds oficiais devem ocorrer no GitHub Actions para não consumir o disco da VPS, que está sob pressão (camadas do containerd).
+- Informado pelo responsável: domínio da PWA `mais1km.novaagencian8n.online`.
