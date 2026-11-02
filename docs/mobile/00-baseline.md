@@ -62,6 +62,6 @@ A execução foi local, usando as dependências instaladas no clone. Não repres
 
 ## Atualização de 2026-11-02
 
-- A `main` está em `293f14f`: documentação da Fase 0/1 mais os workflows `api.yml` e `pwa.yml` (o `ci.yml` antigo foi removido). Não há `mobile/`.
+- A `main` foi atualizada pelo PR #33 (commit `5c5883c`), que adicionou o workflow manual `mobile-scaffold.yml`, além dos workflows `api.yml` e `pwa.yml`. Ainda não há `mobile/`; o scaffold será criado em branch própria pelo workflow.
 - A tabela de ferramentas acima descreve o ambiente da auditoria. A VPS do projeto tem Flutter (`/opt/flutter`) e Android SDK (`/opt/android-sdk`); builds oficiais devem ocorrer no GitHub Actions para não consumir o disco da VPS, que está sob pressão (camadas do containerd).
-- Informado pelo responsável: domínio da PWA `mais1km.navaagencian8n.online`.
+- Informado pelo responsável: domínio da PWA `mais1km.novaagencian8n.online`.
