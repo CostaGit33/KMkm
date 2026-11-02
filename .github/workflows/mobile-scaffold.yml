@@ -1,0 +1,58 @@
+name: Mobile - Criar scaffold Flutter
+
+# Executar manualmente: Actions > "Mobile - Criar scaffold Flutter" > Run workflow.
+# Cria mobile/ numa branch nova (feature/mobile-scaffold). Nao toca na main.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scaffold:
+    name: Gerar projeto Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Parar se mobile/ já existir
+        run: |
+          if [ -d mobile ]; then
+            echo "mobile/ ja existe; nada a fazer."
+            exit 1
+          fi
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Criar projeto Android
+        run: |
+          flutter --version
+          flutter create --platforms=android --org online.navaagencian8n --project-name mais1km mobile
+
+      - name: Analisar e testar
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Publicar na branch feature/mobile-scaffold
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c feature/mobile-scaffold
+          git add mobile
+          git commit -m "feat(mobile): scaffold Flutter Android (applicationId online.navaagencian8n.mais1km)"
+          git push origin feature/mobile-scaffold
