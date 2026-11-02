@@ -8,8 +8,12 @@ Documentação da Fase 0 e decisões para criar o cliente Android Flutter sem su
 - [Arquitetura móvel](03-arquitetura-mobile.md)
 - [ADRs — decisões de arquitetura](adr/README.md)
 
-## Estado atual
+## Estado atual (2026-11-02)
 
-Fase 0: auditoria e baseline documentadas no commit base `1004923`. O clone está na branch `feature/flutter-android-migration`. Baseline web/backend passou (52 testes do server e build Vite). O gate para criar o scaffold Flutter e executar a prova de conceito de sessão está bloqueado pela ausência de Flutter/Dart/Android SDK neste ambiente.
+- Fase 0 (auditoria) e Fase 1 (contrato da API/OpenAPI e teste estático de contrato) concluídas **em documentação**; estão na `main`.
+- Baseline: 52 testes do server e build Vite passaram em 2026-11-01. Desde 2026-11-02 rodam no GitHub Actions (`api.yml`, `pwa.yml`).
+- Flutter e Android SDK estão instalados na VPS, mas builds devem usar o GitHub Actions. Ainda **não existe** `mobile/`, app Flutter nem workflow Android.
+- Decisões em aberto: URL de homologação e conta de teste (prova de autenticação), confirmação final do `applicationId` (`online.navaagencian8n.mais1km`, proposto), assinatura/fingerprints.
+- Próximos passos, em ordem: (1) gerar o scaffold via workflow `mobile-scaffold.yml` e revisar por Pull Request; (2) autenticação e prova de persistência de sessão; (3) workflow Android; (4) catálogo, mapa, pontos, NFC/QR e carimbos; (5) testes de integração Android ↔ PWA ↔ API.
 
-Não há app Flutter nem alteração de backend/banco nesta fase. Consulte os ADRs para itens propostos, adiados e ainda bloqueados.
+Nenhuma alteração de backend, banco ou produção foi feita. Consulte os ADRs para itens propostos, adiados e bloqueados.
