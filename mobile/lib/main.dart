@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -760,29 +762,50 @@ class _HomeShellState extends State<HomeShell> {
               onOpenCollection: () => setState(() => _tab = 3),
               onOpenPoint: _showPointByCode,
             ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (index) => setState(() => _tab = index),
-        backgroundColor: AppColors.paper,
-        indicatorColor: AppColors.gold.withValues(alpha: .22),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Início'),
-          NavigationDestination(
-              icon: Icon(Icons.map_outlined),
-              selectedIcon: Icon(Icons.map),
-              label: 'Mapa'),
-          NavigationDestination(
-              icon: Icon(Icons.route_outlined),
-              selectedIcon: Icon(Icons.route),
-              label: 'Rotas'),
-          NavigationDestination(
-              icon: Icon(Icons.collections_bookmark_outlined),
-              selectedIcon: Icon(Icons.collections_bookmark),
-              label: 'Coleção'),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          decoration: BoxDecoration(
+            color: AppColors.paper.withValues(alpha: .88),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 9)),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: NavigationBar(
+                height: 68,
+                selectedIndex: _tab,
+                onDestinationSelected: (index) => setState(() => _tab = index),
+                backgroundColor: Colors.transparent,
+                indicatorColor: AppColors.gold.withValues(alpha: .22),
+                destinations: const [
+                  NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      selectedIcon: Icon(Icons.home),
+                      label: 'Início'),
+                  NavigationDestination(
+                      icon: Icon(Icons.map_outlined),
+                      selectedIcon: Icon(Icons.map),
+                      label: 'Mapa'),
+                  NavigationDestination(
+                      icon: Icon(Icons.route_outlined),
+                      selectedIcon: Icon(Icons.route),
+                      label: 'Rotas'),
+                  NavigationDestination(
+                      icon: Icon(Icons.collections_bookmark_outlined),
+                      selectedIcon: Icon(Icons.collections_bookmark),
+                      label: 'Coleção'),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
