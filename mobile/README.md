@@ -24,6 +24,8 @@ Não configure outro domínio, serviço ou banco para o aplicativo.
 - Catálogo público e circuitos carregados da API, com filtro de pontos publicados e não ocultos.
 - Busca por nome/código/endereço e filtro por categoria.
 - Detalhe do ponto com endereço, descrição e categorias.
+- Mapa nativo com marcadores dos pontos georreferenciados, seleção de ponto e ajuste inicial para enquadrar os marcadores.
+- Mapa utiliza o endpoint de tiles já existente na API e atribuição OpenStreetMap.
 
 A redefinição por token/deep link será implementada após confirmar o formato do link enviado pelo backend.
 
