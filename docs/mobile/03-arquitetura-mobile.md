@@ -1,6 +1,6 @@
 # Arquitetura proposta do cliente Android — Mais1km
 
-**Status:** primeira fatia funcional de autenticação implementada; catálogo, mapa, caderneta e demais jornadas ainda pendentes.
+**Status:** autenticação e primeira leitura do catálogo/circuitos implementadas; mapa, caderneta e demais jornadas ainda pendentes.
 **Regra central:** o servidor existente é a fonte da verdade para conta, catálogo, carimbo, evento, coleção e gamificação.
 
 ## Visão lógica
@@ -23,12 +23,12 @@ O aplicativo e a PWA compartilham o mesmo serviço de API e o mesmo MySQL. Não 
 - **App:** entry point, tema visual, tela de autenticação e área inicial autenticada.
 - **Core API:** cliente HTTPS com `dart:io HttpClient`, timeout e tratamento de rede/HTTP.
 - **Core auth:** cookie de sessão protegido por `flutter_secure_storage`, restauração remota e logout.
-- **Features:** login, cadastro e solicitação de recuperação de senha.
+- **Features:** login, cadastro, solicitação de recuperação, catálogo público, busca/filtro e detalhe básico de ponto.
 - **Storage:** somente sessão. Sem SQLite/Drift ou progresso offline.
 
 ## Próximas camadas
 
-- Catálogo, mapa, pontos, rotas, carimbos, caderneta, eventos, gamificação e perfil.
+- Mapa nativo, caderneta, carimbos, eventos, gamificação e perfil. O catálogo público e circuitos já são lidos pela API.
 - Leitor NFC/QR e Android App Links após verificar o contrato de links.
 - Redefinição por token/deep link após confirmar o formato do e-mail.
 - Prova real do ciclo de sessão em aparelho Android.
@@ -40,6 +40,7 @@ O aplicativo e a PWA compartilham o mesmo serviço de API e o mesmo MySQL. Não 
 - O backend não retorna token Bearer no JSON de login/cadastro.
 - Não registrar senha, cookie, chave NFC, token de redefinição ou coordenadas.
 - Operações de escrita afetam dados compartilhados com o site; usar apenas contas/pontos autorizados.
+- Catálogo: filtrar status publicado e oculto false; não presumir que toda resposta de /api/catalogo esteja pronta para exibição.
 - Nenhum carimbo offline; somente o servidor confirma uma visita.
 
 ## Build e CI
