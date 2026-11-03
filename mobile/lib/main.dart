@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
+import 'features/map/catalog_map.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -596,11 +597,65 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  void _openMap() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.cream,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.88,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Mapa de descobertas',
+                      style: TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Fechar mapa',
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CatalogMap(
+                points: _catalog?.points ?? const <CatalogPoint>[],
+                onSelectPoint: (point) {
+                  Navigator.of(sheetContext).pop();
+                  _showPoint(point);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.user['nome']?.toString().trim();
     final points = _visiblePoints;
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openMap,
+        backgroundColor: AppColors.forest,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.map_outlined),
+        label: const Text('Mapa'),
+      ),
       appBar: AppBar(
         backgroundColor: AppColors.forest,
         foregroundColor: Colors.white,
