@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mais1km/core/theme/brand_theme.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   test('tema escuro reproduz os tokens institucionais efetivos do PWA', () {
     final theme = Mais1kmTheme.dark;
 
