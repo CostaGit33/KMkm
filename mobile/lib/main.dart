@@ -45,9 +45,8 @@ class _Mais1kmAppState extends State<Mais1kmApp> {
     return MaterialApp(
       title: '+1 KM',
       debugShowCheckedModeBanner: false,
-      theme: Mais1kmTheme.dark,
+      theme: Mais1kmTheme.light,
       darkTheme: Mais1kmTheme.dark,
-      lightTheme: Mais1kmTheme.light,
       themeMode: ThemeMode.dark,
       home: AuthGate(api: _api),
     );
