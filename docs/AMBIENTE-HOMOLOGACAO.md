@@ -8,7 +8,7 @@ Este ambiente é separado da produção. Ele usa outro serviço de aplicação, 
 - API: mesma árvore de rotas `/api`, sem alterar o domínio de produção.
 - Banco: MySQL 8.4 isolado no volume `mais1km_staging_mysql_data`.
 - Mídia: volume próprio `mais1km_staging_media`.
-- Porta local padrão: 3001; no Easypanel, publicar por um domínio de homologação próprio.
+- Porta local padrão: 3001; domínio previsto no Easypanel: `https://android.novaagencian8n.online`.
 - E-mail de contato/teste informado: `silvaromulo33@gmail.com`.
 
 **Proibido compartilhar com produção:** `DATABASE_URL`, senha MySQL, `TAG_KEY_SECRET`, bucket/token R2, sessão/cookies, webhook n8n ou diretório de mídia.
@@ -26,7 +26,7 @@ openssl rand -hex 32
 
 Use uma senha URL-safe para `MYSQL_PASSWORD` e outra para `MYSQL_ROOT_PASSWORD`. Use um segredo aleatório de pelo menos 32 bytes para `TAG_KEY_SECRET`. Preencha também `DATABASE_URL` com o mesmo usuário/senha do MySQL e host `db-staging`. Não reutilize nenhum segredo da produção.
 
-3. Configure `APP_PUBLIC_URL` com o domínio HTTPS exclusivo da homologação. Antes de publicar, configure também `CONTATO_EMAIL` e, se for necessário testar recuperação de senha, credenciais Resend de homologação.
+3. Configure `APP_PUBLIC_URL=https://android.novaagencian8n.online`. Antes de publicar, configure também `CONTATO_EMAIL` e, se for necessário testar recuperação de senha, credenciais Resend de homologação.
 4. Suba o ambiente:
 
 ```bash
@@ -53,10 +53,10 @@ Crie recursos novos, sem editar ou reutilizar o serviço atual:
 2. Build usando o `Dockerfile` existente na raiz.
 3. Novo MySQL 8.4 exclusivo, com banco e credenciais exclusivos.
 4. Rede privada entre aplicação e banco; não exponha a porta MySQL publicamente.
-5. Domínio HTTPS exclusivo, por exemplo `staging.seu-dominio` (confirme disponibilidade e DNS antes de usar).
+5. Configure o domínio HTTPS exclusivo `android.novaagencian8n.online` no serviço de homologação. Crie o registro DNS apontando para o destino indicado pelo Easypanel e aguarde a propagação.
 6. Volume persistente exclusivo para `/data/media` se a mídia local for usada.
 7. Variáveis do modelo `.env.staging.example` na seção Environment do serviço. Nunca coloque segredos em Build Args.
-8. Configure `DATABASE_URL` apontando para o hostname interno do novo MySQL. Configure `APP_PUBLIC_URL` para o domínio de staging.
+8. Configure `DATABASE_URL` apontando para o hostname interno do novo MySQL. Configure `APP_PUBLIC_URL=https://android.novaagencian8n.online`.
 
 Não há como criar esses recursos remotamente apenas pelo repositório; a etapa depende do painel Easypanel e do DNS.
 
