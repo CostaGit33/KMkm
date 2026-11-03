@@ -1,20 +1,21 @@
 # ADR-0002 — Autenticação do cliente Flutter
 
-**Status:** proposta; prova de conceito pendente.
-**Data:** 2026-11-01
+**Status:** implementação inicial por cookie concluída; validação de integração real pendente.
+**Data:** 2026-11-03
 
 ## Contexto
 
-A API de conta define cookie `HttpOnly` e guarda hash da sessão; o middleware também aceita `Authorization: Bearer`. Cadastro/login de conta não retornam o token Bearer no JSON. Flutter/Dart não estão instalados no ambiente atual, portanto não foi possível testar persistência de cookie no cliente nativo.
+A API emite cookie HttpOnly `mais1km_session`, com validade de 30 dias, e guarda hash da sessão. Cadastro/login não retornam token Bearer no JSON. O app usa a mesma API e o mesmo banco do site.
 
-## Decisão provisória
+## Decisão implementada
 
-Testar primeiro uma sessão via cookie jar persistente com armazenamento protegido pelo sistema operacional. Medir login, persistência após reinício, sessão expirada e logout. Manter os endpoints web e suas respostas inalterados durante a prova de conceito.
+- O Flutter usa `HttpClient` nativo para chamadas HTTPS.
+- O cookie recebido no cadastro/login é salvo em `flutter_secure_storage`.
+- Chamadas autenticadas enviam o cookie no cabeçalho HTTP `Cookie`.
+- Na abertura, `GET /api/conta/sessao` valida a sessão com o servidor.
+- Logout chama `POST /api/conta/sair` e limpa o armazenamento local mesmo se a rede falhar.
+- Nenhum endpoint ou resposta do backend foi alterado.
 
-## Alternativa se a prova falhar
+## Limites e validação pendente
 
-Desenhar fluxo mobile próprio com token opaco, hash no servidor, armazenamento seguro no cliente e revogação documentada. Não incluir token Bearer em resposta visível a JavaScript dos endpoints usados pela PWA sem análise e aprovação de segurança.
-
-## Gate e consequências
-
-Nenhuma tela autenticada/carimbo Flutter deve ser implementada antes de a prova passar. Não armazenar sessão em texto claro, logs, analytics ou URL. Nenhuma alteração de autenticação foi feita nesta fase.
+Validar em aparelho Android contra a API real com conta de teste autorizada: persistência após reinício, expiração, sessão revogada e logout. Não executar cadastro ou outros POSTs contra a base real sem autorização explícita.
