@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/api/api_client.dart';
+import 'core/theme/brand_theme.dart';
 import 'core/models/catalog_snapshot.dart';
 import 'features/map/catalog_map.dart';
 import 'core/models/notebook_snapshot.dart';
@@ -12,15 +13,15 @@ void main() {
 }
 
 class AppColors {
-  static const forest = Color(0xFF173D2E);
-  static const forestLight = Color(0xFF285541);
-  static const gold = Color(0xFFC7A45D);
-  static const cream = Color(0xFFF5F1E7);
-  static const paper = Color(0xFFFFFDF8);
-  static const ink = Color(0xFF202820);
-  static const muted = Color(0xFF6F786F);
-  static const border = Color(0xFFE3DED1);
-  static const danger = Color(0xFFB5473C);
+  static const forest = BrandPalette.forest;
+  static const forestLight = BrandPalette.green;
+  static const gold = BrandPalette.gold;
+  static const cream = BrandPalette.cream;
+  static const paper = BrandPalette.darkSurface;
+  static const ink = BrandPalette.cream;
+  static const muted = BrandPalette.darkMuted;
+  static const border = BrandPalette.darkRule;
+  static const danger = BrandPalette.darkDanger;
 }
 
 class Mais1kmApp extends StatefulWidget {
@@ -44,36 +45,10 @@ class _Mais1kmAppState extends State<Mais1kmApp> {
     return MaterialApp(
       title: '+1 KM',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.cream,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.forest,
-          primary: AppColors.forest,
-          secondary: AppColors.gold,
-          surface: AppColors.paper,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.paper,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 17,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.forest, width: 1.5),
-          ),
-        ),
-      ),
+      theme: Mais1kmTheme.dark,
+      darkTheme: Mais1kmTheme.dark,
+      lightTheme: Mais1kmTheme.light,
+      themeMode: ThemeMode.dark,
       home: AuthGate(api: _api),
     );
   }
