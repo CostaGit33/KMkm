@@ -1,6 +1,6 @@
 # Arquitetura proposta do cliente Android — Mais1km
 
-**Status:** autenticação e primeira leitura do catálogo/circuitos implementadas; mapa, caderneta e demais jornadas ainda pendentes.
+**Status:** autenticação, catálogo/circuitos e mapa nativo inicial implementados; caderneta e demais jornadas ainda pendentes.
 **Regra central:** o servidor existente é a fonte da verdade para conta, catálogo, carimbo, evento, coleção e gamificação.
 
 ## Visão lógica
@@ -23,12 +23,12 @@ O aplicativo e a PWA compartilham o mesmo serviço de API e o mesmo MySQL. Não 
 - **App:** entry point, tema visual, tela de autenticação e área inicial autenticada.
 - **Core API:** cliente HTTPS com `dart:io HttpClient`, timeout e tratamento de rede/HTTP.
 - **Core auth:** cookie de sessão protegido por `flutter_secure_storage`, restauração remota e logout.
-- **Features:** login, cadastro, solicitação de recuperação, catálogo público, busca/filtro e detalhe básico de ponto.
+- **Features:** login, cadastro, solicitação de recuperação, catálogo público, busca/filtro, detalhe básico e mapa nativo com marcadores.
 - **Storage:** somente sessão. Sem SQLite/Drift ou progresso offline.
 
 ## Próximas camadas
 
-- Mapa nativo, caderneta, carimbos, eventos, gamificação e perfil. O catálogo público e circuitos já são lidos pela API.
+- Caderneta, carimbos, eventos, gamificação e perfil. O catálogo/circuitos são lidos pela API e o mapa usa o proxy de tiles existente.
 - Leitor NFC/QR e Android App Links após verificar o contrato de links.
 - Redefinição por token/deep link após confirmar o formato do e-mail.
 - Prova real do ciclo de sessão em aparelho Android.
