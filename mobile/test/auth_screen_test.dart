@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mais1km/core/api/api_client.dart';
 import 'package:mais1km/main.dart';
 
 void main() {
-  testWidgets('exibe tela de login e permite abrir cadastro', (tester) async {
+  testWidgets('exibe login e permite alternar para cadastro', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.forest),
         ),
-        home: AuthScreen(
-          api: _UnusedApiClient(),
-          onAuthenticated: (_) {},
-        ),
+        home: AuthScreen(api: ApiClient(), onAuthenticated: (_) {}),
       ),
     );
 
@@ -28,8 +26,4 @@ void main() {
     expect(find.text('Nome'), findsOneWidget);
     expect(find.text('Criar conta'), findsOneWidget);
   });
-}
-
-class _UnusedApiClient extends ApiClient {
-  _UnusedApiClient();
 }
