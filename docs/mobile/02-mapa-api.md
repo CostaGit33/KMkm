@@ -1,7 +1,7 @@
 # Mapa da API para o cliente Android
 
 **Fonte:** handlers em `server/index.js`, `server/recuperacao-senha.js`, `server/gamificacao.js`, rotas públicas de mídia, testes e `docs/api/openapi.yaml`.
-**Base URL:** o app deve usar o domínio HTTPS real configurado para o Mais1km; esse domínio não foi inferido nem testado nesta auditoria.
+**Base URL confirmada pelo responsável:** `https://mais1km.novaagencian8n.online`. O app Android e a PWA usam o mesmo serviço de API e o mesmo banco MySQL.
 
 ## Sessão e autenticação
 
@@ -13,7 +13,7 @@
 - Não há endpoint de refresh de sessão encontrado. `POST /api/conta/sair` revoga a sessão atual por padrão; `{ todos: true }` revoga as sessões da conta.
 - Rotas de gamificação exigem conta registrada; a caderneta aceita o middleware de autenticação também usado por sessões legadas.
 
-**Bloqueio da integração Android:** Flutter e Android SDK estão instalados na VPS, mas ainda não existe app `mobile/`, domínio/base URL de homologação confirmado nem conta de teste autorizada. Cookie jar seguro/persistente, sessão após reinício, logout e respostas 401/429/500 ainda não foram testados. Próximo gate: executar essa prova num ambiente de homologação; não modificar os endpoints web para entregar Bearer a JavaScript.
+**Status da integração Android (2026-11-03):** o app Flutter já possui fluxo inicial de login/cadastro/solicitação de recuperação, armazenamento protegido do cookie e validação de sessão/logout implementados no cliente. A análise/build automatizados e a prova de persistência em aparelho Android ainda estão pendentes. Como o domínio usa o banco compartilhado de produção, não executar testes de escrita sem conta e dados de teste autorizados.
 
 ## Endpoints do participante
 
@@ -62,6 +62,6 @@
 2. O OpenAPI agora descreve o cookie de sessão, suas opções reais de `SameSite`/`Secure`, a ausência de token no JSON de login e a opção `{ todos: true }` no logout.
 3. A documentação de `GET /api/catalogo` explicita que podem vir itens não publicados e ocultos. O filtro de exibição publicável precisa ser regra explícita/testada no cliente, não suposição sobre a resposta.
 4. Um teste automatizado em `server/test/mobile-api-contract.test.js` valida que rotas críticas declaradas ainda aparecem no código e no OpenAPI e verifica schemas de autenticação e carimbo. Ele é uma checagem estática do contrato, não substitui teste de integração contra a API.
-5. A prova de conceito real do cookie jar móvel e os testes de sessão persistente/logout seguem pendentes até existir URL de homologação e conta de teste. Não apontar testes de login ou alteração de dados para produção.
+5. O cliente Flutter implementa cookie persistido com `flutter_secure_storage`; a prova de sessão em aparelho Android permanece pendente. A API configurada é a mesma de produção, portanto não apontar testes de escrita para ela sem autorização.
 
 O OpenAPI foi atualizado neste bloco; não foi encontrada coleção Postman no projeto. Nenhuma rota, regra de autenticação, banco ou serviço de produção foi alterado.
