@@ -602,7 +602,7 @@ class _HomeShellState extends State<HomeShell> {
                   ),
                 ],
                 const SizedBox(height: 14),
-                Text('Código do ponto: ' + point.code,
+                Text('Código do ponto: ${point.code}',
                     style: const TextStyle(
                         color: AppColors.muted, fontSize: 12)),
               ],
@@ -796,7 +796,7 @@ class _HomeShellState extends State<HomeShell> {
                     title: Text(circuit.name,
                         style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(circuit.subtitle ??
-                        circuit.pointCodes.length.toString() + ' pontos'),
+                        '${circuit.pointCodes.length} pontos'),
                   ),
                 )),
           ],
