@@ -19,6 +19,8 @@ void main() {
     expect(find.text('Senha'), findsOneWidget);
     expect(find.text('Entrar'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Cadastre-se'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Cadastre-se'));
     await tester.pumpAndSettle();
 
