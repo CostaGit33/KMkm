@@ -606,50 +606,6 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
-  void _openMap() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.paper,
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.of(sheetContext).size.height * 0.88,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text('Mapa de descobertas',
-                        style: TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
-                  ),
-                  IconButton(
-                    tooltip: 'Fechar mapa',
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CatalogMap(
-                points: _catalog?.points ?? const <CatalogPoint>[],
-                onSelectPoint: (point) {
-                  Navigator.of(sheetContext).pop();
-                  _showPoint(point);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildExplorer() {
     final points = _visiblePoints;
     final mapped = points.where((point) =>
