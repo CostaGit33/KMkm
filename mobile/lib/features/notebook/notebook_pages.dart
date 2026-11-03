@@ -440,9 +440,9 @@ class _CardTile extends StatelessWidget {
               decoration: BoxDecoration(
                   color: captured ? _C.forest : _C.cream,
                   borderRadius: BorderRadius.circular(11)),
-              child: captured && card.artThumbnail != null
+              child: captured && _cardArtUrl(card) != null
                   ? Image.network(
-                      _mediaUrl(card.artThumbnail!),
+                      _cardArtUrl(card)!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
                     )
@@ -524,9 +524,9 @@ class _CollectionCard extends StatelessWidget {
                   children: [
                     Container(
                       color: BrandPalette.forestDeep,
-                      child: captured && card.artThumbnail != null
+                      child: captured && _cardArtUrl(card) != null
                           ? Image.network(
-                              _mediaUrl(card.artThumbnail!),
+                              _cardArtUrl(card)!,
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
                             )
@@ -600,10 +600,10 @@ class _CardPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(card.captured ? Icons.auto_awesome : Icons.lock_outline,
-              color: card.captured ? _C.gold : _C.muted, size: 23),
+          Icon(_categoryIcon(card.category),
+              color: card.captured ? _C.gold : _C.muted, size: 27),
           const SizedBox(height: 5),
-          Text(card.number > 0 ? card.number.toString().padLeft(2, '0') : '—',
+          Text(card.number > 0 ? card.number.toString().padLeft(3, '0') : '---',
               style: TextStyle(
                   color: card.captured ? Colors.white : _C.muted,
                   fontWeight: FontWeight.w800,
@@ -795,6 +795,29 @@ class _LoadError extends StatelessWidget {
         ),
       );
 }
+
+String? _cardArtUrl(NotebookCard card) {
+  final thumbnail = card.artThumbnail;
+  if (thumbnail != null &&
+      RegExp(r'^/midia/[\\w.]+\\.webp$').hasMatch(thumbnail)) {
+    return 'https://mais1km.novaagencian8n.online$thumbnail';
+  }
+  final art = card.art;
+  if (art != null && RegExp(r'^[\\w.-]{1,80}$').hasMatch(art)) {
+    return 'https://mais1km.novaagencian8n.online/cartas/$art';
+  }
+  return null;
+}
+
+IconData _categoryIcon(String category) => switch (category) {
+      'natureza' => Icons.eco_outlined,
+      'historia' => Icons.account_balance_outlined,
+      'cultura' => Icons.music_note_outlined,
+      'trabalho' => Icons.agriculture_outlined,
+      'litoral' => Icons.waves_outlined,
+      'misterio' => Icons.auto_awesome_outlined,
+      _ => Icons.auto_awesome_outlined,
+    };
 
 String _mediaUrl(String value) {
   if (value.startsWith('https://') || value.startsWith('http://')) return value;
