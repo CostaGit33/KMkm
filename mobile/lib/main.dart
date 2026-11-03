@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/api/api_client.dart';
+import 'core/models/catalog_snapshot.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -135,7 +136,7 @@ class _AuthGateState extends State<AuthGate> {
       );
     }
     if (_user != null) {
-      return HomeShell(user: _user!, onLogout: _logout);
+      return HomeShell(api: widget.api, user: _user!, onLogout: _logout);
     }
     return AuthScreen(api: widget.api, onAuthenticated: _onAuthenticated);
   }
@@ -442,19 +443,163 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-class HomeShell extends StatelessWidget {
+class HomeShell extends StatefulWidget {
   const HomeShell({
     super.key,
+    required this.api,
     required this.user,
     required this.onLogout,
   });
 
+  final ApiClient api;
   final Map<String, dynamic> user;
   final VoidCallback onLogout;
 
   @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  CatalogSnapshot? _catalog;
+  bool _loadingCatalog = true;
+  String? _catalogError;
+  String _search = '';
+  String? _category;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCatalog();
+  }
+
+  Future<void> _loadCatalog() async {
+    setState(() {
+      _loadingCatalog = true;
+      _catalogError = null;
+    });
+    try {
+      final catalog = await widget.api.fetchCatalog();
+      if (mounted) setState(() => _catalog = catalog);
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _catalogError = error.message);
+    } finally {
+      if (mounted) setState(() => _loadingCatalog = false);
+    }
+  }
+
+  List<CatalogPoint> get _visiblePoints {
+    final points = _catalog?.points ?? const <CatalogPoint>[];
+    return points.where((point) {
+      final matchesSearch = _search.isEmpty ||
+          point.name.toLowerCase().contains(_search.toLowerCase()) ||
+          point.code.toLowerCase().contains(_search.toLowerCase()) ||
+          point.address?.toLowerCase().contains(_search.toLowerCase()) == true;
+      final matchesCategory =
+          _category == null || point.categories.contains(_category);
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
+
+  List<String> get _categories {
+    final values = _catalog?.points.expand((point) => point.categories) ??
+        const Iterable<String>.empty();
+    return values.toSet().toList()..sort();
+  }
+
+  void _showPoint(CatalogPoint point) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.paper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                point.name,
+                style: const TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (point.address?.isNotEmpty == true) ...[
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.place_outlined,
+                        color: AppColors.forest, size: 19),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        point.address!,
+                        style: const TextStyle(color: AppColors.muted),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (point.note?.isNotEmpty == true) ...[
+                const SizedBox(height: 16),
+                Text(
+                  point.note!,
+                  style: const TextStyle(
+                    color: AppColors.ink,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+              if (point.categories.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: point.categories
+                      .map((item) => Chip(
+                            label: Text(item),
+                            backgroundColor: AppColors.cream,
+                            side: BorderSide.none,
+                          ))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                'Código do ponto: ${point.code}',
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = user['nome']?.toString().trim();
+    final name = widget.user['nome']?.toString().trim();
+    final points = _visiblePoints;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.forest,
@@ -466,76 +611,259 @@ class HomeShell extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Sair',
-            onPressed: onLogout,
+            onPressed: widget.onLogout,
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(22),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: AppColors.forest,
-              borderRadius: BorderRadius.circular(22),
+      body: RefreshIndicator(
+        color: AppColors.forest,
+        onRefresh: _loadCatalog,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: AppColors.forest,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'SUA PRÓXIMA DESCOBERTA',
+                    style: TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 11,
+                      letterSpacing: 1.4,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    name == null || name.isEmpty ? 'Bem-vindo!' : 'Olá, $name!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Explore lugares, conheça histórias e registre suas descobertas.',
+                    style: TextStyle(
+                      color: Color(0xFFE6E9E2),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 24),
+            Row(
               children: [
-                const Text(
-                  'SUA PRÓXIMA DESCOBERTA',
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 11,
-                    letterSpacing: 1.4,
-                    fontWeight: FontWeight.w800,
+                const Expanded(
+                  child: Text(
+                    'Pontos para descobrir',
+                    style: TextStyle(
+                      color: AppColors.ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  name == null || name.isEmpty ? 'Bem-vindo!' : 'Olá, $name!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w800,
+                if (!_loadingCatalog && _catalog != null)
+                  Text(
+                    '${_catalog!.points.length}',
+                    style: const TextStyle(
+                      color: AppColors.forest,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Explore lugares, conheça histórias e registre suas descobertas.',
-                  style: TextStyle(
-                    color: Color(0xFFE6E9E2),
-                    height: 1.45,
-                  ),
-                ),
               ],
             ),
-          ),
-          const SizedBox(height: 22),
-          const _HomeFeature(
-            icon: Icons.map_outlined,
-            title: 'Explorar mapa',
-            subtitle: 'Descubra os pontos disponíveis no +1 KM.',
-          ),
-          const _HomeFeature(
-            icon: Icons.collections_bookmark_outlined,
-            title: 'Minha coleção',
-            subtitle: 'Acompanhe seus carimbos e conquistas.',
-          ),
-          const _HomeFeature(
-            icon: Icons.route_outlined,
-            title: 'Rotas e circuitos',
-            subtitle: 'Conheça caminhos para sua próxima visita.',
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Esta é a primeira etapa funcional do aplicativo. As próximas telas serão conectadas aos dados reais da API.',
-            style: TextStyle(
-              color: AppColors.muted,
-              fontSize: 12,
-              height: 1.5,
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: (value) => setState(() => _search = value.trim()),
+              decoration: const InputDecoration(
+                hintText: 'Buscar ponto ou endereço',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+              ),
             ),
+            if (_categories.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 7,
+                runSpacing: 4,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Todos'),
+                    selected: _category == null,
+                    onSelected: (_) => setState(() => _category = null),
+                  ),
+                  ..._categories.map(
+                    (category) => ChoiceChip(
+                      label: Text(category),
+                      selected: _category == category,
+                      onSelected: (_) => setState(
+                        () => _category =
+                            _category == category ? null : category,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 14),
+            if (_loadingCatalog)
+              const Padding(
+                padding: EdgeInsets.all(28),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.forest),
+                ),
+              )
+            else if (_catalogError != null)
+              _CatalogNotice(
+                message: _catalogError!,
+                onRetry: _loadCatalog,
+              )
+            else if (points.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Nenhum ponto publicado corresponde à busca.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              )
+            else
+              ...points.map(
+                (point) => Card(
+                  color: AppColors.paper,
+                  elevation: 0,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                  child: ListTile(
+                    onTap: () => _showPoint(point),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 7,
+                    ),
+                    leading: Container(
+                      height: 44,
+                      width: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.cream,
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: const Icon(
+                        Icons.place_outlined,
+                        color: AppColors.forest,
+                      ),
+                    ),
+                    title: Text(
+                      point.name,
+                      style: const TextStyle(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      point.categories.isEmpty
+                          ? (point.address ?? point.code)
+                          : point.categories.join(' · '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+              ),
+            if (_catalog?.circuits.isNotEmpty == true) ...[
+              const SizedBox(height: 18),
+              const Text(
+                'Circuitos',
+                style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ..._catalog!.circuits.map(
+                (circuit) => Card(
+                  color: AppColors.paper,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.route_outlined,
+                      color: AppColors.forest,
+                    ),
+                    title: Text(
+                      circuit.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      circuit.subtitle ??
+                          '${circuit.pointCodes.length} pontos',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogNotice extends StatelessWidget {
+  const _CatalogNotice({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tentar novamente'),
           ),
         ],
       ),
