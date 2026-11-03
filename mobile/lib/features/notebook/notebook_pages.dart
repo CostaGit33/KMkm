@@ -667,7 +667,7 @@ class _LoadError extends StatelessWidget {
 
 String _mediaUrl(String value) {
   if (value.startsWith('https://') || value.startsWith('http://')) return value;
-  return 'https://mais1km.novaagencian8n.online${value.startsWith('/') ? value : '/$value}';
+  return 'https://mais1km.novaagencian8n.online${value.startsWith('/') ? value : '/$value'}';
 }
 
 String _categoryLabel(String value) => switch (value) {
