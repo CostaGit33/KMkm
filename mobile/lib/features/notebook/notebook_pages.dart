@@ -49,6 +49,7 @@ class NotebookPages extends StatelessWidget {
       user: user,
       onOpenMap: onOpenMap,
       onOpenCollection: onOpenCollection,
+      onOpenPoint: onOpenPoint,
     );
   }
 }
@@ -69,12 +70,14 @@ class _HomePage extends StatelessWidget {
     required this.user,
     required this.onOpenMap,
     required this.onOpenCollection,
+    required this.onOpenPoint,
   });
 
   final NotebookSnapshot snapshot;
   final Map<String, dynamic> user;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
+  final ValueChanged<String> onOpenPoint;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +181,7 @@ class _HomePage extends StatelessWidget {
         else
           ...recent.take(3).map((card) => Padding(
                 padding: const EdgeInsets.only(bottom: 9),
-                child: _CardTile(card: card),
+                child: _CardTile(card: card, onTap: () => onOpenPoint(card.code)),
               )),
         if (snapshot.events.isNotEmpty) ...[
           const SizedBox(height: 24),
@@ -573,7 +576,7 @@ class _Bar extends StatelessWidget {
   Widget build(BuildContext context) => ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: LinearProgressIndicator(
-            value: value.clamp(0.0, 1.0),
+            value: value.clamp(0.0, 1.0).toDouble(),
             minHeight: 8,
             backgroundColor: _C.cream,
             color: _C.forest),
