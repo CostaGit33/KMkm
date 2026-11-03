@@ -20,13 +20,15 @@ class ApiClient {
     FlutterSecureStorage? secureStorage,
     HttpClient? httpClient,
   })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-        _httpClient = httpClient ?? HttpClient();
+        _httpClient = httpClient;
 
   static const String baseUrl = 'https://mais1km.novaagencian8n.online';
   static const String _sessionKey = 'mais1km_session_cookie';
 
   final FlutterSecureStorage _secureStorage;
-  final HttpClient _httpClient;
+  HttpClient? _httpClient;
+
+  HttpClient get _client => _httpClient ??= HttpClient();
 
   Future<Map<String, dynamic>> login({
     required String email,
@@ -139,7 +141,7 @@ class ApiClient {
   }) async {
     final uri = Uri.parse('$baseUrl$path');
     try {
-      final request = await _httpClient.openUrl(method, uri).timeout(
+      final request = await _client.openUrl(method, uri).timeout(
             const Duration(seconds: 20),
           );
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
@@ -239,7 +241,7 @@ class ApiClient {
     }
   }
 
-  void dispose() => _httpClient.close(force: true);
+  void dispose() => _httpClient?.close(force: true);
 }
 
 class _ApiResponse {
