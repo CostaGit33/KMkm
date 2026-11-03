@@ -406,8 +406,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: const Text('Voltar para entrar'),
                       )
                     else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             isLogin ? 'Ainda não tem conta?' : 'Já tem uma conta?',
