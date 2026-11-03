@@ -21,6 +21,9 @@ Não configure outro domínio, serviço ou banco para o aplicativo.
 - Cookie de sessão persistido em armazenamento seguro.
 - Tratamento de erros HTTP, rede e timeout.
 - Tela inicial autenticada.
+- Catálogo público e circuitos carregados da API, com filtro de pontos publicados e não ocultos.
+- Busca por nome/código/endereço e filtro por categoria.
+- Detalhe do ponto com endereço, descrição e categorias.
 
 A redefinição por token/deep link será implementada após confirmar o formato do link enviado pelo backend.
 
