@@ -77,7 +77,7 @@ class ApiClient {
     }
 
     try {
-      final result = await _request('GET', '/api/conta/sessao');
+      final result = await _request('GET', '/api/conta/sessao', authenticated: true);
       return _asMap(result.data);
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
@@ -89,7 +89,7 @@ class ApiClient {
 
   Future<void> logout() async {
     try {
-      await _request('POST', '/api/conta/sair');
+      await _request('POST', '/api/conta/sair', authenticated: true);
     } finally {
       await clearSession();
     }
