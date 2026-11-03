@@ -18,7 +18,7 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({
     FlutterSecureStorage? secureStorage,
-    HttpClient? _httpClient,
+    this._httpClient,
   }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   static const String baseUrl = 'https://mais1km.novaagencian8n.online';
