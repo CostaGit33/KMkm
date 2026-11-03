@@ -111,8 +111,8 @@ class _HomePage extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 snapshot.capturedCards == 0
-                    ? 'Sua próxima descoberta começa aqui, ' + name + '.'
-                    : 'Continue descobrindo Eunápolis, ' + name + '.',
+                    ? 'Sua próxima descoberta começa aqui, $name.'
+                    : 'Continue descobrindo Eunápolis, $name.',
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 23,
@@ -239,7 +239,7 @@ class _RoutesPage extends StatelessWidget {
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800)),
                       ),
-                      Text(route.completed.toString() + '/' + route.total.toString(),
+                      Text('${route.completed}/${route.total}',
                           style: const TextStyle(
                               color: _C.forest, fontWeight: FontWeight.w800)),
                     ]),
@@ -250,8 +250,8 @@ class _RoutesPage extends StatelessWidget {
                       route.isComplete
                           ? 'Concluída · certificado liberado'
                           : route.completed > 0
-                              ? 'Em andamento · faltam ' + route.remaining.toString() + ' pontos'
-                              : route.total.toString() + ' pontos para começar',
+                              ? 'Em andamento · faltam ${route.remaining} pontos'
+                              : '${route.total} pontos para começar',
                       style: const TextStyle(color: _C.muted, fontSize: 12),
                     ),
                     const Divider(height: 22, color: _C.border),
@@ -364,14 +364,14 @@ class _ProgressCard extends StatelessWidget {
               child: Text('Sua coleção',
                   style: TextStyle(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w800)),
             ),
-            Text(snapshot.capturedCards.toString() + '/' + snapshot.totalCards.toString(),
+            Text('${snapshot.capturedCards}/${snapshot.totalCards}',
                 style: const TextStyle(color: _C.forest, fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 12),
           _Bar(value: snapshot.progress),
           const SizedBox(height: 8),
           Row(children: [
-            Text(percent.toString() + '% concluído',
+            Text('$percent% concluído',
                 style: const TextStyle(color: _C.muted, fontSize: 12)),
             const Spacer(),
             if (onTap != null)
@@ -419,7 +419,7 @@ class _CardTile extends StatelessWidget {
                   ? Image.network(
                       _mediaUrl(card.artThumbnail!),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _CardPlaceholder(card: card),
+                      errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
                     )
                   : _CardPlaceholder(card: card),
             ),
@@ -446,7 +446,7 @@ class _CardTile extends StatelessWidget {
                   ]),
                   if (captured && card.phrase?.isNotEmpty == true) ...[
                     const SizedBox(height: 7),
-                    Text('“' + card.phrase! + '”',
+                    Text('“${card.phrase}”',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: _C.forest, fontSize: 11, fontStyle: FontStyle.italic)),
@@ -501,7 +501,7 @@ class _EventTile extends StatelessWidget {
         ]),
         if (event.sponsor?.isNotEmpty == true) ...[
           const SizedBox(height: 4),
-          Text('Patrocinado por ' + event.sponsor!,
+          Text('Patrocinado por ${event.sponsor}',
               style: const TextStyle(color: _C.muted, fontSize: 11)),
         ],
         if (event.description?.isNotEmpty == true) ...[
@@ -511,7 +511,7 @@ class _EventTile extends StatelessWidget {
         const SizedBox(height: 10),
         _Bar(value: event.progress),
         const SizedBox(height: 6),
-        Text(event.completed.toString() + '/' + event.total.toString() + ' pontos do card',
+        Text('${event.completed}/${event.total} pontos do card',
             style: const TextStyle(color: _C.muted, fontSize: 12)),
       ]),
     );
@@ -667,7 +667,7 @@ class _LoadError extends StatelessWidget {
 
 String _mediaUrl(String value) {
   if (value.startsWith('https://') || value.startsWith('http://')) return value;
-  return 'https://mais1km.novaagencian8n.online' + (value.startsWith('/') ? value : '/' + value);
+  return 'https://mais1km.novaagencian8n.online${value.startsWith('/') ? value : '/$value}';
 }
 
 String _categoryLabel(String value) => switch (value) {
