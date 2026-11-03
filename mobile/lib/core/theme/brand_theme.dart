@@ -75,12 +75,13 @@ class Mais1kmTheme {
     );
     return base.copyWith(
       textTheme: text,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: BrandPalette.forestDeep,
+      appBarTheme: AppBarTheme(
+        backgroundColor: BrandPalette.darkSurface,
         foregroundColor: BrandPalette.cream,
         elevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: GoogleFonts.yellowtail(color: BrandPalette.gold, fontSize: 23),
       ),
       cardTheme: CardThemeData(
         color: BrandPalette.darkCard,
