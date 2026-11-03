@@ -63,15 +63,12 @@ class ApiClient {
         'A API respondeu, mas não enviou a sessão segura esperada.',
       );
     }
-    await _secureStorage.write(
-      key: _sessionKey,
-      value: cookie.value,
-    );
+    await _writeSessionCookie(cookie.value);
     return _asMap(result.data);
   }
 
   Future<Map<String, dynamic>> currentSession() async {
-    final cookie = await _secureStorage.read(key: _sessionKey);
+    final cookie = await _readSessionCookie();
     if (cookie == null || cookie.isEmpty) {
       throw const ApiException('Sessão não encontrada.', statusCode: 401);
     }
@@ -104,8 +101,35 @@ class ApiClient {
     );
   }
 
-  Future<void> clearSession() =>
-      _secureStorage.delete(key: _sessionKey);
+  Future<String?> _readSessionCookie() async {
+    try {
+      return await _secureStorage.read(key: _sessionKey);
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível acessar o armazenamento seguro do aparelho.',
+      );
+    }
+  }
+
+  Future<void> _writeSessionCookie(String value) async {
+    try {
+      await _secureStorage.write(key: _sessionKey, value: value);
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível proteger a sessão neste aparelho.',
+      );
+    }
+  }
+
+  Future<void> clearSession() async {
+    try {
+      await _secureStorage.delete(key: _sessionKey);
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível remover a sessão armazenada no aparelho.',
+      );
+    }
+  }
 
   Future<_ApiResponse> _request(
     String method,
@@ -124,7 +148,7 @@ class ApiClient {
         request.write(jsonEncode(body));
       }
       if (authenticated) {
-        final cookie = await _secureStorage.read(key: _sessionKey);
+        final cookie = await _readSessionCookie();
         if (cookie != null && cookie.isNotEmpty) {
           request.headers.set(
             HttpHeaders.cookieHeader,
@@ -132,7 +156,7 @@ class ApiClient {
           );
         }
       } else if (method == 'GET' && path == '/api/conta/sessao') {
-        final cookie = await _secureStorage.read(key: _sessionKey);
+        final cookie = await _readSessionCookie();
         if (cookie != null && cookie.isNotEmpty) {
           request.headers.set(
             HttpHeaders.cookieHeader,
