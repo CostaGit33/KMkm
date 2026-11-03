@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/models/catalog_snapshot.dart';
+import '../../core/theme/brand_theme.dart';
 
 class CatalogMap extends StatelessWidget {
   const CatalogMap({
@@ -81,23 +82,34 @@ class CatalogMap extends StatelessWidget {
           markers: geolocated.map((point) {
             return Marker(
               point: LatLng(point.latitude!, point.longitude!),
-              width: 48,
-              height: 54,
+              width: 40,
+              height: 44,
               child: Semantics(
                 button: true,
                 label: 'Abrir ${point.name}',
                 child: GestureDetector(
                   onTap: () => onSelectPoint(point),
-                  child: const Icon(
-                    Icons.location_on,
-                    color: Color(0xFF173D2E),
-                    size: 42,
-                    shadows: [
-                      Shadow(
-                        color: Colors.white,
-                        blurRadius: 5,
-                        offset: Offset(0, 1),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: BrandPalette.darkSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: BrandPalette.gold, width: 1.3),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x99000000), blurRadius: 8, offset: Offset(0, 3)),
+                          ],
+                        ),
+                        child: Icon(
+                          _categoryIcon(point.categories.isEmpty ? '' : point.categories.first),
+                          color: BrandPalette.gold,
+                          size: 17,
+                        ),
                       ),
+                      const Icon(Icons.arrow_drop_down, color: BrandPalette.gold, size: 12),
                     ],
                   ),
                 ),
@@ -114,3 +126,13 @@ class CatalogMap extends StatelessWidget {
     );
   }
 }
+
+IconData _categoryIcon(String category) => switch (category.toLowerCase()) {
+      'natureza' => Icons.eco_outlined,
+      'historia' || 'história' => Icons.account_balance_outlined,
+      'cultura' => Icons.music_note_outlined,
+      'trabalho' => Icons.agriculture_outlined,
+      'litoral' => Icons.waves_outlined,
+      'misterio' || 'mistério' => Icons.auto_awesome_outlined,
+      _ => Icons.place_outlined,
+    };
