@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/notebook_snapshot.dart';
+import '../../core/theme/brand_theme.dart';
 
 class NotebookPages extends StatelessWidget {
   const NotebookPages({
@@ -55,13 +57,13 @@ class NotebookPages extends StatelessWidget {
 }
 
 class _C {
-  static const forest = Color(0xFF173D2E);
-  static const gold = Color(0xFFC7A45D);
-  static const cream = Color(0xFFF5F1E7);
-  static const paper = Color(0xFFFFFDF8);
-  static const ink = Color(0xFF202820);
-  static const muted = Color(0xFF6F786F);
-  static const border = Color(0xFFE3DED1);
+  static const forest = BrandPalette.forest;
+  static const gold = BrandPalette.gold;
+  static const cream = BrandPalette.darkCardStrong;
+  static const paper = BrandPalette.darkCard;
+  static const ink = BrandPalette.cream;
+  static const muted = BrandPalette.darkMuted;
+  static const border = BrandPalette.darkRule;
 }
 
 class _HomePage extends StatelessWidget {
@@ -96,28 +98,36 @@ class _HomePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: _C.forest,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
+            ),
+            boxShadow: const [
+              BoxShadow(color: Color(0x55000000), blurRadius: 24, offset: Offset(0, 10)),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('+1 KM · EUNÁPOLIS',
-                  style: TextStyle(
+              Text('+1 KM · EUNÁPOLIS',
+                  style: GoogleFonts.montserrat(
                       color: _C.gold,
-                      fontSize: 11,
-                      letterSpacing: 1.3,
+                      fontSize: 10,
+                      letterSpacing: 2,
                       fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               Text(
                 snapshot.capturedCards == 0
                     ? 'Sua próxima descoberta começa aqui, $name.'
                     : 'Continue descobrindo Eunápolis, $name.',
-                style: const TextStyle(
-                    color: Colors.white,
+                style: GoogleFonts.cinzel(
+                    color: BrandPalette.cream,
                     fontSize: 23,
-                    height: 1.15,
-                    fontWeight: FontWeight.w800),
+                    height: 1.2,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 9),
               const Text(
@@ -128,7 +138,10 @@ class _HomePage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onOpenMap,
                 style: FilledButton.styleFrom(
-                    backgroundColor: _C.gold, foregroundColor: _C.forest),
+                    backgroundColor: _C.gold,
+                    foregroundColor: BrandPalette.forestDeep,
+                    minimumSize: const Size(0, 48),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800)),
                 icon: const Icon(Icons.explore_outlined),
                 label: const Text('Encontrar um ponto'),
               ),
@@ -335,13 +348,25 @@ class _CollectionPageState extends State<_CollectionPage> {
             title: 'Nenhuma carta neste filtro',
             description: 'Experimente outra categoria ou volte para todas.',
           ),
-        ...cards.map((card) => Padding(
-              padding: const EdgeInsets.only(bottom: 9),
-              child: _CardTile(
-                card: card,
-                onTap: () => widget.onOpenPoint(card.code),
+        if (cards.isNotEmpty)
+          LayoutBuilder(builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 620 ? 3 : 2;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: cards.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 14,
+                childAspectRatio: .68,
               ),
-            )),
+              itemBuilder: (context, index) => _CollectionCard(
+                card: cards[index],
+                onTap: () => widget.onOpenPoint(cards[index].code),
+              ),
+            );
+          }),
       ],
     );
   }
@@ -365,7 +390,7 @@ class _ProgressCard extends StatelessWidget {
                   style: TextStyle(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w800)),
             ),
             Text('${snapshot.capturedCards}/${snapshot.totalCards}',
-                style: const TextStyle(color: _C.forest, fontWeight: FontWeight.w800)),
+                style: const TextStyle(color: _C.gold, fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 12),
           _Bar(value: snapshot.progress),
@@ -449,13 +474,119 @@ class _CardTile extends StatelessWidget {
                     Text('“${card.phrase}”',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: _C.forest, fontSize: 11, fontStyle: FontStyle.italic)),
+                        style: const TextStyle(color: _C.gold, fontSize: 11, fontStyle: FontStyle.italic)),
                   ],
                 ],
               ),
             ),
             const Icon(Icons.chevron_right, color: _C.muted),
           ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionCard extends StatelessWidget {
+  const _CollectionCard({required this.card, this.onTap});
+  final NotebookCard card;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final captured = card.captured;
+    final accent = switch (card.rarity) {
+      'lendario' => const Color(0xFFE5BD52),
+      'epico' => const Color(0xFFB68AD8),
+      'raro' => const Color(0xFF7FD0A4),
+      _ => BrandPalette.gold,
+    };
+    return Material(
+      color: BrandPalette.darkCard,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: accent.withValues(alpha: captured ? .85 : .35), width: 1.2),
+            boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 16, offset: Offset(0, 7))],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 7,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      color: BrandPalette.forestDeep,
+                      child: captured && card.artThumbnail != null
+                          ? Image.network(
+                              _mediaUrl(card.artThumbnail!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
+                            )
+                          : _CardPlaceholder(card: card),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: BrandPalette.forestDeep.withValues(alpha: .9),
+                          border: Border.all(color: accent),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          card.number > 0 ? card.number.toString().padLeft(3, '0') : '---',
+                          style: GoogleFonts.cinzel(color: accent, fontSize: 10, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                    if (!captured)
+                      Positioned.fill(
+                        child: Container(
+                          color: BrandPalette.forestDeep.withValues(alpha: .35),
+                          child: const Center(child: Icon(Icons.lock_outline, color: BrandPalette.darkMuted, size: 28)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        captured ? (card.creature ?? card.pointName) : 'Carta bloqueada',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.cinzel(color: captured ? BrandPalette.cream : BrandPalette.darkMuted, fontSize: 11, fontWeight: FontWeight.w700, height: 1.25),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(card.pointName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+                      const Spacer(),
+                      Row(children: [
+                        Expanded(child: Text(_categoryLabel(card.category).toUpperCase(),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: accent, fontSize: 8, letterSpacing: .7, fontWeight: FontWeight.w800))),
+                        Text(_rarityLabel(card.rarity), style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w700)),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -528,9 +659,9 @@ class _Intro extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(eyebrow, style: const TextStyle(color: _C.gold, fontSize: 10, letterSpacing: 1.4, fontWeight: FontWeight.w900)),
+          Text(eyebrow, style: GoogleFonts.montserrat(color: _C.gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800)),
           const SizedBox(height: 5),
-          Text(title, style: const TextStyle(color: _C.ink, fontSize: 25, fontWeight: FontWeight.w900)),
+          Text(title, style: GoogleFonts.cinzel(color: _C.ink, fontSize: 25, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text(subtitle, style: const TextStyle(color: _C.muted, height: 1.4)),
         ]),
@@ -547,7 +678,7 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 11),
         child: Row(children: [
-          Expanded(child: Text(title, style: const TextStyle(color: _C.ink, fontSize: 18, fontWeight: FontWeight.w800))),
+          Expanded(child: Text(title, style: GoogleFonts.cinzel(color: _C.ink, fontSize: 18, fontWeight: FontWeight.w700))),
           if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
         ]),
       );
@@ -578,8 +709,8 @@ class _Bar extends StatelessWidget {
         child: LinearProgressIndicator(
             value: value.clamp(0.0, 1.0).toDouble(),
             minHeight: 8,
-            backgroundColor: _C.cream,
-            color: _C.forest),
+            backgroundColor: _C.border,
+            color: _C.gold),
       );
 }
 
@@ -591,7 +722,7 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: const TextStyle(color: _C.forest, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(value, style: const TextStyle(color: _C.gold, fontSize: 18, fontWeight: FontWeight.w900)),
           Text(label, style: const TextStyle(color: _C.muted, fontSize: 10)),
         ]),
       );
@@ -620,9 +751,9 @@ class _Filter extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        selectedColor: _C.forest.withValues(alpha: .12),
+        selectedColor: _C.gold.withValues(alpha: .2),
         labelStyle: TextStyle(
-            color: selected ? _C.forest : _C.muted,
+            color: selected ? _C.gold : _C.muted,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w500),
       );
 }
