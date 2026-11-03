@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/catalog_snapshot.dart';
+import '../models/notebook_snapshot.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -98,6 +99,11 @@ class ApiClient {
   Future<CatalogSnapshot> fetchCatalog() async {
     final response = await _request('GET', '/api/catalogo');
     return CatalogSnapshot.fromJson(_asMap(response.data));
+  }
+
+  Future<NotebookSnapshot> fetchNotebook() async {
+    final response = await _request('GET', '/api/caderneta', authenticated: true);
+    return NotebookSnapshot.fromJson(_asMap(response.data));
   }
 
   Future<void> requestPasswordRecovery(String email) async {
