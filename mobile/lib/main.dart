@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/api/api_client.dart';
-import 'core/theme/brand_theme.dart';
 import 'core/models/catalog_snapshot.dart';
-import 'features/map/catalog_map.dart';
 import 'core/models/notebook_snapshot.dart';
+import 'core/theme/brand_theme.dart';
+import 'features/map/catalog_map.dart';
 import 'features/notebook/notebook_pages.dart';
 
 void main() {
