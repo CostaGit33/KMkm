@@ -106,7 +106,7 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     if (_checking) {
       return const Scaffold(
-        backgroundColor: AppColors.cream,
+        backgroundColor: BrandPalette.forestDeep,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.forest),
         ),
@@ -349,8 +349,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     FilledButton(
                       onPressed: _loading ? null : _submit,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.forest,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: BrandPalette.forestDeep,
                         minimumSize: const Size.fromHeight(54),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -569,8 +569,8 @@ class _HomeShellState extends State<HomeShell> {
                     children: point.categories
                         .map((item) => Chip(
                               label: Text(item),
-                              backgroundColor: AppColors.cream,
-                              side: BorderSide.none,
+                              backgroundColor: AppColors.paper,
+                              side: const BorderSide(color: AppColors.border),
                             ))
                         .toList(),
                   ),
@@ -610,7 +610,7 @@ class _HomeShellState extends State<HomeShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.paper,
       builder: (sheetContext) => SizedBox(
         height: MediaQuery.of(sheetContext).size.height * 0.88,
         child: Column(
@@ -727,7 +727,7 @@ class _HomeShellState extends State<HomeShell> {
                       height: 44,
                       width: 44,
                       decoration: BoxDecoration(
-                          color: AppColors.cream,
+                          color: AppColors.paper,
                           borderRadius: BorderRadius.circular(13)),
                       child: const Icon(Icons.place_outlined,
                           color: AppColors.forest),
@@ -784,11 +784,11 @@ class _HomeShellState extends State<HomeShell> {
     final titles = ['Início', 'Mapa', 'Rotas', 'Coleção'];
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.forest,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.paper,
+        foregroundColor: AppColors.ink,
         title: Text(
           _tab == 0 ? '+1 KM' : titles[_tab],
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: GoogleFonts.yellowtail(color: AppColors.gold, fontSize: 24),
         ),
         actions: [
           IconButton(
@@ -819,8 +819,8 @@ class _HomeShellState extends State<HomeShell> {
       floatingActionButton: _tab == 1
           ? FloatingActionButton.extended(
               onPressed: _openMap,
-              backgroundColor: AppColors.forest,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.gold,
+              foregroundColor: BrandPalette.forestDeep,
               icon: const Icon(Icons.map_outlined),
               label: const Text('Mapa'),
             )
