@@ -54,11 +54,20 @@ class CatalogMap extends StatelessWidget {
 
     final first = geolocated.first;
     final center = LatLng(first.latitude!, first.longitude!);
+    final bounds = geolocated
+        .map((point) => LatLng(point.latitude!, point.longitude!))
+        .toList();
 
     return FlutterMap(
       options: MapOptions(
         initialCenter: center,
         initialZoom: 13,
+        initialCameraFit: bounds.length > 1
+            ? CameraFit.bounds(
+                bounds: LatLngBounds.fromPoints(bounds),
+                padding: const EdgeInsets.all(44),
+              )
+            : null,
         minZoom: 3,
         maxZoom: 19,
       ),
