@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
 import 'features/map/catalog_map.dart';
+import 'core/models/notebook_snapshot.dart';
+import 'features/notebook/notebook_pages.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -462,15 +464,20 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   CatalogSnapshot? _catalog;
+  NotebookSnapshot? _notebook;
   bool _loadingCatalog = true;
+  bool _loadingNotebook = true;
   String? _catalogError;
+  String? _notebookError;
   String _search = '';
   String? _category;
+  int _tab = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCatalog();
+    _loadNotebook();
   }
 
   Future<void> _loadCatalog() async {
@@ -488,13 +495,33 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  Future<void> _loadNotebook() async {
+    setState(() {
+      _loadingNotebook = true;
+      _notebookError = null;
+    });
+    try {
+      final notebook = await widget.api.fetchNotebook();
+      if (mounted) setState(() => _notebook = notebook);
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _notebookError = error.message);
+    } finally {
+      if (mounted) setState(() => _loadingNotebook = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    await Future.wait([_loadCatalog(), _loadNotebook()]);
+  }
+
   List<CatalogPoint> get _visiblePoints {
     final points = _catalog?.points ?? const <CatalogPoint>[];
     return points.where((point) {
-      final matchesSearch = _search.isEmpty ||
-          point.name.toLowerCase().contains(_search.toLowerCase()) ||
-          point.code.toLowerCase().contains(_search.toLowerCase()) ||
-          point.address?.toLowerCase().contains(_search.toLowerCase()) == true;
+      final query = _search.toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          point.name.toLowerCase().contains(query) ||
+          point.code.toLowerCase().contains(query) ||
+          point.address?.toLowerCase().contains(query) == true;
       final matchesCategory =
           _category == null || point.categories.contains(_category);
       return matchesSearch && matchesCategory;
@@ -518,83 +545,90 @@ class _HomeShellState extends State<HomeShell> {
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                point.name,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (point.address?.isNotEmpty == true) ...[
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.place_outlined,
-                        color: AppColors.forest, size: 19),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        point.address!,
-                        style: const TextStyle(color: AppColors.muted),
-                      ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
-              ],
-              if (point.note?.isNotEmpty == true) ...[
-                const SizedBox(height: 16),
-                Text(
-                  point.note!,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    height: 1.5,
                   ),
                 ),
+                const SizedBox(height: 22),
+                Text(point.name,
+                    style: const TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800)),
+                if (point.address?.isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.place_outlined,
+                          color: AppColors.forest, size: 19),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(point.address!,
+                            style: const TextStyle(color: AppColors.muted)),
+                      ),
+                    ],
+                  ),
+                ],
+                if (point.note?.isNotEmpty == true) ...[
+                  const SizedBox(height: 16),
+                  Text(point.note!,
+                      style: const TextStyle(
+                          color: AppColors.ink, height: 1.5)),
+                ],
+                if (point.categories.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: point.categories
+                        .map((item) => Chip(
+                              label: Text(item),
+                              backgroundColor: AppColors.cream,
+                              side: BorderSide.none,
+                            ))
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Text('Código do ponto: ' + point.code,
+                    style: const TextStyle(
+                        color: AppColors.muted, fontSize: 12)),
               ],
-              if (point.categories.isNotEmpty) ...[
-                const SizedBox(height: 18),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: point.categories
-                      .map((item) => Chip(
-                            label: Text(item),
-                            backgroundColor: AppColors.cream,
-                            side: BorderSide.none,
-                          ))
-                      .toList(),
-                ),
-              ],
-              const SizedBox(height: 14),
-              Text(
-                'Código do ponto: ${point.code}',
-                style: const TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _showPointByCode(String code) {
+    final normalized = code.toLowerCase();
+    CatalogPoint? point;
+    for (final candidate in _catalog?.points ?? const <CatalogPoint>[]) {
+      if (candidate.code.toLowerCase() == normalized) {
+        point = candidate;
+        break;
+      }
+    }
+    if (point != null) {
+      _showPoint(point);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Os detalhes deste ponto não estão no catálogo carregado.')),
+      );
+    }
   }
 
   void _openMap() {
@@ -612,14 +646,11 @@ class _HomeShellState extends State<HomeShell> {
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text(
-                      'Mapa de descobertas',
-                      style: TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    child: Text('Mapa de descobertas',
+                        style: TextStyle(
+                            color: AppColors.ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800)),
                   ),
                   IconButton(
                     tooltip: 'Fechar mapa',
@@ -644,158 +675,69 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final name = widget.user['nome']?.toString().trim();
+  Widget _buildExplorer() {
     final points = _visiblePoints;
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openMap,
-        backgroundColor: AppColors.forest,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.map_outlined),
-        label: const Text('Mapa'),
-      ),
-      appBar: AppBar(
-        backgroundColor: AppColors.forest,
-        foregroundColor: Colors.white,
-        title: const Text(
-          '+1 KM',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Sair',
-            onPressed: widget.onLogout,
-            icon: const Icon(Icons.logout),
+    return RefreshIndicator(
+      color: AppColors.forest,
+      onRefresh: _loadCatalog,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('Explore Eunápolis',
+              style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900)),
+          const SizedBox(height: 5),
+          const Text('Encontre os pontos publicados e conheça cada lugar.',
+              style: TextStyle(color: AppColors.muted)),
+          const SizedBox(height: 18),
+          TextField(
+            onChanged: (value) => setState(() => _search = value.trim()),
+            decoration: const InputDecoration(
+              hintText: 'Buscar ponto, código ou endereço',
+              prefixIcon: Icon(Icons.search),
+              isDense: true,
+            ),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: AppColors.forest,
-        onRefresh: _loadCatalog,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.forest,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SUA PRÓXIMA DESCOBERTA',
-                    style: TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 11,
-                      letterSpacing: 1.4,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    name == null || name.isEmpty ? 'Bem-vindo!' : 'Olá, $name!',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Explore lugares, conheça histórias e registre suas descobertas.',
-                    style: TextStyle(
-                      color: Color(0xFFE6E9E2),
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Pontos para descobrir',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (!_loadingCatalog && _catalog != null)
-                  Text(
-                    '${_catalog!.points.length}',
-                    style: const TextStyle(
-                      color: AppColors.forest,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-              ],
-            ),
+          if (_categories.isNotEmpty) ...[
             const SizedBox(height: 12),
-            TextField(
-              onChanged: (value) => setState(() => _search = value.trim()),
-              decoration: const InputDecoration(
-                hintText: 'Buscar ponto ou endereço',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-              ),
-            ),
-            if (_categories.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 7,
-                runSpacing: 4,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Todos'),
-                    selected: _category == null,
-                    onSelected: (_) => setState(() => _category = null),
-                  ),
-                  ..._categories.map(
-                    (category) => ChoiceChip(
+            Wrap(
+              spacing: 7,
+              runSpacing: 4,
+              children: [
+                ChoiceChip(
+                  label: const Text('Todas'),
+                  selected: _category == null,
+                  onSelected: (_) => setState(() => _category = null),
+                ),
+                ..._categories.map((category) => ChoiceChip(
                       label: Text(category),
                       selected: _category == category,
-                      onSelected: (_) => setState(
-                        () => _category =
-                            _category == category ? null : category,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 14),
-            if (_loadingCatalog)
-              const Padding(
-                padding: EdgeInsets.all(28),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.forest),
-                ),
-              )
-            else if (_catalogError != null)
-              _CatalogNotice(
-                message: _catalogError!,
-                onRetry: _loadCatalog,
-              )
-            else if (points.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Nenhum ponto publicado corresponde à busca.',
+                      onSelected: (_) => setState(() =>
+                          _category = _category == category ? null : category),
+                    )),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          if (_loadingCatalog)
+            const Padding(
+              padding: EdgeInsets.all(28),
+              child: Center(
+                  child: CircularProgressIndicator(color: AppColors.forest)),
+            )
+          else if (_catalogError != null)
+            _CatalogNotice(message: _catalogError!, onRetry: _loadCatalog)
+          else if (points.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Nenhum ponto publicado corresponde à busca.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              )
-            else
-              ...points.map(
-                (point) => Card(
+                  style: TextStyle(color: AppColors.muted)),
+            )
+          else
+            ...points.map((point) => Card(
                   color: AppColors.paper,
                   elevation: 0,
                   margin: const EdgeInsets.only(bottom: 10),
@@ -806,28 +748,20 @@ class _HomeShellState extends State<HomeShell> {
                   child: ListTile(
                     onTap: () => _showPoint(point),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 7,
-                    ),
+                        horizontal: 15, vertical: 7),
                     leading: Container(
                       height: 44,
                       width: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.cream,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: const Icon(
-                        Icons.place_outlined,
-                        color: AppColors.forest,
-                      ),
+                          color: AppColors.cream,
+                          borderRadius: BorderRadius.circular(13)),
+                      child: const Icon(Icons.place_outlined,
+                          color: AppColors.forest),
                     ),
-                    title: Text(
-                      point.name,
-                      style: const TextStyle(
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    title: Text(point.name,
+                        style: const TextStyle(
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.w700)),
                     subtitle: Text(
                       point.categories.isEmpty
                           ? (point.address ?? point.code)
@@ -835,30 +769,21 @@ class _HomeShellState extends State<HomeShell> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12,
-                      ),
+                          color: AppColors.muted, fontSize: 12),
                     ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.muted,
-                    ),
+                    trailing: const Icon(Icons.chevron_right,
+                        color: AppColors.muted),
                   ),
-                ),
-              ),
-            if (_catalog?.circuits.isNotEmpty == true) ...[
-              const SizedBox(height: 18),
-              const Text(
-                'Circuitos',
+                )),
+          if (_catalog?.circuits.isNotEmpty == true) ...[
+            const SizedBox(height: 18),
+            const Text('Circuitos',
                 style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ..._catalog!.circuits.map(
-                (circuit) => Card(
+                    color: AppColors.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            ..._catalog!.circuits.map((circuit) => Card(
                   color: AppColors.paper,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -866,24 +791,89 @@ class _HomeShellState extends State<HomeShell> {
                     side: const BorderSide(color: AppColors.border),
                   ),
                   child: ListTile(
-                    leading: const Icon(
-                      Icons.route_outlined,
-                      color: AppColors.forest,
-                    ),
-                    title: Text(
-                      circuit.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      circuit.subtitle ??
-                          '${circuit.pointCodes.length} pontos',
-                    ),
+                    leading: const Icon(Icons.route_outlined,
+                        color: AppColors.forest),
+                    title: Text(circuit.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: Text(circuit.subtitle ??
+                        circuit.pointCodes.length.toString() + ' pontos'),
                   ),
-                ),
-              ),
-            ],
+                )),
           ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titles = ['Início', 'Mapa', 'Rotas', 'Coleção'];
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.forest,
+        foregroundColor: Colors.white,
+        title: Text(
+          _tab == 0 ? '+1 KM' : titles[_tab],
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Atualizar dados',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Sair',
+            onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout),
+          ),
+        ],
+      ),
+      body: _tab == 1
+          ? _buildExplorer()
+          : NotebookPages(
+              page: _tab,
+              snapshot: _notebook,
+              user: widget.user,
+              loading: _loadingNotebook,
+              error: _notebookError,
+              onRetry: _loadNotebook,
+              onOpenMap: () => setState(() => _tab = 1),
+              onOpenCollection: () => setState(() => _tab = 3),
+              onOpenPoint: _showPointByCode,
+            ),
+      floatingActionButton: _tab == 1
+          ? FloatingActionButton.extended(
+              onPressed: _openMap,
+              backgroundColor: AppColors.forest,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Mapa'),
+            )
+          : null,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (index) => setState(() => _tab = index),
+        backgroundColor: AppColors.paper,
+        indicatorColor: AppColors.gold.withValues(alpha: .22),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Início'),
+          NavigationDestination(
+              icon: Icon(Icons.map_outlined),
+              selectedIcon: Icon(Icons.map),
+              label: 'Mapa'),
+          NavigationDestination(
+              icon: Icon(Icons.route_outlined),
+              selectedIcon: Icon(Icons.route),
+              label: 'Rotas'),
+          NavigationDestination(
+              icon: Icon(Icons.collections_bookmark_outlined),
+              selectedIcon: Icon(Icons.collections_bookmark),
+              label: 'Coleção'),
+        ],
       ),
     );
   }
