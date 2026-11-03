@@ -75,7 +75,7 @@ class CatalogMap extends StatelessWidget {
       children: [
         TileLayer(
           urlTemplate: _tilesUrl,
-          userAgentPackageName: 'online.navaagencian8n.mais1km',
+          userAgentPackageName: 'online.novaagencian8n.mais1km',
           maxZoom: 19,
         ),
         MarkerLayer(
