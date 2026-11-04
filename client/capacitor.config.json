@@ -1,0 +1,13 @@
+{
+  "appId": "online.novaagencian8n.mais1km",
+  "appName": "+1 KM",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "CapacitorCookies": {
+      "enabled": true
+    }
+  }
+}
