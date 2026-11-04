@@ -13,6 +13,9 @@ class NotebookPages extends StatelessWidget {
     required this.onOpenMap,
     required this.onOpenCollection,
     required this.onOpenPoint,
+    this.onOpenStamp,
+    this.onOpenRoutes,
+    this.onRefresh,
     this.loading = false,
     this.error,
     this.onRetry,
@@ -24,6 +27,9 @@ class NotebookPages extends StatelessWidget {
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
   final ValueChanged<String> onOpenPoint;
+  final VoidCallback? onOpenStamp;
+  final VoidCallback? onOpenRoutes;
+  final Future<void> Function()? onRefresh;
   final bool loading;
   final String? error;
   final VoidCallback? onRetry;
@@ -52,6 +58,9 @@ class NotebookPages extends StatelessWidget {
       onOpenMap: onOpenMap,
       onOpenCollection: onOpenCollection,
       onOpenPoint: onOpenPoint,
+      onOpenStamp: onOpenStamp,
+      onOpenRoutes: onOpenRoutes,
+      onRefresh: onRefresh,
     );
   }
 }
@@ -73,6 +82,9 @@ class _HomePage extends StatelessWidget {
     required this.onOpenMap,
     required this.onOpenCollection,
     required this.onOpenPoint,
+    this.onOpenStamp,
+    this.onOpenRoutes,
+    this.onRefresh,
   });
 
   final NotebookSnapshot snapshot;
@@ -80,133 +92,480 @@ class _HomePage extends StatelessWidget {
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
   final ValueChanged<String> onOpenPoint;
+  final VoidCallback? onOpenStamp;
+  final VoidCallback? onOpenRoutes;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    final name = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString();
+    final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
+    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\\s+')).first;
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
-    final next = snapshot.routes
-        .expand((route) => route.points)
-        .where((point) => point.published && !point.completed)
-        .toList();
+    final activeRoutes = snapshot.routes
+        .where((route) => !route.isComplete && route.total > 0)
+        .toList()
+      ..sort((a, b) {
+        final aRank = a.completed > 0 ? 0 : 1;
+        final bRank = b.completed > 0 ? 0 : 1;
+        return aRank.compareTo(bRank);
+      });
+    final activeRoute = activeRoutes.isEmpty ? null : activeRoutes.first;
+    final nextPoints = activeRoute?.points
+            .where((point) => point.published && !point.completed)
+            .toList() ??
+        const <NotebookRoutePoint>[];
+    final nextPoint = nextPoints.isEmpty ? null : nextPoints.first;
+    final featuredEvents = snapshot.events
+        .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
+        .toList()
+      ..sort((a, b) => a.state == b.state
+          ? (a.startAt ?? DateTime(2100)).compareTo(b.startAt ?? DateTime(2100))
+          : a.state == 'ao_vivo' ? -1 : 1);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+    final dashboard = ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
+        _HomeHero(
+          firstName: firstName,
+          capturedCards: snapshot.capturedCards,
+          totalCards: snapshot.totalCards,
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _HomeAction(
+                icon: Icons.explore_outlined,
+                label: 'Explorar mapa',
+                onTap: onOpenMap,
+                primary: true,
+              ),
             ),
-            boxShadow: const [
-              BoxShadow(color: Color(0x55000000), blurRadius: 24, offset: Offset(0, 10)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('+1 KM · EUNÁPOLIS',
-                  style: GoogleFonts.montserrat(
-                      color: _C.gold,
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
-              Text(
-                snapshot.capturedCards == 0
-                    ? 'Sua próxima descoberta começa aqui, $name.'
-                    : 'Continue descobrindo Eunápolis, $name.',
-                style: GoogleFonts.cinzel(
-                    color: BrandPalette.cream,
-                    fontSize: 23,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _HomeAction(
+                icon: Icons.nfc,
+                label: 'Ler TAG',
+                onTap: onOpenStamp,
               ),
-              const SizedBox(height: 9),
-              const Text(
-                'Encontre um ponto participante, aproxime o celular da tag NFC e conquiste cartas da cidade.',
-                style: TextStyle(color: Color(0xFFE6E9E2), height: 1.45),
-              ),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: onOpenMap,
-                style: FilledButton.styleFrom(
-                    backgroundColor: _C.gold,
-                    foregroundColor: BrandPalette.forestDeep,
-                    minimumSize: const Size(0, 48),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w800)),
-                icon: const Icon(Icons.explore_outlined),
-                label: const Text('Encontrar um ponto'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(height: 18),
+        _HomeSectionHeading(
+          title: 'Sua jornada',
+          action: 'Ver coleção',
+          onTap: onOpenCollection,
+        ),
         _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
-        const SizedBox(height: 24),
-        const _Heading('Próximo passo'),
-        if (next.isNotEmpty)
+        const SizedBox(height: 18),
+        _HomeSectionHeading(
+          title: 'Continue de onde parou',
+          action: activeRoute == null ? null : 'Ver rotas',
+          onTap: onOpenRoutes,
+        ),
+        if (nextPoint != null && activeRoute != null)
           _Panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CONTINUE SUA JORNADA',
-                    style: TextStyle(
-                        color: _C.muted,
-                        fontSize: 10,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 7),
-                Text(next.first.name,
-                    style: const TextStyle(
-                        color: _C.ink,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(next.first.code,
-                    style: const TextStyle(color: _C.muted)),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                    onPressed: onOpenMap,
-                    icon: const Icon(Icons.map_outlined),
-                    label: const Text('Ver no mapa')),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _C.gold.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.route_outlined, color: _C.gold),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            activeRoute.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _C.ink,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            '${activeRoute.completed} de ${activeRoute.total} pontos concluídos',
+                            style: const TextStyle(color: _C.muted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _Tag(label: '${(activeRoute.progress * 100).round()}%'),
+                  ],
+                ),
+                const SizedBox(height: 13),
+                _Bar(value: activeRoute.progress),
+                const SizedBox(height: 15),
+                const Text(
+                  'PRÓXIMA DESCOBERTA',
+                  style: TextStyle(
+                    color: _C.gold,
+                    fontSize: 9,
+                    letterSpacing: 1.3,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  nextPoint.name,
+                  style: const TextStyle(
+                    color: _C.ink,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(nextPoint.code,
+                    style: const TextStyle(color: _C.muted, fontSize: 11)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: onOpenMap,
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Abrir mapa'),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: () => onOpenPoint(nextPoint.code),
+                      icon: const Icon(Icons.info_outline),
+                      label: const Text('Detalhes do ponto'),
+                    ),
+                  ],
+                ),
               ],
             ),
           )
         else
-          const _Panel(
-              child: Text('Você concluiu todos os pontos publicados nas rotas disponíveis.')),
-        const SizedBox(height: 24),
-        _Heading('Cartas conquistadas', action: 'Ver coleção', onTap: onOpenCollection),
+          _Panel(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.flag_outlined, color: _C.gold, size: 26),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        snapshot.routes.isEmpty
+                            ? 'Sua primeira rota está esperando'
+                            : 'Você chegou ao fim das rotas disponíveis',
+                        style: const TextStyle(
+                          color: _C.ink,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Explore o mapa para descobrir outros pontos publicados.',
+                        style: TextStyle(color: _C.muted, height: 1.4, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: onOpenMap,
+                        icon: const Icon(Icons.explore_outlined),
+                        label: const Text('Descobrir pontos'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 18),
+        _HomeSectionHeading(
+          title: 'Conquistas recentes',
+          action: recent.isEmpty ? null : 'Ver todas',
+          onTap: onOpenCollection,
+        ),
         if (recent.isEmpty)
           const _Empty(
             icon: Icons.auto_awesome_outlined,
             title: 'Sua coleção está começando',
-            description: 'Sua primeira carta será desbloqueada quando uma visita for confirmada pelo servidor.',
+            description:
+                'Sua primeira carta será desbloqueada quando uma visita for confirmada pelo servidor.',
           )
         else
-          ...recent.take(3).map((card) => Padding(
-                padding: const EdgeInsets.only(bottom: 9),
-                child: _CardTile(card: card, onTap: () => onOpenPoint(card.code)),
-              )),
-        if (snapshot.events.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          const _Heading('Eventos e patrocínios'),
-          ...snapshot.events.map((event) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _EventTile(event: event),
-              )),
+          SizedBox(
+            height: 124,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: recent.length > 5 ? 5 : recent.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => SizedBox(
+                width: 286,
+                child: _CardTile(
+                  card: recent[index],
+                  onTap: () => onOpenPoint(recent[index].code),
+                ),
+              ),
+            ),
+          ),
+        if (featuredEvents.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const _HomeSectionHeading(title: 'Eventos ativos'),
+          ...featuredEvents.take(3).map(
+                (event) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _EventTile(event: event),
+                ),
+              ),
         ],
+        const SizedBox(height: 10),
+        Center(
+          child: Text(
+            'Cada caminho conta uma história.',
+            style: GoogleFonts.cinzel(
+              color: _C.muted,
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
       ],
     );
+
+    if (onRefresh == null) return dashboard;
+    return RefreshIndicator(
+      color: _C.gold,
+      backgroundColor: _C.paper,
+      onRefresh: onRefresh!,
+      child: dashboard,
+    );
   }
+}
+
+class _HomeHero extends StatelessWidget {
+  const _HomeHero({
+    required this.firstName,
+    required this.capturedCards,
+    required this.totalCards,
+  });
+
+  final String firstName;
+  final int capturedCards;
+  final int totalCards;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalCards == 0 ? 0.0 : capturedCards / totalCards;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x44000000),
+            blurRadius: 22,
+            offset: Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            top: -10,
+            child: Icon(
+              Icons.explore_outlined,
+              size: 112,
+              color: _C.gold.withValues(alpha: .07),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '+1 KM  /  EUNÁPOLIS',
+                style: GoogleFonts.montserrat(
+                  color: _C.gold,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Olá, $firstName.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.cinzel(
+                  color: _C.ink,
+                  fontSize: 25,
+                  height: 1.18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'A cidade guarda histórias. Seu próximo passo é descobrir uma delas.',
+                style: TextStyle(color: _C.muted, height: 1.5, fontSize: 12),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          totalCards == 0
+                              ? 'Sua coleção começa aqui'
+                              : '$capturedCards de $totalCards cartas',
+                          style: const TextStyle(
+                            color: _C.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: LinearProgressIndicator(
+                            value: progress.clamp(0.0, 1.0).toDouble(),
+                            minHeight: 5,
+                            backgroundColor: _C.border,
+                            color: _C.gold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    '${(progress * 100).round()}%',
+                    style: GoogleFonts.cinzel(
+                      color: _C.gold,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = primary ? BrandPalette.forestDeep : _C.ink;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: primary ? _C.gold : _C.paper,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: primary ? _C.gold : _C.border,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 19, color: foreground),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeSectionHeading extends StatelessWidget {
+  const _HomeSectionHeading({
+    required this.title,
+    this.action,
+    this.onTap,
+  });
+
+  final String title;
+  final String? action;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.cinzel(
+                  color: _C.ink,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (action != null)
+              TextButton(
+                onPressed: onTap,
+                child: Text(action!),
+              ),
+          ],
+        ),
+      );
 }
 
 class _RoutesPage extends StatelessWidget {
