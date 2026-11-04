@@ -550,7 +550,10 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void didUpdateWidget(covariant HomeShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.stampVersion != widget.stampVersion) _loadNotebook();
+    if (oldWidget.stampVersion != widget.stampVersion) {
+      _loadNotebook();
+      _loadPodium();
+    }
   }
 
   Future<void> _loadCatalog() async {
@@ -616,6 +619,7 @@ class _HomeShellState extends State<HomeShell> {
           api: widget.api,
           onSuccess: () {
             unawaited(_loadNotebook());
+            unawaited(_loadPodium());
           },
         ),
       ),
