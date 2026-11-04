@@ -140,11 +140,12 @@ void main() {
     expect(stampOpened, isTrue);
   });
 
-  testWidgets('abre os detalhes do próximo ponto sem iniciar GPS', (tester) async {
+  testWidgets('abre os detalhes do próximo ponto selecionado', (tester) async {
     String? openedCode;
 
     await pumpHome(tester, onPoint: (code) => openedCode = code);
 
+    await tester.ensureVisible(find.text('Detalhes do ponto'));
     await tester.tap(find.text('Detalhes do ponto'));
     await tester.pump();
 
