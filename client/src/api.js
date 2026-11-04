@@ -19,7 +19,7 @@ export const apiUrl = (caminho) => {
 export const publicAssetUrl = (value) => {
   const url = String(value || '');
   if (url.startsWith('https://') || url.startsWith('http://')) return url;
-  if (url.startsWith('/midia/')) return `${API_BASE_URL}${url}`;
+  if (url.startsWith('/midia/') || url.startsWith('/api/')) return `${API_BASE_URL}${url}`;
   return url;
 };
 
