@@ -23,7 +23,7 @@ function capturar() {
     const chave = params.get("k") || "";
     params.delete("k");
     const resto = params.toString();
-    window.history.replaceState(null, "", window.location.pathname + (resto ? \`?\${resto}\` : "") + window.location.hash);
+    window.history.replaceState(null, "", window.location.pathname + (resto ? "?" + resto : "") + window.location.hash);
     guardarChave(casou[1], chave);
   } catch { /* sem sessionStorage ou history: segue sem guardar a chave */ }
 }
@@ -44,7 +44,7 @@ export function capturarLinkTagExterno(valor) {
     params.delete("k");
     guardarChave(casou[1], chave);
     const resto = params.toString();
-    const caminhoLimpo = url.pathname + (resto ? \`?\${resto}\` : "") + url.hash;
+    const caminhoLimpo = url.pathname + (resto ? "?" + resto : "") + url.hash;
     window.history.replaceState(null, "", caminhoLimpo);
     return casou[1].toLowerCase();
   } catch { return ""; }
