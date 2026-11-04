@@ -1,8 +1,20 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
+import 'core/models/notebook_snapshot.dart';
+import 'core/theme/brand_theme.dart';
+import 'features/gamification/podium_page.dart';
 import 'features/map/catalog_map.dart';
+import 'features/notebook/notebook_pages.dart';
+import 'features/profile/profile_page.dart';
+import 'features/stamp/stamp_link_parser.dart';
+import 'features/stamp/stamp_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,15 +22,15 @@ void main() {
 }
 
 class AppColors {
-  static const forest = Color(0xFF173D2E);
-  static const forestLight = Color(0xFF285541);
-  static const gold = Color(0xFFC7A45D);
-  static const cream = Color(0xFFF5F1E7);
-  static const paper = Color(0xFFFFFDF8);
-  static const ink = Color(0xFF202820);
-  static const muted = Color(0xFF6F786F);
-  static const border = Color(0xFFE3DED1);
-  static const danger = Color(0xFFB5473C);
+  static const forest = BrandPalette.forest;
+  static const forestLight = BrandPalette.green;
+  static const gold = BrandPalette.gold;
+  static const cream = BrandPalette.cream;
+  static const paper = BrandPalette.darkSurface;
+  static const ink = BrandPalette.cream;
+  static const muted = BrandPalette.darkMuted;
+  static const border = BrandPalette.darkRule;
+  static const danger = BrandPalette.darkDanger;
 }
 
 class Mais1kmApp extends StatefulWidget {
@@ -42,36 +54,9 @@ class _Mais1kmAppState extends State<Mais1kmApp> {
     return MaterialApp(
       title: '+1 KM',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.cream,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.forest,
-          primary: AppColors.forest,
-          secondary: AppColors.gold,
-          surface: AppColors.paper,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.paper,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 17,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.forest, width: 1.5),
-          ),
-        ),
-      ),
+      theme: Mais1kmTheme.light,
+      darkTheme: Mais1kmTheme.dark,
+      themeMode: ThemeMode.dark,
       home: AuthGate(api: _api),
     );
   }
@@ -89,11 +74,66 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   bool _checking = true;
   Map<String, dynamic>? _user;
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _appLinkSubscription;
+  Uri? _pendingStampUri;
+  int _stampVersion = 0;
 
   @override
   void initState() {
     super.initState();
+    _listenForAppLinks();
     _restoreSession();
+  }
+
+  Future<void> _listenForAppLinks() async {
+    _appLinkSubscription = _appLinks.uriLinkStream.listen(
+      _handleIncomingUri,
+      onError: (_) {},
+    );
+    try {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null) _handleIncomingUri(uri);
+    } catch (_) {
+      // Um link inválido ou indisponível não impede a abertura normal do app.
+    }
+  }
+
+  void _handleIncomingUri(Uri uri) {
+    if (!mounted || StampLinkParser.parse(uri.toString()) == null) return;
+    if (_user == null) {
+      _pendingStampUri = uri;
+      return;
+    }
+    unawaited(_openStampPage(uri));
+  }
+
+  Future<void> _openStampPage(Uri? uri) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => StampPage(
+          api: widget.api,
+          initialUri: uri,
+          onSuccess: () {
+            if (mounted) setState(() => _stampVersion++);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openPendingStampAfterAuthentication() {
+    final uri = _pendingStampUri;
+    if (uri == null) return;
+    _pendingStampUri = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_user == null) {
+        _pendingStampUri = uri;
+        return;
+      }
+      unawaited(_openStampPage(uri));
+    });
   }
 
   Future<void> _restoreSession() async {
@@ -105,6 +145,7 @@ class _AuthGateState extends State<AuthGate> {
       // Falha de rede não apaga uma sessão que ainda pode ser válida.
     } finally {
       if (mounted) setState(() => _checking = false);
+      _openPendingStampAfterAuthentication();
     }
   }
 
@@ -115,6 +156,7 @@ class _AuthGateState extends State<AuthGate> {
 
   void _onAuthenticated(Map<String, dynamic> response) {
     setState(() => _user = _userFrom(response));
+    _openPendingStampAfterAuthentication();
   }
 
   Future<void> _logout() async {
@@ -126,18 +168,34 @@ class _AuthGateState extends State<AuthGate> {
     if (mounted) setState(() => _user = null);
   }
 
+  void _sessionEnded() {
+    if (mounted) setState(() => _user = null);
+  }
+
+  @override
+  void dispose() {
+    _appLinkSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_checking) {
       return const Scaffold(
-        backgroundColor: AppColors.cream,
+        backgroundColor: BrandPalette.forestDeep,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.forest),
         ),
       );
     }
     if (_user != null) {
-      return HomeShell(api: widget.api, user: _user!, onLogout: _logout);
+      return HomeShell(
+        api: widget.api,
+        user: _user!,
+        onLogout: _logout,
+        onSessionEnded: _sessionEnded,
+        stampVersion: _stampVersion,
+      );
     }
     return AuthScreen(api: widget.api, onAuthenticated: _onAuthenticated);
   }
@@ -373,8 +431,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     FilledButton(
                       onPressed: _loading ? null : _submit,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.forest,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: BrandPalette.forestDeep,
                         minimumSize: const Size.fromHeight(54),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -450,11 +508,15 @@ class HomeShell extends StatefulWidget {
     required this.api,
     required this.user,
     required this.onLogout,
+    required this.onSessionEnded,
+    required this.stampVersion,
   });
 
   final ApiClient api;
   final Map<String, dynamic> user;
-  final VoidCallback onLogout;
+  final Future<void> Function() onLogout;
+  final VoidCallback onSessionEnded;
+  final int stampVersion;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -462,15 +524,33 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   CatalogSnapshot? _catalog;
+  NotebookSnapshot? _notebook;
+  Map<String, dynamic>? _gamificationData;
+  Map<String, dynamic>? _podiumData;
+  late Map<String, dynamic> _accountUser = widget.user;
   bool _loadingCatalog = true;
+  bool _loadingNotebook = true;
+  bool _loadingPodium = true;
   String? _catalogError;
+  String? _notebookError;
+  String? _podiumError;
   String _search = '';
   String? _category;
+  String _stampFilter = 'Todos';
+  int _tab = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCatalog();
+    _loadNotebook();
+    _loadPodium();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.stampVersion != widget.stampVersion) _loadNotebook();
   }
 
   Future<void> _loadCatalog() async {
@@ -488,16 +568,114 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  Future<void> _loadNotebook() async {
+    setState(() {
+      _loadingNotebook = true;
+      _notebookError = null;
+    });
+    try {
+      final notebook = await widget.api.fetchNotebook();
+      if (mounted) setState(() => _notebook = notebook);
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _notebookError = error.message);
+    } finally {
+      if (mounted) setState(() => _loadingNotebook = false);
+    }
+  }
+
+  Future<void> _loadPodium() async {
+    setState(() {
+      _loadingPodium = true;
+      _podiumError = null;
+    });
+    try {
+      final results = await Future.wait([
+        widget.api.fetchGamificationMe(),
+        widget.api.fetchGamificationPodium(limit: 25),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _gamificationData = results[0];
+        _podiumData = results[1];
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _podiumError = error.message);
+    } finally {
+      if (mounted) setState(() => _loadingPodium = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    await Future.wait([_loadCatalog(), _loadNotebook(), _loadPodium()]);
+  }
+
+  Future<void> _openStamp() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => StampPage(
+          api: widget.api,
+          onSuccess: () {
+            unawaited(_loadNotebook());
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openProfile() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ProfilePage(
+          user: _accountUser,
+          onSaveAccount: ({
+            required String nome,
+            required String email,
+            required String senhaAtual,
+            required String senhaNova,
+          }) async {
+            final result = await widget.api.updateAccount(
+              name: nome,
+              email: email,
+              currentPassword: senhaAtual.isEmpty ? null : senhaAtual,
+              newPassword: senhaNova.isEmpty ? null : senhaNova,
+            );
+            final updated = result['usuario'];
+            if (mounted && updated is Map<String, dynamic>) {
+              setState(() => _accountUser = updated);
+            }
+          },
+          onDeleteAccount: () async {
+            await widget.api.deleteAccount();
+            widget.onSessionEnded();
+          },
+          onLogout: widget.onLogout,
+        ),
+      ),
+    );
+  }
+
+  Set<String> get _completedPointCodes => _notebook?.routes
+          .expand((route) => route.points)
+          .where((point) => point.completed)
+          .map((point) => point.code.toLowerCase())
+          .toSet() ??
+      <String>{};
+
   List<CatalogPoint> get _visiblePoints {
     final points = _catalog?.points ?? const <CatalogPoint>[];
     return points.where((point) {
-      final matchesSearch = _search.isEmpty ||
-          point.name.toLowerCase().contains(_search.toLowerCase()) ||
-          point.code.toLowerCase().contains(_search.toLowerCase()) ||
-          point.address?.toLowerCase().contains(_search.toLowerCase()) == true;
+      final query = _search.toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          point.name.toLowerCase().contains(query) ||
+          point.code.toLowerCase().contains(query) ||
+          point.address?.toLowerCase().contains(query) == true;
       final matchesCategory =
           _category == null || point.categories.contains(_category);
-      return matchesSearch && matchesCategory;
+      final completed = _completedPointCodes.contains(point.code.toLowerCase());
+      final matchesStamp = _stampFilter == 'Todos' ||
+          (_stampFilter == 'Carimbados' && completed) ||
+          (_stampFilter == 'Disponíveis' && !completed);
+      return matchesSearch && matchesCategory && matchesStamp;
     }).toList();
   }
 
@@ -518,371 +696,336 @@ class _HomeShellState extends State<HomeShell> {
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                point.name,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (point.address?.isNotEmpty == true) ...[
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.place_outlined,
-                        color: AppColors.forest, size: 19),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        point.address!,
-                        style: const TextStyle(color: AppColors.muted),
-                      ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
-              ],
-              if (point.note?.isNotEmpty == true) ...[
-                const SizedBox(height: 16),
-                Text(
-                  point.note!,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    height: 1.5,
                   ),
                 ),
+                const SizedBox(height: 22),
+                Text(point.name,
+                    style: const TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800)),
+                if (point.address?.isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.place_outlined,
+                          color: AppColors.forest, size: 19),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(point.address!,
+                            style: const TextStyle(color: AppColors.muted)),
+                      ),
+                    ],
+                  ),
+                ],
+                if (point.note?.isNotEmpty == true) ...[
+                  const SizedBox(height: 16),
+                  Text(point.note!,
+                      style: const TextStyle(
+                          color: AppColors.ink, height: 1.5)),
+                ],
+                if (point.categories.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: point.categories
+                        .map((item) => Chip(
+                              label: Text(item),
+                              backgroundColor: AppColors.paper,
+                              side: const BorderSide(color: AppColors.border),
+                            ))
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Text('Código do ponto: ${point.code}',
+                    style: const TextStyle(
+                        color: AppColors.muted, fontSize: 12)),
               ],
-              if (point.categories.isNotEmpty) ...[
-                const SizedBox(height: 18),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: point.categories
-                      .map((item) => Chip(
-                            label: Text(item),
-                            backgroundColor: AppColors.cream,
-                            side: BorderSide.none,
-                          ))
-                      .toList(),
-                ),
-              ],
-              const SizedBox(height: 14),
-              Text(
-                'Código do ponto: ${point.code}',
-                style: const TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _openMap() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.cream,
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.of(sheetContext).size.height * 0.88,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
+  void _showPointByCode(String code) {
+    final normalized = code.toLowerCase();
+    CatalogPoint? point;
+    for (final candidate in _catalog?.points ?? const <CatalogPoint>[]) {
+      if (candidate.code.toLowerCase() == normalized) {
+        point = candidate;
+        break;
+      }
+    }
+    if (point != null) {
+      _showPoint(point);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Os detalhes deste ponto não estão no catálogo carregado.')),
+      );
+    }
+  }
+
+  Widget _buildExplorer() {
+    final points = _visiblePoints;
+    final mapped = points.where((point) =>
+      point.latitude != null && point.longitude != null).length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('MAPA DE DESCOBERTAS',
+                    style: GoogleFonts.montserrat(
+                      color: AppColors.gold,
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w800,
+                    )),
+                const SizedBox(height: 4),
+                Text('Eunápolis',
+                    style: GoogleFonts.cinzel(
+                      color: AppColors.ink,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                    )),
+                const SizedBox(height: 4),
+                const Text('Encontre os lugares e escolha sua próxima descoberta.',
+                    style: TextStyle(color: AppColors.muted, fontSize: 11)),
+              ],
+            ),
+          ),
+          TextField(
+            onChanged: (value) => setState(() => _search = value.trim()),
+            decoration: const InputDecoration(
+              hintText: 'Buscar ponto ou código',
+              prefixIcon: Icon(Icons.search),
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            ),
+          ),
+          if (_categories.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'Mapa de descobertas',
-                      style: TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ChoiceChip(
+                    label: const Text('Todas'),
+                    selected: _category == null,
+                    onSelected: (_) => setState(() => _category = null),
+                  ),
+                  const SizedBox(width: 6),
+                  ..._categories.map((category) => Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(category),
+                      selected: _category == category,
+                      onSelected: (_) => setState(() =>
+                        _category = _category == category ? null : category),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Fechar mapa',
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
+                  )),
                 ],
               ),
             ),
-            Expanded(
-              child: CatalogMap(
-                points: _catalog?.points ?? const <CatalogPoint>[],
-                onSelectPoint: (point) {
-                  Navigator.of(sheetContext).pop();
-                  _showPoint(point);
-                },
+          ],
+          if (_notebook != null) ...[
+            const SizedBox(height: 7),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final filter in const ['Todos', 'Disponíveis', 'Carimbados'])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(filter),
+                        selected: _stampFilter == filter,
+                        onSelected: (_) => setState(() => _stampFilter = filter),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 9),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${points.length} ${points.length == 1 ? 'ponto' : 'pontos'} encontrados',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 10),
+                  ),
+                ),
+                Text('$mapped no mapa',
+                    style: const TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.w700)),
+                if (_search.isNotEmpty || _category != null || _stampFilter != 'Todos')
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _search = '';
+                      _category = null;
+                      _stampFilter = 'Todos';
+                    }),
+                    child: const Text('Limpar'),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.paper,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: _loadingCatalog
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+                    : _catalogError != null
+                        ? _CatalogNotice(message: _catalogError!, onRetry: _loadCatalog)
+                        : CatalogMap(
+                            points: points,
+                            onSelectPoint: _showPoint,
+                          ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.user['nome']?.toString().trim();
-    final points = _visiblePoints;
+    final titles = ['Início', 'Mapa', 'Rotas', 'Coleção', 'Pódio'];
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openMap,
-        backgroundColor: AppColors.forest,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.map_outlined),
-        label: const Text('Mapa'),
-      ),
       appBar: AppBar(
-        backgroundColor: AppColors.forest,
-        foregroundColor: Colors.white,
-        title: const Text(
-          '+1 KM',
-          style: TextStyle(fontWeight: FontWeight.w800),
+        backgroundColor: AppColors.paper,
+        foregroundColor: AppColors.ink,
+        title: Text(
+          _tab == 0 ? '+1 KM' : titles[_tab],
+          style: GoogleFonts.yellowtail(color: AppColors.gold, fontSize: 24),
         ),
         actions: [
           IconButton(
-            tooltip: 'Sair',
-            onPressed: widget.onLogout,
-            icon: const Icon(Icons.logout),
+            tooltip: 'Atualizar dados',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Conquistar carimbo',
+            onPressed: _openStamp,
+            icon: const Icon(Icons.nfc),
+          ),
+          IconButton(
+            tooltip: 'Meu perfil',
+            onPressed: _openProfile,
+            icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppColors.forest,
-        onRefresh: _loadCatalog,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.forest,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SUA PRÓXIMA DESCOBERTA',
-                    style: TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 11,
-                      letterSpacing: 1.4,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    name == null || name.isEmpty ? 'Bem-vindo!' : 'Olá, $name!',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Explore lugares, conheça histórias e registre suas descobertas.',
-                    style: TextStyle(
-                      color: Color(0xFFE6E9E2),
-                      height: 1.45,
-                    ),
-                  ),
+      body: _tab == 1
+          ? _buildExplorer()
+          : _tab == 4
+              ? PodiumPage(
+                  podiumData: _podiumData,
+                  gamificationData: _gamificationData,
+                  loading: _loadingPodium,
+                  error: _podiumError,
+                  onRefresh: _loadPodium,
+                  onSaveParticipation: ({
+                    required bool optIn,
+                    required String alias,
+                  }) async {
+                    await widget.api.updateGamificationParticipation(
+                      optIn: optIn,
+                      alias: alias.isEmpty ? null : alias,
+                    );
+                    await _loadPodium();
+                  },
+                )
+              : NotebookPages(
+              page: _tab,
+              snapshot: _notebook,
+              user: widget.user,
+              loading: _loadingNotebook,
+              error: _notebookError,
+              onRetry: _loadNotebook,
+              onOpenMap: () => setState(() => _tab = 1),
+              onOpenCollection: () => setState(() => _tab = 3),
+              onOpenPoint: _showPointByCode,
+            ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          decoration: BoxDecoration(
+            color: AppColors.paper.withValues(alpha: .88),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 9)),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: NavigationBar(
+                height: 68,
+                selectedIndex: _tab,
+                onDestinationSelected: (index) => setState(() => _tab = index),
+                backgroundColor: Colors.transparent,
+                indicatorColor: AppColors.gold.withValues(alpha: .22),
+                destinations: const [
+                  NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      selectedIcon: Icon(Icons.home),
+                      label: 'Início'),
+                  NavigationDestination(
+                      icon: Icon(Icons.map_outlined),
+                      selectedIcon: Icon(Icons.map),
+                      label: 'Mapa'),
+                  NavigationDestination(
+                      icon: Icon(Icons.route_outlined),
+                      selectedIcon: Icon(Icons.route),
+                      label: 'Rotas'),
+                  NavigationDestination(
+                      icon: Icon(Icons.collections_bookmark_outlined),
+                      selectedIcon: Icon(Icons.collections_bookmark),
+                      label: 'Coleção'),
+                  NavigationDestination(
+                      icon: Icon(Icons.emoji_events_outlined),
+                      selectedIcon: Icon(Icons.emoji_events),
+                      label: 'Pódio'),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Pontos para descobrir',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (!_loadingCatalog && _catalog != null)
-                  Text(
-                    '${_catalog!.points.length}',
-                    style: const TextStyle(
-                      color: AppColors.forest,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              onChanged: (value) => setState(() => _search = value.trim()),
-              decoration: const InputDecoration(
-                hintText: 'Buscar ponto ou endereço',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-              ),
-            ),
-            if (_categories.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 7,
-                runSpacing: 4,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Todos'),
-                    selected: _category == null,
-                    onSelected: (_) => setState(() => _category = null),
-                  ),
-                  ..._categories.map(
-                    (category) => ChoiceChip(
-                      label: Text(category),
-                      selected: _category == category,
-                      onSelected: (_) => setState(
-                        () => _category =
-                            _category == category ? null : category,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 14),
-            if (_loadingCatalog)
-              const Padding(
-                padding: EdgeInsets.all(28),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.forest),
-                ),
-              )
-            else if (_catalogError != null)
-              _CatalogNotice(
-                message: _catalogError!,
-                onRetry: _loadCatalog,
-              )
-            else if (points.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Nenhum ponto publicado corresponde à busca.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              )
-            else
-              ...points.map(
-                (point) => Card(
-                  color: AppColors.paper,
-                  elevation: 0,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  child: ListTile(
-                    onTap: () => _showPoint(point),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 7,
-                    ),
-                    leading: Container(
-                      height: 44,
-                      width: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.cream,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: const Icon(
-                        Icons.place_outlined,
-                        color: AppColors.forest,
-                      ),
-                    ),
-                    title: Text(
-                      point.name,
-                      style: const TextStyle(
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      point.categories.isEmpty
-                          ? (point.address ?? point.code)
-                          : point.categories.join(' · '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
-              ),
-            if (_catalog?.circuits.isNotEmpty == true) ...[
-              const SizedBox(height: 18),
-              const Text(
-                'Circuitos',
-                style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ..._catalog!.circuits.map(
-                (circuit) => Card(
-                  color: AppColors.paper,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.route_outlined,
-                      color: AppColors.forest,
-                    ),
-                    title: Text(
-                      circuit.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      circuit.subtitle ??
-                          '${circuit.pointCodes.length} pontos',
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

@@ -39,7 +39,7 @@ jobs:
       - name: Criar projeto Android
         run: |
           flutter --version
-          flutter create --platforms=android --org online.navaagencian8n --project-name mais1km mobile
+          flutter create --platforms=android --org online.novaagencian8n --project-name mais1km mobile
 
       - name: Analisar e testar
         working-directory: mobile
@@ -54,5 +54,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c feature/mobile-scaffold
           git add mobile
-          git commit -m "feat(mobile): scaffold Flutter Android (applicationId online.navaagencian8n.mais1km)"
+          git commit -m "feat(mobile): scaffold Flutter Android (applicationId online.novaagencian8n.mais1km)"
           git push origin feature/mobile-scaffold

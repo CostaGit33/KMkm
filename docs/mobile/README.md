@@ -1,6 +1,6 @@
 # Migração Android Mais1km
 
-Documentação da Fase 0 e decisões para criar o cliente Android Flutter sem substituir a PWA, compartilhar as regras/API atuais e preservar o MySQL como fonte oficial.
+Documentação do cliente Android Flutter. O app complementa a PWA e usa a API existente como fonte de dados; o MySQL permanece como fonte oficial.
 
 - [Baseline e toolchain](00-baseline.md)
 - [Escopo do MVP](01-escopo-mvp.md)
@@ -8,12 +8,19 @@ Documentação da Fase 0 e decisões para criar o cliente Android Flutter sem su
 - [Arquitetura móvel](03-arquitetura-mobile.md)
 - [ADRs — decisões de arquitetura](adr/README.md)
 
-## Estado atual (2026-11-02)
+## Estado atual (2026-11-03)
 
-- Fase 0 (auditoria) e Fase 1 (contrato da API/OpenAPI e teste estático de contrato) concluídas **em documentação**; estão na `main`.
-- Baseline: 52 testes do server e build Vite passaram em 2026-11-01. Desde 2026-11-02 rodam no GitHub Actions (`api.yml`, `pwa.yml`).
-- Flutter e Android SDK estão instalados na VPS, mas builds devem usar o GitHub Actions. Ainda **não existe** `mobile/`, app Flutter nem workflow Android.
-- Decisões em aberto: URL de homologação e conta de teste (prova de autenticação), confirmação final do `applicationId` (`online.navaagencian8n.mais1km`, proposto), assinatura/fingerprints.
-- Próximos passos, em ordem: (1) gerar o scaffold via workflow `mobile-scaffold.yml` e revisar por Pull Request; (2) autenticação e prova de persistência de sessão; (3) workflow Android; (4) catálogo, mapa, pontos, NFC/QR e carimbos; (5) testes de integração Android ↔ PWA ↔ API.
+O código Flutter está em `mobile/`, com `applicationId` confirmado como `online.novaagencian8n.mais1km`. O app inclui autenticação e sessão segura, recuperação de senha, catálogo/mapa, rotas e caderneta, telas de perfil e pódio, participação opcional no ranking, entrada de link NFC/QR e envio de carimbo. A localização é solicitada somente quando a API informa que o ponto exige GPS.
 
-Nenhuma alteração de backend, banco ou produção foi feita. Consulte os ADRs para itens propostos, adiados e bloqueados.
+O mapa nativo Google é opcional: sem chave Android configurada o app mantém o fallback OpenStreetMap. Uma chave, quando usada, deve ser específica para Android e restrita ao package name e fingerprint do certificado; não deve ser versionada no repositório. Veja `mobile/README.md` para configuração e build.
+
+O workflow `.github/workflows/mobile.yml` instala dependências, executa `flutter analyze --fatal-infos`, `flutter test`, gera um APK debug e publica o artefato do GitHub Actions por sete dias. O APK debug serve para avaliação; ainda não é um APK de release assinado nem está pronto para publicação na Play Store.
+
+## Validação pendente e bloqueios
+
+- Ainda é necessário testar em aparelho/emulador a persistência da sessão após reiniciar, o logout revogando a sessão no servidor, recuperação de senha, permissões de GPS e o fluxo NFC/QR ponta a ponta. Use uma conta descartável e não carimbe pontos reais sem autorização.
+- Android App Links exigem publicar `https://mais1km.novaagencian8n.online/.well-known/assetlinks.json` com o `applicationId` e o SHA-256 do certificado usado na distribuição. O filtro Android no app, sozinho, não verifica o domínio.
+- O mapa Google só será exibido quando a chave Android compatível estiver configurada no build; sem ela, o mapa permanece em OSM. A chave web do PWA não deve ser reutilizada no APK.
+- Os testes de API/telas cobrem contratos e validações locais, mas não substituem testes instrumentados de rede, GPS, câmera/NFC ou sessão real. Eventos e outras funcionalidades não disponíveis no app ainda precisam ser comparados com a PWA antes de declarar paridade integral.
+
+Nenhuma publicação na Play Store ou alteração de infraestrutura/produção é realizada por este documento. Consulte os ADRs para decisões adiadas ou ainda dependentes de ambiente.

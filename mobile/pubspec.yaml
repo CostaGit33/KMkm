@@ -1,7 +1,7 @@
 name: mais1km
 description: "Aplicativo Android do Mais1km."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.13.7
@@ -9,10 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  app_links: ^6.4.1
   cupertino_icons: ^1.0.8
   flutter_secure_storage: ^9.2.4
+  geolocator: ^14.0.2
   flutter_map: ^8.3.2
+  google_maps_flutter: ^2.19.0
   latlong2: ^0.10.1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
