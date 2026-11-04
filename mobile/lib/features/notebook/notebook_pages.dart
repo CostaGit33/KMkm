@@ -99,7 +99,7 @@ class _HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
-    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\\s+')).first;
+    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\s+')).first;
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
@@ -1158,7 +1158,111 @@ class _LoadError extends StatelessWidget {
 String? _cardArtUrl(NotebookCard card) {
   final thumbnail = card.artThumbnail;
   if (thumbnail != null &&
-      RegExp(r'^/midia/[\\w.]+\\.webp$').hasMatch(thumbnail)) {
+      RegExp(r'^/midia/[\w.]+\.webp.hasMatch(thumbnail)) {
+    return 'https://mais1km.novaagencian8n.online$thumbnail';
+  }
+  final art = card.art;
+  if (art != null && RegExp(r'^[\w.-]{1,80}.hasMatch(art)) {
+    return 'https://mais1km.novaagencian8n.online/cartas/$art';
+  }
+  return null;
+}
+
+IconData _categoryIcon(String category) => switch (category) {
+      'natureza' => Icons.eco_outlined,
+      'historia' => Icons.account_balance_outlined,
+      'cultura' => Icons.music_note_outlined,
+      'trabalho' => Icons.agriculture_outlined,
+      'litoral' => Icons.waves_outlined,
+      'misterio' => Icons.auto_awesome_outlined,
+      _ => Icons.auto_awesome_outlined,
+    };
+
+String _categoryLabel(String value) => switch (value) {
+      'natureza' => 'Natureza',
+      'historia' => 'História',
+      'cultura' => 'Cultura',
+      'trabalho' => 'Trabalho',
+      'litoral' => 'Litoral',
+      'misterio' => 'Mistério',
+      _ => value,
+    };
+
+String _rarityLabel(String value) => switch (value) {
+      'raro' => 'Raro',
+      'epico' => 'Épico',
+      'lendario' => 'Lendário',
+      _ => 'Comum',
+    };
+).hasMatch(thumbnail)) {
+    return 'https://mais1km.novaagencian8n.online$thumbnail';
+  }
+  final art = card.art;
+  if (art != null && RegExp(r'^[\\w.-]{1,80}$').hasMatch(art)) {
+    return 'https://mais1km.novaagencian8n.online/cartas/$art';
+  }
+  return null;
+}
+
+IconData _categoryIcon(String category) => switch (category) {
+      'natureza' => Icons.eco_outlined,
+      'historia' => Icons.account_balance_outlined,
+      'cultura' => Icons.music_note_outlined,
+      'trabalho' => Icons.agriculture_outlined,
+      'litoral' => Icons.waves_outlined,
+      'misterio' => Icons.auto_awesome_outlined,
+      _ => Icons.auto_awesome_outlined,
+    };
+
+String _categoryLabel(String value) => switch (value) {
+      'natureza' => 'Natureza',
+      'historia' => 'História',
+      'cultura' => 'Cultura',
+      'trabalho' => 'Trabalho',
+      'litoral' => 'Litoral',
+      'misterio' => 'Mistério',
+      _ => value,
+    };
+
+String _rarityLabel(String value) => switch (value) {
+      'raro' => 'Raro',
+      'epico' => 'Épico',
+      'lendario' => 'Lendário',
+      _ => 'Comum',
+    };
+).hasMatch(art)) {
+    return 'https://mais1km.novaagencian8n.online/cartas/$art';
+  }
+  return null;
+}
+
+IconData _categoryIcon(String category) => switch (category) {
+      'natureza' => Icons.eco_outlined,
+      'historia' => Icons.account_balance_outlined,
+      'cultura' => Icons.music_note_outlined,
+      'trabalho' => Icons.agriculture_outlined,
+      'litoral' => Icons.waves_outlined,
+      'misterio' => Icons.auto_awesome_outlined,
+      _ => Icons.auto_awesome_outlined,
+    };
+
+String _categoryLabel(String value) => switch (value) {
+      'natureza' => 'Natureza',
+      'historia' => 'História',
+      'cultura' => 'Cultura',
+      'trabalho' => 'Trabalho',
+      'litoral' => 'Litoral',
+      'misterio' => 'Mistério',
+      _ => value,
+    };
+
+String _rarityLabel(String value) => switch (value) {
+      'raro' => 'Raro',
+      'epico' => 'Épico',
+      'lendario' => 'Lendário',
+      _ => 'Comum',
+    };
+).hasMatch(thumbnail)) {
     return 'https://mais1km.novaagencian8n.online$thumbnail';
   }
   final art = card.art;
