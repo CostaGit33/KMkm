@@ -19,7 +19,11 @@ void main() {
     clearedSessions = 0;
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
-      final text = await request.transform(utf8.decoder).join();
+      final bytes = await request.fold<List<int>>(
+        <int>[],
+        (buffer, chunk) => buffer..addAll(chunk),
+      );
+      final text = utf8.decode(bytes);
       final body = text.isEmpty ? null : jsonDecode(text);
       requests.add({
         'method': request.method,

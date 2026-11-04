@@ -37,9 +37,13 @@ class ApiClient {
     Future<String?> Function()? sessionCookieReader,
     Future<void> Function()? sessionCookieClearer,
   })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        // Constructor keeps public injection names while the backing fields stay private.
+        // ignore: prefer_initializing_formals
         _httpClient = httpClient,
         _baseUrl = baseUrl ?? ApiClient.baseUrl,
+        // ignore: prefer_initializing_formals
         _sessionCookieReader = sessionCookieReader,
+        // ignore: prefer_initializing_formals
         _sessionCookieClearer = sessionCookieClearer;
 
   static const String baseUrl = 'https://mais1km.novaagencian8n.online';

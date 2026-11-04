@@ -275,7 +275,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _currentPasswordController,
                 enabled: !_busy,
                 obscureText: true,
-                autofillHints: const [AutofillHints.currentPassword],
+                autofillHints: const [AutofillHints.password],
                 decoration: const InputDecoration(labelText: 'Senha atual', prefixIcon: Icon(Icons.lock_outline)),
                 validator: _validateCurrentPassword,
               ),

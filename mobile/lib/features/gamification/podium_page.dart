@@ -425,7 +425,8 @@ class _ParticipationCard extends StatelessWidget {
               title: const Text('Participar do pódio público'),
               value: optedIn,
               onChanged: saving ? null : onOptInChanged,
-              activeColor: BrandPalette.gold,
+              activeThumbColor: BrandPalette.gold,
+              activeTrackColor: BrandPalette.gold.withValues(alpha: .35),
             ),
             if (optedIn) ...[
               const SizedBox(height: 4),
@@ -584,7 +585,7 @@ List<Map<String, dynamic>> _listAt(Map<String, dynamic>? source, String key) {
   return value.whereType<Map>().map((row) => row.map((key, value) => MapEntry(key.toString(), value))).toList();
 }
 
-String? _stringValue(Object? value) => value == null ? null : value.toString();
+String? _stringValue(Object? value) => value?.toString();
 
 bool? _boolValue(Object? value) => value is bool ? value : null;
 
