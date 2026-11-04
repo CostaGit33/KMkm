@@ -68,7 +68,14 @@ function launchIntro() {
           const servidor = await criarContaServidor({ nome, email, senha });
           state = createAccount(state, { nome, email, serverId: servidor.usuario.id, criadoEm: new Date().toISOString() });
         } catch (error) {
-          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
+          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado. Entre com sua senha." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
+          authDraft = { nome, email };
+          authModo = error.code === "email_ja_cadastrado" ? "entrar" : "criar";
+          // O assistente visual será fechado após onCreate. Renderizar a tela simples de autenticação
+          // antes disso evita deixar o app vazio quando a API recusar ou não responder.
+          introDone = true;
+          introHandle = null;
+          render();
           showToast(authMessage);
           return;
         }
