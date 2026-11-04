@@ -21,6 +21,13 @@ void main() {
     );
 
     expect(find.text('Conquistar carimbo'), findsOneWidget);
+    // A mensagem fica abaixo do conteúdo inicial da ListView. Role até ela
+    // para que o teste valide a interface renderizada, não apenas widgets
+    // que ainda estão fora da área construída pelo viewport.
+    await tester.scrollUntilVisible(
+      find.text('Link reconhecido. Toque em “Enviar carimbo” para continuar.'),
+      250,
+    );
     expect(find.text('Link reconhecido. Toque em “Enviar carimbo” para continuar.'),
         findsOneWidget);
     expect(find.text('Enviar carimbo'), findsOneWidget);
