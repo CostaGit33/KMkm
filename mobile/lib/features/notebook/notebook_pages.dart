@@ -224,7 +224,7 @@ class _HomePage extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 124,
+            height: 150,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: recent.length > 5 ? 5 : recent.length,
@@ -373,15 +373,24 @@ class _HomeAction extends StatelessWidget {
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: primary ? _C.gold : _C.border),
             ),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icon, size: 19, color: foreground),
-              const SizedBox(width: 8),
-              Flexible(child: Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: foreground, fontSize: 12, fontWeight: FontWeight.w800),
-              )),
-            ]),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 22, color: foreground),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
