@@ -8,7 +8,8 @@
     "build:android": "vite build --mode android",
     "cap:sync:android": "npm run build:android && cap sync android",
     "cap:open:android": "cap open android",
-    "cap:run:android": "cap run android"
+    "cap:run:android": "cap run android",
+    "test": "node --test"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",
