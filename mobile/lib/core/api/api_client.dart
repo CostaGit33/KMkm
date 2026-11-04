@@ -18,16 +18,37 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Posição opcional enviada ao validar um carimbo de tag.
+class TagPosition {
+  const TagPosition({required this.lat, required this.lng, required this.acc});
+
+  final double lat;
+  final double lng;
+  final double acc;
+
+  Map<String, double> toJson() => {'lat': lat, 'lng': lng, 'acc': acc};
+}
+
 class ApiClient {
   ApiClient({
     FlutterSecureStorage? secureStorage,
-    this._httpClient,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+    HttpClient? httpClient,
+    String? baseUrl,
+    Future<String?> Function()? sessionCookieReader,
+    Future<void> Function()? sessionCookieClearer,
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _httpClient = httpClient,
+        _baseUrl = baseUrl ?? ApiClient.baseUrl,
+        _sessionCookieReader = sessionCookieReader,
+        _sessionCookieClearer = sessionCookieClearer;
 
   static const String baseUrl = 'https://mais1km.novaagencian8n.online';
   static const String _sessionKey = 'mais1km_session_cookie';
 
   final FlutterSecureStorage _secureStorage;
+  final String _baseUrl;
+  final Future<String?> Function()? _sessionCookieReader;
+  final Future<void> Function()? _sessionCookieClearer;
   HttpClient? _httpClient;
 
   HttpClient get _client => _httpClient ??= HttpClient();
@@ -96,6 +117,91 @@ class ApiClient {
     }
   }
 
+  /// Atualiza nome/e-mail e, se informado, senha atual e nova senha.
+  Future<Map<String, dynamic>> updateAccount({
+    required String name,
+    required String email,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    final body = <String, dynamic>{
+      'nome': name.trim(),
+      'email': email.trim(),
+    };
+    if (currentPassword != null) body['senhaAtual'] = currentPassword;
+    if (newPassword != null) body['senhaNova'] = newPassword;
+    final response = await _request(
+      'PUT',
+      '/api/conta',
+      body: body,
+      authenticated: true,
+    );
+    return _asMap(response.data);
+  }
+
+  /// Exclui a conta; a sessão local só é removida após resposta HTTP 2xx.
+  Future<void> deleteAccount() async {
+    await _request('DELETE', '/api/eu', authenticated: true);
+    await clearSession();
+  }
+
+  Future<Map<String, dynamic>> fetchGamificationMe() async {
+    final response = await _request(
+      'GET',
+      '/api/gamificacao/me',
+      authenticated: true,
+    );
+    return _asMap(response.data);
+  }
+
+  /// Busca o pódio mensal (padrão) ou geral e, opcionalmente, limita resultados.
+  Future<Map<String, dynamic>> fetchGamificationPodium({
+    String? period,
+    int? limit,
+  }) async {
+    final query = <String, String>{};
+    if (period != null) query['periodo'] = period;
+    if (limit != null) query['limite'] = limit.toString();
+    final path = Uri(
+      path: '/api/gamificacao/podio',
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+    final response = await _request('GET', path, authenticated: true);
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> updateGamificationParticipation({
+    required bool optIn,
+    String? alias,
+  }) async {
+    final body = <String, dynamic>{'optIn': optIn};
+    if (alias != null) body['alias'] = alias;
+    final response = await _request(
+      'PUT',
+      '/api/gamificacao/participacao',
+      body: body,
+      authenticated: true,
+    );
+    return _asMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> stampTag({
+    required String code,
+    String? key,
+    TagPosition? position,
+  }) async {
+    final body = <String, dynamic>{};
+    if (key != null) body['chave'] = key;
+    if (position != null) body['pos'] = position.toJson();
+    final response = await _request(
+      'POST',
+      '/api/tags/${Uri.encodeComponent(code)}/carimbar',
+      body: body,
+      authenticated: true,
+    );
+    return _asMap(response.data);
+  }
+
   Future<CatalogSnapshot> fetchCatalog() async {
     final response = await _request('GET', '/api/catalogo');
     return CatalogSnapshot.fromJson(_asMap(response.data));
@@ -116,6 +222,8 @@ class ApiClient {
   }
 
   Future<String?> _readSessionCookie() async {
+    final reader = _sessionCookieReader;
+    if (reader != null) return reader();
     try {
       return await _secureStorage.read(key: _sessionKey);
     } catch (_) {
@@ -136,6 +244,10 @@ class ApiClient {
   }
 
   Future<void> clearSession() async {
+    if (_sessionCookieClearer != null) {
+      await _sessionCookieClearer();
+      return;
+    }
     try {
       await _secureStorage.delete(key: _sessionKey);
     } catch (_) {
@@ -151,7 +263,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool authenticated = false,
   }) async {
-    final uri = Uri.parse('$baseUrl$path');
+    final uri = Uri.parse('$_baseUrl$path');
     try {
       final request = await _client.openUrl(method, uri).timeout(
             const Duration(seconds: 20),
@@ -178,13 +290,11 @@ class ApiClient {
           );
         }
       }
-
       final response = await request.close().timeout(
             const Duration(seconds: 20),
           );
       final text = await response.transform(utf8.decoder).join();
       final decoded = text.isEmpty ? <String, dynamic>{} : _decode(text);
-
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final payload = decoded is Map<String, dynamic> ? decoded : {};
         final code = payload['erro']?.toString();
@@ -194,11 +304,7 @@ class ApiClient {
           code: code,
         );
       }
-
-      return _ApiResponse(
-        data: decoded,
-        cookies: response.cookies,
-      );
+      return _ApiResponse(data: decoded, cookies: response.cookies);
     } on ApiException {
       rethrow;
     } on SocketException {
@@ -239,10 +345,20 @@ class ApiClient {
         return 'Confira os dados informados.';
       case 'senha_igual_ao_email':
         return 'A senha não pode ser igual ao e-mail.';
+      case 'senha_atual_invalida':
+        return 'A senha atual não confere.';
+      case 'chave_invalida':
+        return 'A chave deste ponto não é válida.';
       case 'rate_limited':
       case 'muitas_tentativas':
+      case 'muitos_carimbos':
         return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
       default:
+        if (status == 401) return 'Sua sessão expirou. Entre novamente.';
+        if (status == 403) return 'Esta solicitação não foi autorizada.';
+        if (status == 409) {
+          return 'Não foi possível concluir devido ao estado atual do recurso.';
+        }
         if (status == 429) {
           return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
         }
