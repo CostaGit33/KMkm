@@ -16,8 +16,6 @@ class NotebookPages extends StatelessWidget {
     this.loading = false,
     this.error,
     this.onRetry,
-    this.onOpenStamp,
-    this.onRefresh,
   });
 
   final int page;
@@ -29,8 +27,6 @@ class NotebookPages extends StatelessWidget {
   final bool loading;
   final String? error;
   final VoidCallback? onRetry;
-  final VoidCallback? onOpenStamp;
-  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +52,6 @@ class NotebookPages extends StatelessWidget {
       onOpenMap: onOpenMap,
       onOpenCollection: onOpenCollection,
       onOpenPoint: onOpenPoint,
-      onOpenStamp: onOpenStamp,
-      onRefresh: onRefresh,
     );
   }
 }
@@ -79,8 +73,6 @@ class _HomePage extends StatelessWidget {
     required this.onOpenMap,
     required this.onOpenCollection,
     required this.onOpenPoint,
-    this.onOpenStamp,
-    this.onRefresh,
   });
 
   final NotebookSnapshot snapshot;
@@ -88,13 +80,10 @@ class _HomePage extends StatelessWidget {
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
   final ValueChanged<String> onOpenPoint;
-  final VoidCallback? onOpenStamp;
-  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
-    final name = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\s+')).first;
+    final name = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString();
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
@@ -102,20 +91,15 @@ class _HomePage extends StatelessWidget {
         .expand((route) => route.points)
         .where((point) => point.published && !point.completed)
         .toList();
-    final remainingCards = (snapshot.totalCards - snapshot.capturedCards)
-        .clamp(0, snapshot.totalCards);
-    final completedPoints = snapshot.capturedRoutePoints;
-    final totalPoints = snapshot.totalRoutePoints;
 
-    final content = ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+    return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
       children: [
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .65)),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -128,134 +112,79 @@ class _HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: _C.gold.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.explore_outlined, color: _C.gold),
-                  ),
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Text('+1 KM  ·  SUA JORNADA',
-                        style: GoogleFonts.montserrat(
-                          color: _C.gold,
-                          fontSize: 10,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w800,
-                        )),
-                  ),
-                  if (onRefresh != null)
-                    IconButton(
-                      tooltip: 'Atualizar página inicial',
-                      onPressed: onRefresh,
-                      icon: const Icon(Icons.refresh, color: _C.muted, size: 20),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 13),
+              Text('+1 KM · EUNÁPOLIS',
+                  style: GoogleFonts.montserrat(
+                      color: _C.gold,
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
               Text(
                 snapshot.capturedCards == 0
-                    ? 'Olá, $name. Sua próxima descoberta começa aqui.'
-                    : 'Que bom ter você de volta, $name.',
+                    ? 'Sua próxima descoberta começa aqui, $name.'
+                    : 'Continue descobrindo Eunápolis, $name.',
                 style: GoogleFonts.cinzel(
-                  color: BrandPalette.cream,
-                  fontSize: 22,
-                  height: 1.25,
-                  fontWeight: FontWeight.w700,
-                ),
+                    color: BrandPalette.cream,
+                    fontSize: 23,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 9),
               const Text(
-                'Explore lugares, descubra histórias e registre suas visitas para construir sua coleção.',
+                'Encontre um ponto participante, aproxime o celular da tag NFC e conquiste cartas da cidade.',
                 style: TextStyle(color: Color(0xFFE6E9E2), height: 1.45),
               ),
-              const SizedBox(height: 17),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onOpenMap,
-                  style: FilledButton.styleFrom(
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: onOpenMap,
+                style: FilledButton.styleFrom(
                     backgroundColor: _C.gold,
                     foregroundColor: BrandPalette.forestDeep,
                     minimumSize: const Size(0, 48),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  icon: const Icon(Icons.map_outlined),
-                  label: const Text('Explorar pontos no mapa'),
-                ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800)),
+                icon: const Icon(Icons.explore_outlined),
+                label: const Text('Encontrar um ponto'),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
-        const _Heading('Acesso rápido'),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: _HomeActionCard(icon: Icons.map_outlined, label: 'Explorar', onTap: onOpenMap)),
-            const SizedBox(width: 9),
-            Expanded(child: _HomeActionCard(icon: Icons.nfc, label: 'Ler TAG', onTap: onOpenStamp)),
-            const SizedBox(width: 9),
-            Expanded(child: _HomeActionCard(icon: Icons.collections_bookmark_outlined, label: 'Coleção', onTap: onOpenCollection)),
-          ],
-        ),
-        const SizedBox(height: 20),
         _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
-        const SizedBox(height: 13),
-        Row(
-          children: [
-            Expanded(child: _HomeMetric(icon: Icons.check_circle_outline, value: '$completedPoints/$totalPoints', label: 'Pontos carimbados')),
-            const SizedBox(width: 9),
-            Expanded(child: _HomeMetric(icon: Icons.auto_awesome_outlined, value: '${snapshot.completedRoutes}', label: 'Rotas concluídas')),
-            const SizedBox(width: 9),
-            Expanded(child: _HomeMetric(icon: Icons.lock_open_outlined, value: '$remainingCards', label: 'Cartas restantes')),
-          ],
-        ),
         const SizedBox(height: 24),
         const _Heading('Próximo passo'),
-        const SizedBox(height: 10),
         if (next.isNotEmpty)
           _Panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('UM NOVO LUGAR ESPERA POR VOCÊ',
-                    style: TextStyle(color: _C.gold, fontSize: 10, letterSpacing: 1, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                Text(next.first.name, style: const TextStyle(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w800)),
+                const Text('CONTINUE SUA JORNADA',
+                    style: TextStyle(
+                        color: _C.muted,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 7),
+                Text(next.first.name,
+                    style: const TextStyle(
+                        color: _C.ink,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('Código ${next.first.code}', style: const TextStyle(color: _C.muted, fontSize: 12)),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(onPressed: onOpenMap, icon: const Icon(Icons.near_me_outlined), label: const Text('Encontrar no mapa')),
+                Text(next.first.code,
+                    style: const TextStyle(color: _C.muted)),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                    onPressed: onOpenMap,
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Ver no mapa')),
               ],
             ),
           )
         else
-          _Panel(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(snapshot.routes.isEmpty ? Icons.route_outlined : Icons.emoji_events_outlined, color: _C.gold),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    snapshot.routes.isEmpty
-                        ? 'As rotas publicadas aparecerão aqui. Enquanto isso, explore os pontos disponíveis no mapa.'
-                        : 'Você concluiu todos os pontos publicados nas rotas disponíveis. Continue explorando a cidade.',
-                    style: const TextStyle(color: _C.ink, height: 1.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const _Panel(
+              child: Text('Você concluiu todos os pontos publicados nas rotas disponíveis.')),
         const SizedBox(height: 24),
         _Heading('Cartas conquistadas', action: 'Ver coleção', onTap: onOpenCollection),
-        const SizedBox(height: 10),
         if (recent.isEmpty)
           const _Empty(
             icon: Icons.auto_awesome_outlined,
@@ -270,80 +199,12 @@ class _HomePage extends StatelessWidget {
         if (snapshot.events.isNotEmpty) ...[
           const SizedBox(height: 24),
           const _Heading('Eventos e patrocínios'),
-          const SizedBox(height: 10),
           ...snapshot.events.map((event) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _EventTile(event: event),
               )),
         ],
-        const SizedBox(height: 8),
-        Center(
-          child: Text('Cada descoberta começa com um passo.',
-              style: GoogleFonts.montserrat(color: _C.muted, fontSize: 11, fontWeight: FontWeight.w600)),
-        ),
       ],
-    );
-
-    if (onRefresh == null) return content;
-    return RefreshIndicator(onRefresh: onRefresh!, color: _C.gold, backgroundColor: _C.paper, child: content);
-  }
-}
-
-class _HomeActionCard extends StatelessWidget {
-  const _HomeActionCard({required this.icon, required this.label, required this.onTap});
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _C.paper,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 82),
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: _C.border)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: onTap == null ? _C.muted : _C.gold, size: 23),
-              const SizedBox(height: 7),
-              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _C.ink, fontSize: 11, fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeMetric extends StatelessWidget {
-  const _HomeMetric({required this.icon, required this.value, required this.label});
-  final IconData icon;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 88),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
-      decoration: BoxDecoration(color: _C.paper, borderRadius: BorderRadius.circular(14), border: Border.all(color: _C.border)),
-      child: Column(
-        children: [
-          Icon(icon, color: _C.gold, size: 18),
-          const SizedBox(height: 5),
-          Text(value, maxLines: 1, style: const TextStyle(color: _C.ink, fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 3),
-          Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: _C.muted, fontSize: 9, height: 1.2)),
-        ],
-      ),
     );
   }
 }
