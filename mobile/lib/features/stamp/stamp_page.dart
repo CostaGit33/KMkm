@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -81,8 +83,15 @@ class _StampPageState extends State<StampPage> {
                 final isUriRecord = record.typeNameFormat == TypeNameFormat.wellKnown &&
                     record.type.length == 1 &&
                     record.type.first == 0x55;
-                if (!isUriRecord) continue;
-                uriText = NdefUriParser.decodeUriPayload(record.payload);
+                if (isUriRecord) {
+                  uriText = NdefUriParser.decodeUriPayload(record.payload);
+                } else if (record.typeNameFormat == TypeNameFormat.wellKnown &&
+                    record.type.length == 1 &&
+                    record.type.first == 0x54) {
+                  // Algumas ferramentas gravam a URL como texto NDEF em vez
+                  // do registro URI. Aceita ambos, sem relaxar o host/caminho.
+                  uriText = NdefUriParser.decodeTextPayload(record.payload);
+                }
                 if (uriText != null) break;
               }
             }
@@ -261,7 +270,7 @@ class _StampPageState extends State<StampPage> {
   @override
   void dispose() {
     if (_nfcScanning) {
-      NfcManager.instance.stopSession();
+      unawaited(NfcManager.instance.stopSession());
     }
     _linkController.dispose();
     super.dispose();
