@@ -1,6 +1,7 @@
 // Catálogo vindo do servidor: o que a administração publica (pontos, coordenadas, circuitos) substitui o catálogo
 // fixo de data.js antes do app abrir. Sem rede, usa a última cópia guardada no aparelho; sem nenhuma, o catálogo fixo.
 import { POINTS, ROUTES, COLLECTIONS, CITY, CATEGORIES } from "./data.js";
+import { apiUrl } from "./api.js";
 
 const CHAVE = "mais1km:catalogo:v1";
 const IDS_ORIGINAIS = new Set(POINTS.map((p) => p.id));
@@ -15,7 +16,7 @@ export async function carregarCatalogo({ tempoMs = 2500 } = {}) {
   const controle = new AbortController();
   const limite = setTimeout(() => controle.abort(), tempoMs);
   try {
-    const r = await fetch("/api/catalogo", { signal: controle.signal, cache: "no-store" });
+    const r = await fetch(apiUrl("/catalogo"), { signal: controle.signal, cache: "no-store" });
     if (r.ok) { catalogo = await r.json(); gravarCache(catalogo); }
   } catch { /* offline ou lento: segue com a cópia local */ }
   clearTimeout(limite);
