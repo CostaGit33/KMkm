@@ -14,8 +14,9 @@ const alternativo = (f) => f.titulo || f.legenda || ROTULO[f.tipo_registro] || "
 // Miniatura do ponto (capa do catálogo) para listas, cartões e o mapa. Vazia se o ponto não tem foto aprovada.
 // Quem chama decide não usar em ponto-mistério (a foto estragaria a surpresa).
 export function miniaturaHtml(ponto, { tamanho = 52, classe = "ponto-foto" } = {}) {
-  const url = ponto?.capa;
-  if (!url || !/^\/midia\/[\w.]+\.webp$/.test(url)) return "";
+  const origem = ponto?.capa;
+  if (typeof origem !== "string" || !origem.startsWith("/midia/") || !origem.endsWith(".webp")) return "";
+  const url = publicAssetUrl(origem);
   return `<img class="${classe}" src="${esc(url)}" alt="" width="${tamanho}" height="${tamanho}" loading="lazy" decoding="async" />`;
 }
 
