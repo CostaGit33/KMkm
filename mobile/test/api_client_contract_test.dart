@@ -142,7 +142,4 @@ void main() {
 }
 
 class _NativeHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) =>
-      super.createHttpClient(context);
 }
