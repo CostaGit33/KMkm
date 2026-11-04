@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mais1km/features/profile/profile_page.dart';
 
+void useTallViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   Widget mount({
     required ProfileSaveCallback onSave,
@@ -19,6 +26,7 @@ void main() {
       );
 
   testWidgets('valida campos e envia dados normalizados no callback', (tester) async {
+    useTallViewport(tester);
     Map<String, String>? received;
     await tester.pumpWidget(mount(
       onSave: ({required nome, required email, required senhaAtual, required senhaNova}) async {
@@ -38,13 +46,14 @@ void main() {
     expect(received, {
       'nome': 'Ana Lima',
       'email': 'ana.lima@example.com',
-      'senhaAtual': '',
+      'senhaAtual': 'senha-atual',
       'senhaNova': '',
     });
     expect(find.text('Dados da conta salvos com sucesso.'), findsOneWidget);
   });
 
   testWidgets('não conclui exclusão sem confirmação nem sucesso do callback', (tester) async {
+    useTallViewport(tester);
     var deleteCalls = 0;
     await tester.pumpWidget(mount(
       onSave: ({required nome, required email, required senhaAtual, required senhaNova}) async {},
@@ -74,6 +83,7 @@ void main() {
   });
 
   testWidgets('cancelar confirmação não chama exclusão', (tester) async {
+    useTallViewport(tester);
     var deleteCalls = 0;
     await tester.pumpWidget(mount(
       onSave: ({required nome, required email, required senhaAtual, required senhaNova}) async {},

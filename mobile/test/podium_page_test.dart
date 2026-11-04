@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mais1km/features/gamification/podium_page.dart';
 
+void useTallViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   Widget mount({
     Map<String, dynamic>? podium,
@@ -38,6 +45,7 @@ void main() {
   });
 
   testWidgets('renderiza XP, conquistas e participantes do JSON', (tester) async {
+    useTallViewport(tester);
     await tester.pumpWidget(mount(
       podium: {
         'scope': 'geral',
@@ -72,6 +80,7 @@ void main() {
   });
 
   testWidgets('valida apelido e salva preferência opt-in via callback', (tester) async {
+    useTallViewport(tester);
     Map<String, Object?>? saved;
     await tester.pumpWidget(mount(
       podium: {'board': [], 'me': {'optedIn': false, 'alias': ''}},

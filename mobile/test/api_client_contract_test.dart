@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,43 +6,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mais1km/core/api/api_client.dart';
 
 void main() {
-  late HttpServer server;
   late ApiClient api;
   late List<Map<String, dynamic>> requests;
   late int responseStatus;
   late String responseCode;
   var clearedSessions = 0;
 
-  setUp(() async {
+  setUp(() {
     requests = [];
     responseStatus = 200;
     responseCode = 'erro_teste';
     clearedSessions = 0;
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    server.listen((request) async {
-      final text = await utf8.decodeStream(request.cast<List<int>>());
+    final client = _FakeHttpClient((method, uri, headers, text) {
       final body = text.isEmpty ? null : jsonDecode(text);
       requests.add({
-        'method': request.method,
-        'path': request.uri.path,
-        'query': request.uri.queryParameters,
+        'method': method,
+        'path': uri.path,
+        'query': uri.queryParameters,
         'body': body,
-        'cookie': request.headers.value(HttpHeaders.cookieHeader),
+        'cookie': headers['cookie'],
       });
-      if (responseStatus < 200 || responseStatus >= 300) {
-        request.response.statusCode = responseStatus;
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode({'erro': responseCode}));
-      } else {
-        request.response.statusCode = responseStatus;
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode({'ok': true}));
-      }
-      await request.response.close();
+      final payload = responseStatus < 200 || responseStatus >= 300
+          ? {'erro': responseCode}
+          : {'ok': true};
+      return _FakeResponse(responseStatus, jsonEncode(payload));
     });
     api = ApiClient(
-      httpClient: _NativeHttpOverrides().createHttpClient(null),
-      baseUrl: 'http://127.0.0.1:${server.port}',
+      httpClient: client,
+      baseUrl: 'https://api.test',
       sessionCookieReader: () async => 'cookie-de-teste',
       sessionCookieClearer: () async {
         clearedSessions++;
@@ -49,10 +41,7 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    api.dispose();
-    await server.close(force: true);
-  });
+  tearDown(() => api.dispose());
 
   test('métodos usam caminhos, verbos, payloads e cookie do contrato', () async {
     final updated = await api.updateAccount(
@@ -141,5 +130,106 @@ void main() {
   });
 }
 
-class _NativeHttpOverrides extends HttpOverrides {
+class _FakeHttpClient implements HttpClient {
+  _FakeHttpClient(this._respond);
+
+  final _FakeResponse Function(
+    String method,
+    Uri uri,
+    Map<String, String> headers,
+    String body,
+  ) _respond;
+
+  @override
+  Future<HttpClientRequest> openUrl(String method, Uri url) async =>
+      _FakeHttpClientRequest(method, url, _respond);
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeHttpClientRequest implements HttpClientRequest {
+  _FakeHttpClientRequest(this.method, this.uri, this._respond);
+
+  @override
+  final String method;
+
+  @override
+  final Uri uri;
+
+  final _RecordingHeaders _headers = _RecordingHeaders();
+  final StringBuffer _body = StringBuffer();
+  final _FakeResponse Function(
+    String method,
+    Uri uri,
+    Map<String, String> headers,
+    String body,
+  ) _respond;
+
+  @override
+  HttpHeaders get headers => _headers;
+
+  @override
+  void write(Object? object) => _body.write(object);
+
+  @override
+  Future<HttpClientResponse> close() async =>
+      _respond(method, uri, _headers.values, _body.toString());
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _RecordingHeaders implements HttpHeaders {
+  final Map<String, String> values = {};
+
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {
+    values[name.toLowerCase()] = value.toString();
+  }
+
+  @override
+  ContentType? get contentType {
+    final value = values['content-type'];
+    return value == null ? null : ContentType.parse(value);
+  }
+
+  @override
+  set contentType(ContentType? value) {
+    if (value != null) values['content-type'] = value.mimeType;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeResponse extends Stream<List<int>> implements HttpClientResponse {
+  _FakeResponse(this.statusCode, String body) : _bytes = utf8.encode(body);
+
+  @override
+  final int statusCode;
+
+  final List<int> _bytes;
+
+  @override
+  List<Cookie> get cookies => const [];
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int>)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => Stream<List<int>>.value(_bytes).listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
