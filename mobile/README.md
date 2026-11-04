@@ -51,13 +51,16 @@ flutter test --reporter expanded
 flutter run
 ```
 
-APK de depuração (usa OSM por padrão):
+APK local:
 
 ```bash
 flutter build apk --debug
+flutter build apk --release
 ```
 
-O workflow `.github/workflows/mobile.yml` executa análise, testes, build do APK debug e publica o APK/lockfile resolvido como artefatos temporários do GitHub Actions. APK debug não é uma versão assinada para distribuição na Play Store.
+O workflow `.github/workflows/mobile.yml` executa dependências, análise estática, testes, builds debug e release e publica APKs com checksum SHA-256 como artefatos temporários do GitHub Actions.
+
+**Atenção à assinatura:** o Gradle ainda assina o build release com a chave debug padrão. Esse APK é adequado para instalação e teste controlado, mas não para Google Play nem para atualização contínua entre builds de CI (a chave debug do runner é temporária). Para distribuição pública, será necessário configurar uma chave de assinatura permanente em GitHub Secrets, sem versioná-la no repositório, e publicar `assetlinks.json` com o fingerprint correspondente.
 
 ## Segurança e teste manual
 
