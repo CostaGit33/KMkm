@@ -73,6 +73,15 @@ O Capacitor deve carregar o build local `client/dist` dentro do Android WebView.
 - O GPS nativo é solicitado somente após a API pedir localização para o carimbo; o fluxo web continua usando `navigator.geolocation`.
 - Todas as chamadas à API do participante e da administração que eram relativas foram migradas para a origem configurável; mídia `/midia/` e endpoints `/api/` também são resolvidos no host da API.
 
+
+## Origem e sessão no Android
+
+O código do servidor usa proteção CSRF por comparação do cabeçalho `Origin` com o host da API e bloqueia requisições declaradas como `cross-site`; o cookie da conta é `HttpOnly; SameSite=Lax; Secure` em HTTPS. Portanto, deixar o WebView com a origem padrão `https://localhost` e apenas apontar a API para outro domínio quebraria operações autenticadas de escrita e a persistência do cookie.
+
+Para evitar alterar `ORIGENS_PERMITIDAS`, `COOKIE_SAMESITE` ou qualquer configuração da produção, o Capacitor Android agora usa o hostname local `mais1km.novaagencian8n.online` com esquema HTTPS. Assim, a origem do WebView coincide com a origem da API. `CapacitorHttp` e `CapacitorCookies` permanecem habilitados para usar a pilha nativa e o armazenamento de cookies do Android; o cookie HttpOnly não é copiado para localStorage nem exposto ao JavaScript. Isso é uma decisão arquitetural que ainda precisa ser validada com login, chamadas POST, reinício do app e logout em aparelho Android antes de considerar sessão homologada.
+
+O Service Worker continua ativo no PWA de navegador. No Android Capacitor, a aplicação usa assets embarcados e não registra um segundo Service Worker, evitando uma camada de cache adicional na origem compartilhada.
+
 ## Critério de conclusão
 
 O Android só será considerado equivalente quando as jornadas e telas do PWA tiverem uma matriz de testes com resultado no navegador e no Android. Um APK que apenas abre a home não representa migração concluída.
