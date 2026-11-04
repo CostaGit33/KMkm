@@ -112,13 +112,15 @@ void main() {
 
   testWidgets('mostra painel, progresso e próxima descoberta reais', (tester) async {
     await pumpHome(tester);
-    await tester.ensureVisible(find.text('Continue de onde parou'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -460));
+    await tester.pumpAndSettle();
 
     expect(find.text('Olá, Romulo.'), findsOneWidget);
     expect(find.text('1 de 2 cartas'), findsOneWidget);
     expect(find.text('Circuito Cultural'), findsOneWidget);
     expect(find.text('Praça da Liberdade'), findsOneWidget);
-    await tester.ensureVisible(find.text('Eventos ativos'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -420));
+    await tester.pumpAndSettle();
     expect(find.text('Festival da Cidade'), findsOneWidget);
     expect(find.text('Evento encerrado'), findsNothing);
   });
@@ -147,7 +149,8 @@ void main() {
 
     await pumpHome(tester, onPoint: (code) => openedCode = code);
 
-    await tester.ensureVisible(find.text('Continue de onde parou'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -460));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Detalhes do ponto'));
     await tester.tap(find.text('Detalhes do ponto'));
     await tester.pump();
@@ -165,7 +168,11 @@ void main() {
     await pumpHome(tester);
 
     final exception = tester.takeException();
-    if (exception is FlutterError) debugPrint(exception.toStringDeep());
+    if (exception is FlutterError) {
+      for (final diagnostic in exception.diagnostics) {
+        debugPrint(diagnostic.toStringDeep());
+      }
+    }
     expect(exception, isNull);
     expect(find.text('Explorar mapa'), findsOneWidget);
     expect(find.text('Ler TAG'), findsOneWidget);
