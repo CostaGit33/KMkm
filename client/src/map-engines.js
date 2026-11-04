@@ -2,6 +2,7 @@
 // Os dois expõem a mesma interface, então a tela do mapa (real-map.js) não sabe qual está em uso.
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { apiUrl } from "./api.js";
 
 const reduceMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -11,7 +12,7 @@ const htmlToElement = (html) => { const t = document.createElement("template"); 
 export function createLeafletEngine(element, { center, zoom }, { onTileError } = {}) {
   const map = L.map(element, { zoomControl: false, scrollWheelZoom: false, minZoom: 10, maxZoom: 18 }).setView(center, zoom);
   L.control.zoom({ position: "bottomright" }).addTo(map);
-  L.tileLayer("/api/map-tiles/{z}/{x}/{y}.png", {
+  L.tileLayer(apiUrl("/map-tiles/{z}/{x}/{y}.png"), {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
     maxZoom: 19,
   }).on("tileerror", () => onTileError?.()).addTo(map);
@@ -135,7 +136,7 @@ export async function createGoogleEngine(element, { center, zoom }, { apiKey, ma
 
 export async function carregarConfigMapa() {
   try {
-    const res = await fetch("/api/config-mapa", { headers: { Accept: "application/json" } });
+    const res = await fetch(apiUrl("/config-mapa"), { headers: { Accept: "application/json" } });
     if (!res.ok) return {};
     return await res.json();
   } catch { return {}; }
