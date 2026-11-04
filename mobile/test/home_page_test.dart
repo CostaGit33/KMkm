@@ -169,7 +169,6 @@ void main() {
 
     await pumpHome(tester);
 
-    debugDumpRenderTree();
     final exception = tester.takeException();
     if (exception is FlutterError) {
       for (final diagnostic in exception.diagnostics) {
