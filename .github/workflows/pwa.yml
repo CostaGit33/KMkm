@@ -40,6 +40,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci --prefix client
 
+      - name: Testar utilitários do cliente
+        run: npm test --prefix client
+
       - name: Compilar frontend web
         run: npm run build --prefix client
 
@@ -90,6 +93,9 @@ jobs:
           npm install --prefix client --save-exact @capacitor/core@8.6.0 @capacitor/android@8.6.0
           npm install --prefix client --save-dev --save-exact @capacitor/cli@8.6.0
           npm install --prefix client --save-exact @capacitor/app@8.1.2 @capacitor/geolocation@8.2.4
+
+      - name: Testar utilitários do cliente
+        run: npm test --prefix client
 
       - name: Validar build PWA sem configuração Android
         run: npm run build --prefix client
