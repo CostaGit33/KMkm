@@ -82,7 +82,7 @@ jobs:
             'cap:open:android': 'cap open android',
             'cap:run:android': 'cap run android'
           };
-          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\\n');
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           NODE
 
       - name: Instalar Capacitor 8.6.0
@@ -97,9 +97,11 @@ jobs:
         run: npm run build:android --prefix client
 
       - name: Criar plataforma Android se ainda não existir
-        if: ${{ !hashFiles('client/android/app/build.gradle', 'client/android/app/build.gradle.kts') }}
-        working-directory: client
-        run: npx cap add android
+        run: |
+          if [ ! -f client/android/app/build.gradle ] && [ ! -f client/android/app/build.gradle.kts ]; then
+            cd client
+            npx cap add android
+          fi
 
       - name: Sincronizar Capacitor
         working-directory: client
