@@ -19,6 +19,17 @@ void main() {
       expect(NdefUriParser.decodeUriPayload(payload), 'https://www.example.com/path');
     });
 
+    test('decodifica URL gravada como registro de texto NDEF', () {
+      final text = 'https://mais1km.novaagencian8n.online/t/eu-002?k=xyz';
+      final payload = <int>[0x02, ...utf8.encode('pt'), ...utf8.encode(text)];
+      expect(NdefUriParser.decodeTextPayload(payload), text);
+    });
+
+    test('rejeita texto NDEF sem URL', () {
+      final payload = <int>[0x02, ...utf8.encode('pt'), ...utf8.encode('não é link')];
+      expect(NdefUriParser.decodeTextPayload(payload), isNull);
+    });
+
     test('rejeita payload vazio, curto ou com prefixo desconhecido', () {
       expect(NdefUriParser.decodeUriPayload([]), isNull);
       expect(NdefUriParser.decodeUriPayload([0x04]), isNull);
