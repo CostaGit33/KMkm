@@ -19,12 +19,12 @@
 - Service Worker: `client/public/sw.js`; o cache não armazena respostas privadas de `/api/`.
 - Backend: `server/`, API Node/Express e MySQL existentes.
 - API oficial: `https://mais1km.novaagencian8n.online`.
-- Package Android planejado: `online.novaagencian8n.mais1km` (confirmar antes de gerar a plataforma nativa; o valor veio da tentativa Flutter, não é ainda uma decisão de publicação).
+- Package Android já gerado: `online.novaagencian8n.mais1km`. Confirmar a manutenção deste identificador antes de publicar na Google Play; alterá-lo depois significa publicar outro aplicativo.
 - A aplicação web possui rotas especiais de TAG em `/t/:codigo`; o parâmetro secreto `?k=` é removido da URL pelo código web antes de telemetria.
 
 ## Versão de referência
 
-A integração usa Capacitor **8.6.0** (`@capacitor/core`, `@capacitor/cli` e `@capacitor/android` alinhados). As dependências e o `package-lock.json` já foram instalados/gerados na CI. O projeto Android nativo está em `client/android/`, com Gradle Wrapper 8.14.3, Java 21 e compile/target SDK 36.
+A integração usa Capacitor **8.6.0** (`@capacitor/core`, `@capacitor/cli` e `@capacitor/android` alinhados), `@capacitor/app` **8.1.2** para App Links e `@capacitor/geolocation` **8.2.4** para GPS quando exigido no carimbo. As dependências e o `package-lock.json` estão versionados. O projeto Android nativo está em `client/android/`, com Gradle Wrapper 8.14.3, Java 21 e compile/target SDK 36.
 
 ## Arquitetura alvo
 
@@ -58,8 +58,8 @@ O Capacitor deve carregar o build local `client/dist` dentro do Android WebView.
 - [x] F0 — Baseline do repositório e decisão arquitetural inicial documentadas; configuração Capacitor criada. Inventário detalhado de paridade segue como parte da F1.
 - [x] F1 — Integrar Capacitor 8.6.0 ao cliente Vite, configurar `webDir: dist`, scripts e origem da API para o build Android. Build PWA e bundle Android aprovados na CI.
 - [x] F2 — Gerar e versionar o projeto Android nativo. O package ID já está configurado; identidade visual nativa, splash, status/navigation bars e assinatura de release ainda precisam de acabamento.
-- [ ] F3 — Validar em aparelho navegação, rotas de TAG, autenticação/cookies, sessão, logout e links externos no WebView.
-- [ ] F4 — Integrar capacidades nativas estritamente necessárias: NFC, localização precisa, câmera/QR, compartilhamento e notificações quando aprovadas.
+- [ ] F3 — Validar em aparelho navegação, rotas de TAG, autenticação/cookies, sessão, logout e links externos no WebView. A implementação inicial de `appUrlOpen` e link de inicialização está no cliente; falta validar o comportamento real do Android.
+- [ ] F4 — Implementar/validar capacidades nativas estritamente necessárias: App Links de TAG e GPS sob demanda já estão integrados em código; câmera/QR, compartilhamento e notificações ficam para as jornadas que realmente precisarem. A leitura de uma TAG NDEF que contém URL HTTPS usa App Links; leitura NFC bruta não foi adicionada.
 - [x] F5a — CI reproduzível: build PWA + build Android + APK debug de validação publicado como artefato.
 - [ ] F5b — Testes de paridade PWA × Android em aparelho, APK de release e AAB assinado para distribuição quando autorizado.
 
@@ -67,8 +67,10 @@ O Capacitor deve carregar o build local `client/dist` dentro do Android WebView.
 
 - GitHub Actions: [execução 41874304473](https://github.com/CostaGit33/KMkm/actions/runs/41874304473) — PWA e Android concluíram com sucesso.
 - Artefato: `mais1km-capacitor-debug` (APK debug, não assinado para publicação).
-- O APK comprova que o bundle web local foi incorporado e o projeto Gradle compila. Ainda não comprova login, cookie HttpOnly, GPS, câmera, NFC, App Links ou paridade funcional em aparelho.
+- O APK comprova que o bundle web local foi incorporado e o projeto Gradle compila. A versão gerada antes da integração de App Links/GPS não valida esses plugins. Mesmo no build mais recente, CI não comprova login, cookie HttpOnly, GPS real, câmera, NFC, App Links verificados nem paridade funcional em aparelho.
 - Build Android usa `client/.env.android` para apontar à API oficial. Esse arquivo contém somente URL pública, não segredo.
+- O manifesto declara App Links HTTPS para `/t/` em `mais1km.novaagencian8n.online`. Para o Android validar a associação do domínio, ainda é necessário servir `/.well-known/assetlinks.json` com o SHA-256 do certificado final de distribuição; não usar uma impressão digital inventada nem o certificado debug como chave de produção.
+- O GPS nativo é solicitado somente após a API pedir localização para o carimbo; o fluxo web continua usando `navigator.geolocation`.
 - Todas as chamadas à API do participante e da administração que eram relativas foram migradas para a origem configurável; mídia `/midia/` e endpoints `/api/` também são resolvidos no host da API.
 
 ## Critério de conclusão
