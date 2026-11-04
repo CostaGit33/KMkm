@@ -11,7 +11,7 @@
     }
   },
   "server": {
-    "hostname": "mais1km.novaagencian8n.online",
+    "hostname": "localhost",
     "androidScheme": "https"
   }
 }
