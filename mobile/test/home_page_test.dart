@@ -112,11 +112,13 @@ void main() {
 
   testWidgets('mostra painel, progresso e próxima descoberta reais', (tester) async {
     await pumpHome(tester);
+    await tester.ensureVisible(find.text('Continue de onde parou'));
 
     expect(find.text('Olá, Romulo.'), findsOneWidget);
     expect(find.text('1 de 2 cartas'), findsOneWidget);
     expect(find.text('Circuito Cultural'), findsOneWidget);
     expect(find.text('Praça da Liberdade'), findsOneWidget);
+    await tester.ensureVisible(find.text('Eventos ativos'));
     expect(find.text('Festival da Cidade'), findsOneWidget);
     expect(find.text('Evento encerrado'), findsNothing);
   });
@@ -145,6 +147,7 @@ void main() {
 
     await pumpHome(tester, onPoint: (code) => openedCode = code);
 
+    await tester.ensureVisible(find.text('Continue de onde parou'));
     await tester.ensureVisible(find.text('Detalhes do ponto'));
     await tester.tap(find.text('Detalhes do ponto'));
     await tester.pump();
@@ -161,7 +164,9 @@ void main() {
 
     await pumpHome(tester);
 
-    expect(tester.takeException(), isNull);
+    final exception = tester.takeException();
+    if (exception is FlutterError) debugPrint(exception.toStringDeep());
+    expect(exception, isNull);
     expect(find.text('Explorar mapa'), findsOneWidget);
     expect(find.text('Ler TAG'), findsOneWidget);
   });
