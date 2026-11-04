@@ -2,7 +2,12 @@ const CHAVE = 'caderneta_token';
 
 // No PWA, a API continua same-origin. No Android, o build mode android define a origem
 // pública da API porque o bundle local roda em https://localhost dentro do WebView.
-const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\\/+$/, '');
+const normalizarBase = (value) => {
+  let url = String(value || '');
+  while (url.endsWith('/')) url = url.slice(0, -1);
+  return url;
+};
+const API_BASE_URL = normalizarBase(import.meta.env.VITE_API_BASE_URL);
 
 export const apiUrl = (caminho) => {
   const sufixo = String(caminho || '');
@@ -13,7 +18,7 @@ export const apiUrl = (caminho) => {
 // empacotados localmente no app Android.
 export const publicAssetUrl = (value) => {
   const url = String(value || '');
-  if (/^https?:\\/\\//i.test(url)) return url;
+  if (url.startsWith('https://') || url.startsWith('http://')) return url;
   if (url.startsWith('/midia/')) return `${API_BASE_URL}${url}`;
   return url;
 };
