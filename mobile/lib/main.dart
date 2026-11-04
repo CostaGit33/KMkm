@@ -982,6 +982,9 @@ class _HomeShellState extends State<HomeShell> {
               onOpenMap: () => setState(() => _tab = 1),
               onOpenCollection: () => setState(() => _tab = 3),
               onOpenPoint: _showPointByCode,
+              onOpenStamp: _openStamp,
+              onOpenRoutes: () => setState(() => _tab = 2),
+              onRefresh: _refresh,
             ),
       bottomNavigationBar: SafeArea(
         top: false,
