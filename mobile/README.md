@@ -11,7 +11,8 @@ Aplicativo Android Flutter desenvolvido em paralelo à PWA existente. Usa o mesm
 - Perfil: atualização de nome/e-mail/senha e solicitação de exclusão de conta, com confirmação.
 - Catálogo público (somente pontos publicados e não ocultos), busca, categorias, rotas e caderneta.
 - Pódio/XP, medalhas e participação pública opcional.
-- Carimbo por App Link NFC/QR ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
+- Carimbo por leitura NFC NDEF dentro do app, App Link ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
+- Leitura NFC aceita registros NDEF URI e texto contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; o app não consegue ler uma TAG vazia ou sem NDEF.
 
 A redefinição de senha pelo token/deep link enviado por e-mail e as telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
 
@@ -40,6 +41,8 @@ O app só solicita permissão de localização após o backend responder `locali
 ## Executar e validar
 
 Na pasta `mobile/`:
+
+O botão **Ler TAG agora** abre uma sessão NFC em primeiro plano. Mantenha o celular desbloqueado e aproxime a região da antena NFC da TAG. Se o Android não suportar NFC ou a TAG não tiver um registro NDEF com URL Mais1km, o app informa o motivo e mantém a opção de colar o link.
 
 ```bash
 flutter pub get
