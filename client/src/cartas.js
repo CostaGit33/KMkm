@@ -1,6 +1,7 @@
 // Coleção de cartas de Eunápolis: uma carta única numerada por ponto, com personagem, categoria e raridade.
 // A carta é desbloqueada no primeiro carimbo de rota; não evolui com o tempo, não gera XP nem pode ser trocada.
 import { galeriaHtml, montarGaleria } from "./galeria.js";
+import { publicAssetUrl } from "./api.js";
 const RARIDADE = { comum: ['Comum', 1], raro: ['Rara', 2], epico: ['Épica', 3], lendario: ['Lendária', 4] };
 const rotuloRaridade = (r) => (RARIDADE[r] || RARIDADE.comum)[0];
 const estrelas = (r) => '★'.repeat((RARIDADE[r] || RARIDADE.comum)[1]);
@@ -35,7 +36,7 @@ const num = (n) => String(n || 0).padStart(3, '0');
 function arteHtml(i, size) {
   if (!i.capturada) return emblemaSvg(i.categoria, true, size);
   // Foto da galeria escolhida no admin: tem prioridade; miniatura nas cartas pequenas, versão grande no detalhe.
-  if (i.arte_foto?.m && /^\/midia\/[\w.]+\.webp$/.test(i.arte_foto.m)) return `<img class="carta-img" src="${esc(size > 140 && i.arte_foto.g ? i.arte_foto.g : i.arte_foto.m)}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" decoding="async" />`;
+  if (i.arte_foto?.m && /^\/midia\/[\w.]+\.webp$/.test(i.arte_foto.m)) return `<img class="carta-img" src="${esc(publicAssetUrl(size > 140 && i.arte_foto.g ? i.arte_foto.g : i.arte_foto.m))}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" decoding="async" />`;
   if (i.arte && /^[\w.-]{1,80}$/.test(i.arte)) return `<img class="carta-img" src="/cartas/${esc(i.arte)}" alt="${esc(i.criatura)}" width="${size}" height="${size}" loading="lazy" />`;
   return emblemaSvg(i.categoria, false, size);
 }
