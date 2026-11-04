@@ -45,6 +45,21 @@ class NdefUriParser {
     0x23: 'urn:nfc:',
   };
 
+  static String? decodeTextPayload(List<int> payload) {
+    if (payload.length < 2) return null;
+    try {
+      final languageLength = payload.first & 0x3F;
+      final textOffset = 1 + languageLength;
+      if (textOffset >= payload.length) return null;
+      final value = utf8.decode(payload.sublist(textOffset), allowMalformed: false).trim();
+      final uri = Uri.tryParse(value);
+      if (uri == null || !uri.hasScheme) return null;
+      return value;
+    } on FormatException {
+      return null;
+    }
+  }
+
   static String? decodeUriPayload(List<int> payload) {
     if (payload.length < 2) return null;
     final prefix = _prefixes[payload.first];
