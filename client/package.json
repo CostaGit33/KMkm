@@ -4,14 +4,21 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "build:android": "vite build --mode android",
+    "cap:sync:android": "npm run build:android && cap sync android",
+    "cap:open:android": "cap open android",
+    "cap:run:android": "cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0",
     "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^6.4.4"
   }
