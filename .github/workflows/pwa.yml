@@ -85,10 +85,11 @@ jobs:
           fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           NODE
 
-      - name: Instalar Capacitor 8.6.0
+      - name: Instalar Capacitor 8.6.0 e plugins nativos
         run: |
           npm install --prefix client --save-exact @capacitor/core@8.6.0 @capacitor/android@8.6.0
           npm install --prefix client --save-dev --save-exact @capacitor/cli@8.6.0
+          npm install --prefix client --save-exact @capacitor/app@8.1.2 @capacitor/geolocation@8.2.4
 
       - name: Validar build PWA sem configuração Android
         run: npm run build --prefix client
