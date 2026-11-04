@@ -94,7 +94,7 @@ class _HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
-    final name = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\\s+')).first;
+    final name = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\s+')).first;
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
