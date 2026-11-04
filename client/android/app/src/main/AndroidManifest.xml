@@ -34,6 +34,17 @@
                     android:pathPrefix="/t/" />
             </intent-filter>
 
+            <!-- Compatibilidade com TAGs NDEF URI em versões anteriores ao Android 16.
+                 Android 16+ usa ACTION_VIEW para links HTTP(S) lidos por NFC. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="https"
+                    android:host="mais1km.novaagencian8n.online"
+                    android:pathPrefix="/t/" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -50,5 +61,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
 </manifest>
