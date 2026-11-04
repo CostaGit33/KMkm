@@ -22,6 +22,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Abre links HTTPS das TAGs no app. A verificação do domínio depende de assetlinks.json
+                 com a impressão digital do certificado de distribuição. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="mais1km.novaagencian8n.online"
+                    android:pathPrefix="/t/" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -38,4 +50,5 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 </manifest>
