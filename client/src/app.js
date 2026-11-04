@@ -14,6 +14,7 @@ import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
 import { setAnalyticsConsent, openConsentPreferences } from "./telemetry.js";
 import { lerTokenRedefinicao, limparTokenRedefinicao } from "./redefinir-token.js";
+import { Capacitor } from "@capacitor/core";
 
 let state = loadState();
 let view = "home";
@@ -637,7 +638,7 @@ window.addEventListener("pageshow", (event) => {
 });
 sincronizarComServidor();
 
-if ("serviceWorker" in navigator && window.isSecureContext) {
+if (!Capacitor.isNativePlatform() && "serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch((error) => {
     console.warn("O modo offline do PWA não pôde ser ativado.", error);
   }));
