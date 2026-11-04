@@ -9,5 +9,9 @@
     "CapacitorCookies": {
       "enabled": true
     }
+  },
+  "server": {
+    "hostname": "mais1km.novaagencian8n.online",
+    "androidScheme": "https"
   }
 }
