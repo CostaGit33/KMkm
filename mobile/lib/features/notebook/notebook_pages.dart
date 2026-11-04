@@ -99,32 +99,22 @@ class _HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
-    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(RegExp(r'\s+')).first;
+    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(' ').first;
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
-    final activeRoutes = snapshot.routes
-        .where((route) => !route.isComplete && route.total > 0)
-        .toList()
-      ..sort((a, b) {
-        final aRank = a.completed > 0 ? 0 : 1;
-        final bRank = b.completed > 0 ? 0 : 1;
-        return aRank.compareTo(bRank);
-      });
-    final activeRoute = activeRoutes.isEmpty ? null : activeRoutes.first;
-    final nextPoints = activeRoute?.points
-            .where((point) => point.published && !point.completed)
-            .toList() ??
-        const <NotebookRoutePoint>[];
-    final nextPoint = nextPoints.isEmpty ? null : nextPoints.first;
-    final featuredEvents = snapshot.events
+    final routes = snapshot.routes.where((route) => !route.isComplete && route.total > 0).toList()
+      ..sort((a, b) => (b.completed > 0 ? 1 : 0).compareTo(a.completed > 0 ? 1 : 0));
+    final route = routes.isEmpty ? null : routes.first;
+    final pending = route?.points.where((point) => point.published && !point.completed).toList()
+        ?? const <NotebookRoutePoint>[];
+    final next = pending.isEmpty ? null : pending.first;
+    final events = snapshot.events
         .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
-        .toList()
-      ..sort((a, b) => a.state == b.state
-          ? (a.startAt ?? DateTime(2100)).compareTo(b.startAt ?? DateTime(2100))
-          : a.state == 'ao_vivo' ? -1 : 1);
+        .take(3)
+        .toList();
 
-    final dashboard = ListView(
+    final content = ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
@@ -134,161 +124,93 @@ class _HomePage extends StatelessWidget {
           totalCards: snapshot.totalCards,
         ),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _HomeAction(
-                icon: Icons.explore_outlined,
-                label: 'Explorar mapa',
-                onTap: onOpenMap,
-                primary: true,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _HomeAction(
-                icon: Icons.nfc,
-                label: 'Ler TAG',
-                onTap: onOpenStamp,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
+        Row(children: [
+          Expanded(child: _HomeAction(
+            icon: Icons.explore_outlined,
+            label: 'Explorar mapa',
+            onTap: onOpenMap,
+            primary: true,
+          )),
+          const SizedBox(width: 10),
+          Expanded(child: _HomeAction(
+            icon: Icons.nfc,
+            label: 'Ler TAG',
+            onTap: onOpenStamp,
+          )),
+        ]),
+        const SizedBox(height: 20),
         _HomeSectionHeading(
           title: 'Sua jornada',
           action: 'Ver coleção',
           onTap: onOpenCollection,
         ),
         _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
         _HomeSectionHeading(
           title: 'Continue de onde parou',
-          action: activeRoute == null ? null : 'Ver rotas',
+          action: route == null ? null : 'Ver rotas',
           onTap: onOpenRoutes,
         ),
-        if (nextPoint != null && activeRoute != null)
-          _Panel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _C.gold.withValues(alpha: .14),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.route_outlined, color: _C.gold),
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            activeRoute.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _C.ink,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            '${activeRoute.completed} de ${activeRoute.total} pontos concluídos',
-                            style: const TextStyle(color: _C.muted, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _Tag(label: '${(activeRoute.progress * 100).round()}%'),
-                  ],
+        if (route != null && next != null)
+          _Panel(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.route_outlined, color: _C.gold),
+                const SizedBox(width: 9),
+                Expanded(child: Text(route.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w800),
+                )),
+                _Tag(label: (route.progress * 100).round().toString() + '%'),
+              ]),
+              const SizedBox(height: 10),
+              _Bar(value: route.progress),
+              const SizedBox(height: 13),
+              const Text('PRÓXIMA DESCOBERTA',
+                style: TextStyle(color: _C.gold, fontSize: 9, letterSpacing: 1.3, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 5),
+              Text(next.name, style: const TextStyle(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(next.code, style: const TextStyle(color: _C.muted, fontSize: 11)),
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                OutlinedButton.icon(
+                  onPressed: onOpenMap,
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Abrir mapa'),
                 ),
-                const SizedBox(height: 13),
-                _Bar(value: activeRoute.progress),
-                const SizedBox(height: 15),
-                const Text(
-                  'PRÓXIMA DESCOBERTA',
-                  style: TextStyle(
-                    color: _C.gold,
-                    fontSize: 9,
-                    letterSpacing: 1.3,
-                    fontWeight: FontWeight.w800,
-                  ),
+                FilledButton.tonalIcon(
+                  onPressed: () => onOpenPoint(next.code),
+                  icon: const Icon(Icons.info_outline),
+                  label: const Text('Detalhes do ponto'),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  nextPoint.name,
-                  style: const TextStyle(
-                    color: _C.ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(nextPoint.code,
-                    style: const TextStyle(color: _C.muted, fontSize: 11)),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: onOpenMap,
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Abrir mapa'),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () => onOpenPoint(nextPoint.code),
-                      icon: const Icon(Icons.info_outline),
-                      label: const Text('Detalhes do ponto'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          )
+              ]),
+            ],
+          ))
         else
-          _Panel(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.flag_outlined, color: _C.gold, size: 26),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        snapshot.routes.isEmpty
-                            ? 'Sua primeira rota está esperando'
-                            : 'Você chegou ao fim das rotas disponíveis',
-                        style: const TextStyle(
-                          color: _C.ink,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Explore o mapa para descobrir outros pontos publicados.',
-                        style: TextStyle(color: _C.muted, height: 1.4, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: onOpenMap,
-                        icon: const Icon(Icons.explore_outlined),
-                        label: const Text('Descobrir pontos'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 18),
+          _Panel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.flag_outlined, color: _C.gold, size: 26),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                snapshot.routes.isEmpty ? 'Sua primeira rota está esperando' : 'Você chegou ao fim das rotas disponíveis',
+                style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text('Explore o mapa para descobrir outros pontos publicados.',
+                style: TextStyle(color: _C.muted, height: 1.4, fontSize: 12),
+              ),
+              TextButton.icon(
+                onPressed: onOpenMap,
+                icon: const Icon(Icons.explore_outlined),
+                label: const Text('Descobrir pontos'),
+              ),
+            ])),
+          ])),
+        const SizedBox(height: 20),
         _HomeSectionHeading(
           title: 'Conquistas recentes',
           action: recent.isEmpty ? null : 'Ver todas',
@@ -298,8 +220,7 @@ class _HomePage extends StatelessWidget {
           const _Empty(
             icon: Icons.auto_awesome_outlined,
             title: 'Sua coleção está começando',
-            description:
-                'Sua primeira carta será desbloqueada quando uma visita for confirmada pelo servidor.',
+            description: 'Sua primeira carta será desbloqueada quando uma visita for confirmada pelo servidor.',
           )
         else
           SizedBox(
@@ -317,36 +238,28 @@ class _HomePage extends StatelessWidget {
               ),
             ),
           ),
-        if (featuredEvents.isNotEmpty) ...[
+        if (events.isNotEmpty) ...[
           const SizedBox(height: 20),
           const _HomeSectionHeading(title: 'Eventos ativos'),
-          ...featuredEvents.take(3).map(
-                (event) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _EventTile(event: event),
-                ),
-              ),
+          ...events.map((event) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _EventTile(event: event),
+          )),
         ],
         const SizedBox(height: 10),
-        Center(
-          child: Text(
-            'Cada caminho conta uma história.',
-            style: GoogleFonts.cinzel(
-              color: _C.muted,
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
+        Center(child: Text(
+          'Cada caminho conta uma história.',
+          style: GoogleFonts.cinzel(color: _C.muted, fontSize: 12, fontStyle: FontStyle.italic),
+        )),
       ],
     );
 
-    if (onRefresh == null) return dashboard;
+    if (onRefresh == null) return content;
     return RefreshIndicator(
       color: _C.gold,
       backgroundColor: _C.paper,
       onRefresh: onRefresh!,
-      child: dashboard,
+      child: content,
     );
   }
 }
@@ -376,98 +289,54 @@ class _HomeHero extends StatelessWidget {
           colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
         ),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 22,
-            offset: Offset(0, 9),
-          ),
+          BoxShadow(color: Color(0x44000000), blurRadius: 22, offset: Offset(0, 9)),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -8,
-            top: -10,
-            child: Icon(
-              Icons.explore_outlined,
-              size: 112,
-              color: _C.gold.withValues(alpha: .07),
-            ),
+      child: Stack(children: [
+        Positioned(
+          right: -8,
+          top: -10,
+          child: Icon(Icons.explore_outlined, size: 112, color: _C.gold.withValues(alpha: .07)),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('+1 KM  /  EUNÁPOLIS',
+            style: GoogleFonts.montserrat(color: _C.gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          const SizedBox(height: 12),
+          Text('Olá, $firstName.',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.cinzel(color: _C.ink, fontSize: 25, height: 1.18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 7),
+          const Text('A cidade guarda histórias. Seu próximo passo é descobrir uma delas.',
+            style: TextStyle(color: _C.muted, height: 1.5, fontSize: 12),
+          ),
+          const SizedBox(height: 18),
+          Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
-                '+1 KM  /  EUNÁPOLIS',
-                style: GoogleFonts.montserrat(
+                totalCards == 0 ? 'Sua coleção começa aqui' : '$capturedCards de $totalCards cartas',
+                style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0).toDouble(),
+                  minHeight: 5,
+                  backgroundColor: _C.border,
                   color: _C.gold,
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Olá, $firstName.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cinzel(
-                  color: _C.ink,
-                  fontSize: 25,
-                  height: 1.18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 7),
-              const Text(
-                'A cidade guarda histórias. Seu próximo passo é descobrir uma delas.',
-                style: TextStyle(color: _C.muted, height: 1.5, fontSize: 12),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          totalCards == 0
-                              ? 'Sua coleção começa aqui'
-                              : '$capturedCards de $totalCards cartas',
-                          style: const TextStyle(
-                            color: _C.ink,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: LinearProgressIndicator(
-                            value: progress.clamp(0.0, 1.0).toDouble(),
-                            minHeight: 5,
-                            backgroundColor: _C.border,
-                            color: _C.gold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    '${(progress * 100).round()}%',
-                    style: GoogleFonts.cinzel(
-                      color: _C.gold,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+            ])),
+            const SizedBox(width: 14),
+            Text((progress * 100).round().toString() + '%',
+              style: GoogleFonts.cinzel(color: _C.gold, fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+          ]),
+        ]),
+      ]),
     );
   }
 }
@@ -502,29 +371,17 @@ class _HomeAction extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: primary ? _C.gold : _C.border,
-              ),
+              border: Border.all(color: primary ? _C.gold : _C.border),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 19, color: foreground),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foreground,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, size: 19, color: foreground),
+              const SizedBox(width: 8),
+              Flexible(child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: foreground, fontSize: 12, fontWeight: FontWeight.w800),
+              )),
+            ]),
           ),
         ),
       ),
@@ -533,39 +390,21 @@ class _HomeAction extends StatelessWidget {
 }
 
 class _HomeSectionHeading extends StatelessWidget {
-  const _HomeSectionHeading({
-    required this.title,
-    this.action,
-    this.onTap,
-  });
-
+  const _HomeSectionHeading({required this.title, this.action, this.onTap});
   final String title;
   final String? action;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.cinzel(
-                  color: _C.ink,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (action != null)
-              TextButton(
-                onPressed: onTap,
-                child: Text(action!),
-              ),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(children: [
+      Expanded(child: Text(title,
+        style: GoogleFonts.cinzel(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w700),
+      )),
+      if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
+    ]),
+  );
 }
 
 class _RoutesPage extends StatelessWidget {
@@ -1158,111 +997,7 @@ class _LoadError extends StatelessWidget {
 String? _cardArtUrl(NotebookCard card) {
   final thumbnail = card.artThumbnail;
   if (thumbnail != null &&
-      RegExp(r'^/midia/[\w.]+\.webp.hasMatch(thumbnail)) {
-    return 'https://mais1km.novaagencian8n.online$thumbnail';
-  }
-  final art = card.art;
-  if (art != null && RegExp(r'^[\w.-]{1,80}.hasMatch(art)) {
-    return 'https://mais1km.novaagencian8n.online/cartas/$art';
-  }
-  return null;
-}
-
-IconData _categoryIcon(String category) => switch (category) {
-      'natureza' => Icons.eco_outlined,
-      'historia' => Icons.account_balance_outlined,
-      'cultura' => Icons.music_note_outlined,
-      'trabalho' => Icons.agriculture_outlined,
-      'litoral' => Icons.waves_outlined,
-      'misterio' => Icons.auto_awesome_outlined,
-      _ => Icons.auto_awesome_outlined,
-    };
-
-String _categoryLabel(String value) => switch (value) {
-      'natureza' => 'Natureza',
-      'historia' => 'História',
-      'cultura' => 'Cultura',
-      'trabalho' => 'Trabalho',
-      'litoral' => 'Litoral',
-      'misterio' => 'Mistério',
-      _ => value,
-    };
-
-String _rarityLabel(String value) => switch (value) {
-      'raro' => 'Raro',
-      'epico' => 'Épico',
-      'lendario' => 'Lendário',
-      _ => 'Comum',
-    };
-).hasMatch(thumbnail)) {
-    return 'https://mais1km.novaagencian8n.online$thumbnail';
-  }
-  final art = card.art;
-  if (art != null && RegExp(r'^[\\w.-]{1,80}$').hasMatch(art)) {
-    return 'https://mais1km.novaagencian8n.online/cartas/$art';
-  }
-  return null;
-}
-
-IconData _categoryIcon(String category) => switch (category) {
-      'natureza' => Icons.eco_outlined,
-      'historia' => Icons.account_balance_outlined,
-      'cultura' => Icons.music_note_outlined,
-      'trabalho' => Icons.agriculture_outlined,
-      'litoral' => Icons.waves_outlined,
-      'misterio' => Icons.auto_awesome_outlined,
-      _ => Icons.auto_awesome_outlined,
-    };
-
-String _categoryLabel(String value) => switch (value) {
-      'natureza' => 'Natureza',
-      'historia' => 'História',
-      'cultura' => 'Cultura',
-      'trabalho' => 'Trabalho',
-      'litoral' => 'Litoral',
-      'misterio' => 'Mistério',
-      _ => value,
-    };
-
-String _rarityLabel(String value) => switch (value) {
-      'raro' => 'Raro',
-      'epico' => 'Épico',
-      'lendario' => 'Lendário',
-      _ => 'Comum',
-    };
-).hasMatch(art)) {
-    return 'https://mais1km.novaagencian8n.online/cartas/$art';
-  }
-  return null;
-}
-
-IconData _categoryIcon(String category) => switch (category) {
-      'natureza' => Icons.eco_outlined,
-      'historia' => Icons.account_balance_outlined,
-      'cultura' => Icons.music_note_outlined,
-      'trabalho' => Icons.agriculture_outlined,
-      'litoral' => Icons.waves_outlined,
-      'misterio' => Icons.auto_awesome_outlined,
-      _ => Icons.auto_awesome_outlined,
-    };
-
-String _categoryLabel(String value) => switch (value) {
-      'natureza' => 'Natureza',
-      'historia' => 'História',
-      'cultura' => 'Cultura',
-      'trabalho' => 'Trabalho',
-      'litoral' => 'Litoral',
-      'misterio' => 'Mistério',
-      _ => value,
-    };
-
-String _rarityLabel(String value) => switch (value) {
-      'raro' => 'Raro',
-      'epico' => 'Épico',
-      'lendario' => 'Lendário',
-      _ => 'Comum',
-    };
-).hasMatch(thumbnail)) {
+      RegExp(r'^/midia/[\\w.]+\\.webp$').hasMatch(thumbnail)) {
     return 'https://mais1km.novaagencian8n.online$thumbnail';
   }
   final art = card.art;
