@@ -163,7 +163,7 @@ class _HomePage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w800),
                 )),
-                _Tag(label: (route.progress * 100).round().toString() + '%'),
+                _Tag(label: '${(route.progress * 100).round()}%'),
               ]),
               const SizedBox(height: 10),
               _Bar(value: route.progress),
@@ -331,7 +331,7 @@ class _HomeHero extends StatelessWidget {
               ),
             ])),
             const SizedBox(width: 14),
-            Text((progress * 100).round().toString() + '%',
+            Text('${(progress * 100).round()}%',
               style: GoogleFonts.cinzel(color: _C.gold, fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ]),
@@ -862,22 +862,6 @@ class _Intro extends StatelessWidget {
           Text(title, style: GoogleFonts.cinzel(color: _C.ink, fontSize: 25, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text(subtitle, style: const TextStyle(color: _C.muted, height: 1.4)),
-        ]),
-      );
-}
-
-class _Heading extends StatelessWidget {
-  const _Heading(this.title, {this.action, this.onTap});
-  final String title;
-  final String? action;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 11),
-        child: Row(children: [
-          Expanded(child: Text(title, style: GoogleFonts.cinzel(color: _C.ink, fontSize: 18, fontWeight: FontWeight.w700))),
-          if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
         ]),
       );
 }
