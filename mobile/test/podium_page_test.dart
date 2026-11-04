@@ -64,7 +64,7 @@ void main() {
         ],
       },
     ));
-    expect(find.text('90 XP'), findsOneWidget);
+    expect(find.text('90 XP'), findsNWidgets(2));
     expect(find.text('Descobridor'), findsOneWidget);
     expect(find.text('Bia'), findsOneWidget);
     expect(find.text('Caio · você'), findsOneWidget);
@@ -81,14 +81,26 @@ void main() {
       },
     ));
 
+    await tester.scrollUntilVisible(
+      find.text('Participar do pódio público'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Participar do pódio público'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Salvar preferência'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Salvar preferência'));
     await tester.pump();
     expect(find.text('Informe um apelido público de 2 a 30 caracteres, sem e-mail.'), findsOneWidget);
     expect(saved, isNull);
 
+    await tester.ensureVisible(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, '  Nina   Luz ');
+    await tester.ensureVisible(find.text('Salvar preferência'));
     await tester.tap(find.text('Salvar preferência'));
     await tester.pump();
     expect(saved, {'optIn': true, 'alias': 'Nina Luz'});

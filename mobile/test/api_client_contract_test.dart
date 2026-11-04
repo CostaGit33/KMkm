@@ -19,11 +19,7 @@ void main() {
     clearedSessions = 0;
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
-      final bytes = await request.fold<List<int>>(
-        <int>[],
-        (buffer, chunk) => buffer..addAll(chunk),
-      );
-      final text = utf8.decode(bytes);
+      final text = await utf8.decodeStream(request.cast<List<int>>());
       final body = text.isEmpty ? null : jsonDecode(text);
       requests.add({
         'method': request.method,
@@ -44,6 +40,7 @@ void main() {
       await request.response.close();
     });
     api = ApiClient(
+      httpClient: _NativeHttpOverrides().createHttpClient(null),
       baseUrl: 'http://127.0.0.1:${server.port}',
       sessionCookieReader: () async => 'cookie-de-teste',
       sessionCookieClearer: () async {
@@ -142,4 +139,10 @@ void main() {
     await expectLater(api.deleteAccount(), throwsA(isA<ApiException>()));
     expect(clearedSessions, 0);
   });
+}
+
+class _NativeHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) =>
+      super.createHttpClient(context);
 }

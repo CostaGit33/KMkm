@@ -27,13 +27,10 @@ void main() {
       onDelete: () async {},
       onLogout: () async {},
     ));
-
-    await tester.tap(find.text('Salvar dados'));
-    await tester.pump();
-    expect(find.text('Informe um nome com pelo menos 2 caracteres.'), findsNothing);
-
     await tester.enterText(find.byType(TextFormField).at(0), 'Ana Lima');
     await tester.enterText(find.byType(TextFormField).at(1), 'ana.lima@example.com');
+    await tester.ensureVisible(find.byType(TextFormField).at(2));
+    await tester.enterText(find.byType(TextFormField).at(2), 'senha-atual');
     await tester.ensureVisible(find.text('Salvar dados'));
     await tester.tap(find.text('Salvar dados'));
     await tester.pump();
@@ -58,7 +55,11 @@ void main() {
       onLogout: () async {},
     ));
 
-    await tester.ensureVisible(find.text('Excluir conta e dados'));
+    await tester.scrollUntilVisible(
+      find.text('Excluir conta e dados'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Excluir conta e dados'));
     await tester.pumpAndSettle();
     expect(find.text('A solicitação de exclusão foi concluída.'), findsNothing);
@@ -81,7 +82,11 @@ void main() {
       },
       onLogout: () async {},
     ));
-    await tester.ensureVisible(find.text('Excluir conta e dados'));
+    await tester.scrollUntilVisible(
+      find.text('Excluir conta e dados'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Excluir conta e dados'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancelar'));

@@ -420,13 +420,16 @@ class _ParticipationCard extends StatelessWidget {
             const SizedBox(height: 4),
             const Text('A participação é opcional. No ranking, outras pessoas veem seu apelido público e seus pontos.', style: TextStyle(color: BrandPalette.darkMuted, height: 1.4, fontSize: 12)),
             const SizedBox(height: 8),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Participar do pódio público'),
-              value: optedIn,
-              onChanged: saving ? null : onOptInChanged,
-              activeThumbColor: BrandPalette.gold,
-              activeTrackColor: BrandPalette.gold.withValues(alpha: .35),
+            Material(
+              color: Colors.transparent,
+              child: SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Participar do pódio público'),
+                value: optedIn,
+                onChanged: saving ? null : onOptInChanged,
+                activeThumbColor: BrandPalette.gold,
+                activeTrackColor: BrandPalette.gold.withValues(alpha: .35),
+              ),
             ),
             if (optedIn) ...[
               const SizedBox(height: 4),
