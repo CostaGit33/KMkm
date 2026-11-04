@@ -22,6 +22,10 @@
 - Package Android planejado: `online.novaagencian8n.mais1km` (confirmar antes de gerar a plataforma nativa; o valor veio da tentativa Flutter, não é ainda uma decisão de publicação).
 - A aplicação web possui rotas especiais de TAG em `/t/:codigo`; o parâmetro secreto `?k=` é removido da URL pelo código web antes de telemetria.
 
+## Versão de referência
+
+A versão estável consultada para iniciar a integração em 2026-11-04 é Capacitor **8.6.0** (`@capacitor/core`, `@capacitor/cli` e `@capacitor/android` devem permanecer na mesma linha/versão). Não foi adicionada dependência npm nem gerado o projeto Android nesta primeira etapa; isso será feito junto com a atualização consistente do `package-lock.json`.
+
 ## Arquitetura alvo
 
 ```text
@@ -51,7 +55,7 @@ O Capacitor deve carregar o build local `client/dist` dentro do Android WebView.
 
 ## Fases
 
-- [ ] F0 — Baseline, arquitetura e inventário de paridade.
+- [x] F0 — Baseline do repositório e decisão arquitetural inicial documentadas; configuração Capacitor criada. Inventário detalhado de paridade segue como parte da F1.
 - [ ] F1 — Adicionar Capacitor ao cliente Vite, configurar `webDir: dist` e scripts; manter build PWA atual passando.
 - [ ] F2 — Gerar e versionar projeto Android nativo; package ID, ícone, splash, status/navigation bars e configuração de segurança.
 - [ ] F3 — Validar navegação, rotas de TAG, autenticação/cookies, sessão, logout e links externos no WebView.
