@@ -27,7 +27,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Link reconhecido. Toque em “Enviar carimbo” para continuar.'),
       250,
-      scrollableFinder: find.byType(Scrollable).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Link reconhecido. Toque em “Enviar carimbo” para continuar.'),
         findsOneWidget);
