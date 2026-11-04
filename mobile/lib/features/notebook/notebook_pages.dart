@@ -602,13 +602,41 @@ class _ProgressCard extends StatelessWidget {
           const SizedBox(height: 12),
           _Bar(value: snapshot.progress),
           const SizedBox(height: 8),
-          Row(children: [
-            Text('$percent% concluído',
-                style: const TextStyle(color: _C.muted, fontSize: 12)),
-            const Spacer(),
-            if (onTap != null)
-              TextButton(onPressed: onTap, child: const Text('Ver coleção')),
-          ]),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final progressLabel = Text(
+                '$percent% concluído',
+                style: const TextStyle(color: _C.muted, fontSize: 12),
+              );
+              if (constraints.maxWidth < 340) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    progressLabel,
+                    if (onTap != null)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: onTap,
+                          child: const Text('Ver coleção'),
+                        ),
+                      ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  progressLabel,
+                  const Spacer(),
+                  if (onTap != null)
+                    TextButton(
+                      onPressed: onTap,
+                      child: const Text('Ver coleção'),
+                    ),
+                ],
+              );
+            },
+          ),
           Row(children: [
             _Stat(label: 'rotas completas', value: snapshot.completedRoutes.toString()),
             const SizedBox(width: 18),
