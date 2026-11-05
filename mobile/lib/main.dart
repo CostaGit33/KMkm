@@ -210,7 +210,7 @@ class _AuthGateState extends State<AuthGate> {
     final current = _user?['email']?.toString().trim().toLowerCase();
     // Não encerra uma sessão de outra conta que esteja aberta no aparelho.
     if (current == null || (target != null && target.isNotEmpty && current == target)) {
-      unawaited(widget.api.clearSession());
+      unawaited(widget.api.clearSession().catchError((_) {}));
       if (_user != null && mounted) setState(() => _user = null);
     }
   }
