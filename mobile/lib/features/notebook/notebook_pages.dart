@@ -300,7 +300,7 @@ class _HomePage extends StatelessWidget {
                   children: [
                     Text(entry.value.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700)),
-                    Text('Carimbo confirmado · $formatted,
+                    Text('Carimbo confirmado · $formatted',
                       style: const TextStyle(color: _C.muted, fontSize: 10)),
                   ],
                 )),
