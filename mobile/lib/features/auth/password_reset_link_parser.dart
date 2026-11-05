@@ -5,7 +5,7 @@ class PasswordResetLinkParser {
   static const host = 'mais1km.novaagencian8n.online';
   static final RegExp _tokenPattern = RegExp(r'^[A-Za-z0-9_-]{30,200}$');
 
-  /// Aceita somente https://<host>/?redefinir=<token>, sem parâmetros duplicados.
+  /// Aceita somente `https://mais1km.novaagencian8n.online/?redefinir=token`, sem parâmetros duplicados.
   /// Não registra nem persiste o token; ele é usado uma única vez pela API.
   static String? parse(String input) {
     final value = input.trim();
