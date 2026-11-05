@@ -53,17 +53,19 @@ void main() {
       home: Scaffold(body: CardsCollectionPage(snapshot: fixture(), onOpenPoint: (_) {})),
     ));
 
-    await tester.scrollUntilVisible(find.text('Guardião da Praça'), 240);
+    await tester.ensureVisible(find.text('Guardião da Praça'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Guardião da Praça'));
     await tester.pumpAndSettle();
 
     expect(find.text('Rara'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('HISTÓRIA'), 160, scrollable: find.byType(Scrollable).last);
+    final detailScroll = find.byWidgetPredicate((widget) => widget is ListView && widget.controller != null);
+    await tester.scrollUntilVisible(find.text('HISTÓRIA'), 160, scrollable: detailScroll);
     expect(find.text('HISTÓRIA'), findsOneWidget);
     expect(find.text('Uma história da cidade.'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('“Cada caminho conta.”'), 120, scrollable: find.byType(Scrollable).last);
+    await tester.scrollUntilVisible(find.text('“Cada caminho conta.”'), 120, scrollable: detailScroll);
     expect(find.text('“Cada caminho conta.”'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Ver ponto no mapa'), 120, scrollable: find.byType(Scrollable).last);
+    await tester.scrollUntilVisible(find.text('Ver ponto no mapa'), 120, scrollable: detailScroll);
     expect(find.text('Ver ponto no mapa'), findsOneWidget);
   });
 }
