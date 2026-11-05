@@ -5,10 +5,11 @@ import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
 
 class CardsCollectionPage extends StatefulWidget {
-  const CardsCollectionPage({super.key, required this.snapshot, required this.onOpenPoint});
+  const CardsCollectionPage({super.key, required this.snapshot, required this.onOpenPoint, this.user = const {}});
 
   final NotebookSnapshot snapshot;
   final ValueChanged<String> onOpenPoint;
+  final Map<String, dynamic> user;
 
   @override
   State<CardsCollectionPage> createState() => _CardsCollectionPageState();
@@ -84,6 +85,9 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
         const SizedBox(height: 24),
         _heading('Conquistas especiais', 'Marcos da sua jornada'),
         _achievements(data),
+        const SizedBox(height: 24),
+        _heading('Certificados', '${data.completedRoutes} rotas concluídas'),
+        _certificates(data),
         const SizedBox(height: 24),
         _heading('Histórico', 'Últimos carimbos confirmados'),
         _history(data),
@@ -210,6 +214,100 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
           color: badge.earned ? BrandPalette.gold : BrandPalette.darkMuted, fontSize: 9, fontWeight: FontWeight.w700)),
       ]),
     )).toList());
+  }
+
+  Widget _certificates(NotebookSnapshot data) {
+    final completed = data.routes.where((route) => route.isComplete).toList();
+    if (completed.isEmpty) {
+      return const _CollectionPanel(child: Text(
+        'Complete todos os pontos de uma rota para liberar seu certificado.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: BrandPalette.darkMuted, fontSize: 11, height: 1.5),
+      ));
+    }
+    return Column(children: completed.map((route) {
+      final dates = route.points.map((point) => point.stamp?.createdAt).whereType<DateTime>().toList()
+        ..sort((a, b) => b.compareTo(a));
+      final completedAt = dates.isEmpty ? null : dates.first;
+      return Container(
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: BrandPalette.darkCard,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: BrandPalette.gold.withValues(alpha: .5)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.workspace_premium_outlined, color: BrandPalette.gold, size: 28),
+          const SizedBox(width: 11),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(route.name, style: const TextStyle(color: BrandPalette.cream, fontSize: 12, fontWeight: FontWeight.w800)),
+            Text('${route.total} pontos · ${completedAt == null ? 'Concluída' : _formatDate(completedAt)}',
+              style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 10)),
+          ])),
+          TextButton(
+            onPressed: () => _showCertificate(route, completedAt),
+            child: const Text('Visualizar'),
+          ),
+        ]),
+      );
+    }).toList());
+  }
+
+  Future<void> _showCertificate(NotebookRoute route, DateTime? completedAt) async {
+    final name = (widget.user['nome'] ?? widget.user['apelido'] ?? 'Explorador').toString();
+    final number = widget.user['numero']?.toString();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: BrandPalette.darkCardStrong,
+        insetPadding: const EdgeInsets.all(18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
+          decoration: BoxDecoration(
+            border: Border.all(color: BrandPalette.gold, width: 1.5),
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('✦  ·  ✦  ·  ✦', style: TextStyle(color: BrandPalette.gold, fontSize: 18)),
+            const SizedBox(height: 14),
+            Text('+1 KM · EUNÁPOLIS', style: GoogleFonts.montserrat(
+              color: BrandPalette.gold, fontSize: 9, letterSpacing: 2, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Text('Certificado de rota', textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel(color: BrandPalette.cream, fontSize: 23, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            const Text('Atesta que', style: TextStyle(color: BrandPalette.darkMuted, fontSize: 11)),
+            const SizedBox(height: 5),
+            Text(name, textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel(color: BrandPalette.gold, fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            Text('completou todos os ${route.total} pontos da rota',
+              textAlign: TextAlign.center, style: const TextStyle(color: BrandPalette.cream, fontSize: 11)),
+            const SizedBox(height: 6),
+            Text(route.name, textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel(color: BrandPalette.gold, fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            Wrap(alignment: WrapAlignment.center, spacing: 5, children: route.points.take(6).map((point) =>
+              Container(width: 30, height: 30, alignment: Alignment.center,
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: BrandPalette.gold)),
+                child: const Icon(Icons.check, color: BrandPalette.gold, size: 15),
+              )).toList()),
+            const SizedBox(height: 14),
+            Text('${completedAt == null ? 'Todos os pontos confirmados' : 'Concluída em ${_formatDate(completedAt)}'}${number == null ? '' : ' · Caderneta nº $number'}',
+              textAlign: TextAlign.center, style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+            const SizedBox(height: 17),
+            const Text('Cada ponto, uma história guardada.',
+              textAlign: TextAlign.center, style: TextStyle(color: BrandPalette.gold, fontSize: 10, fontStyle: FontStyle.italic)),
+            const SizedBox(height: 14),
+            SizedBox(width: double.infinity, child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: FilledButton.styleFrom(backgroundColor: BrandPalette.gold, foregroundColor: BrandPalette.forestDeep),
+              child: const Text('Fechar'),
+            )),
+          ]),
+        ),
+      ),
+    );
   }
 
   Widget _history(NotebookSnapshot data) {
