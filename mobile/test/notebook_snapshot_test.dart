@@ -47,7 +47,9 @@ void main() {
             'capturada': true,
             'criatura': 'Guardião da Praça',
             'frase': 'Cada caminho conta.',
-            'capturada_em': '2026-10-01T12:00:00.000Z'
+            'capturada_em': '2026-10-01T12:00:00.000Z',
+            'arte_foto': {'m': '/midia/thumb.webp', 'g': '/midia/full.webp'},
+            'historia': 'História do ponto.'
           },
           {
             'codigo': 'eu-002',
@@ -70,6 +72,9 @@ void main() {
     expect(notebook.totalCards, 2);
     expect(notebook.capturedCards, 1);
     expect(notebook.cards.first.creature, 'Guardião da Praça');
+    expect(notebook.cards.first.artThumbnail, '/midia/thumb.webp');
+    expect(notebook.cards.first.artLarge, '/midia/full.webp');
+    expect(notebook.cards.first.story, 'História do ponto.');
     expect(notebook.cards.last.captured, isFalse);
     expect(notebook.categories['cultura']?['total'], 2);
   });
