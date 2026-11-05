@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/models/catalog_snapshot.dart';
 import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
 import 'cards_collection_page.dart';
@@ -10,6 +11,7 @@ class NotebookPages extends StatelessWidget {
     super.key,
     required this.page,
     required this.snapshot,
+    this.catalog,
     required this.user,
     required this.onOpenMap,
     required this.onOpenCollection,
@@ -27,6 +29,7 @@ class NotebookPages extends StatelessWidget {
 
   final int page;
   final NotebookSnapshot? snapshot;
+  final CatalogSnapshot? catalog;
   final Map<String, dynamic> user;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
@@ -61,6 +64,7 @@ class NotebookPages extends StatelessWidget {
     }
     return _HomePage(
       snapshot: data,
+      catalog: catalog,
       user: user,
       onOpenMap: onOpenMap,
       onOpenCollection: onOpenCollection,
@@ -87,6 +91,7 @@ class _C {
 class _HomePage extends StatelessWidget {
   const _HomePage({
     required this.snapshot,
+    this.catalog,
     required this.user,
     required this.onOpenMap,
     required this.onOpenCollection,
@@ -99,6 +104,7 @@ class _HomePage extends StatelessWidget {
   });
 
   final NotebookSnapshot snapshot;
+  final CatalogSnapshot? catalog;
   final Map<String, dynamic> user;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
@@ -125,6 +131,35 @@ class _HomePage extends StatelessWidget {
     final events = snapshot.events
         .where((event) => event.state != 'encerrado' || event.completed > 0)
         .toList();
+    final completedCodes = snapshot.cards
+        .where((card) => card.captured)
+        .map((card) => card.code.toUpperCase())
+        .toSet();
+    final categoryTotals = <String, List<int>>{};
+    for (final point in catalog?.points ?? const <CatalogPoint>[]) {
+      for (final category in point.categories) {
+        final counts = categoryTotals.putIfAbsent(category, () => [0, 0]);
+        counts[1]++;
+        if (completedCodes.contains(point.code.toUpperCase())) counts[0]++;
+      }
+    }
+    const categoryOrder = [
+      'historia',
+      'praias',
+      'natureza',
+      'caminhos',
+      'cultura',
+      'sabores',
+    ];
+    final categories = categoryTotals.keys.toList()
+      ..sort((a, b) {
+        final indexA = categoryOrder.indexOf(a);
+        final indexB = categoryOrder.indexOf(b);
+        if (indexA < 0 && indexB < 0) return a.compareTo(b);
+        if (indexA < 0) return 1;
+        if (indexB < 0) return -1;
+        return indexA.compareTo(indexB);
+      });
     final activityByCode = <String, ({String name, DateTime date})>{};
     for (final routePoint in snapshot.routes.expand((item) => item.points)) {
       final date = routePoint.stamp?.createdAt;
@@ -193,6 +228,36 @@ class _HomePage extends StatelessWidget {
           onTap: onOpenCollection,
         ),
         _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _HomeSectionHeading(
+            title: 'Progresso por categoria',
+            action: 'Explorar mapa',
+            onTap: onOpenMap,
+          ),
+          LayoutBuilder(builder: (context, constraints) {
+            const gap = 10.0;
+            final columns = constraints.maxWidth >= 400 ? 2 : 1;
+            final cardWidth = columns == 2
+                ? (constraints.maxWidth - gap) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: categories.map((category) {
+                final counts = categoryTotals[category]!;
+                return SizedBox(
+                  width: cardWidth,
+                  child: _HomeCategoryProgress(
+                    label: _pointCategoryLabel(category),
+                    completed: counts[0],
+                    total: counts[1],
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+        ],
         const SizedBox(height: 20),
         _HomeSectionHeading(
           title: 'Continue de onde parou',
@@ -677,6 +742,51 @@ class _ProgressCard extends StatelessWidget {
   }
 }
 
+class _HomeCategoryProgress extends StatelessWidget {
+  const _HomeCategoryProgress({
+    required this.label,
+    required this.completed,
+    required this.total,
+  });
+
+  final String label;
+  final int completed;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) => _Panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$completed/$total pontos',
+                style: const TextStyle(
+                  color: _C.gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ]),
+            const SizedBox(height: 9),
+            _Bar(value: total == 0 ? 0 : completed / total),
+          ],
+        ),
+      );
+}
+
 class _CardTile extends StatelessWidget {
   const _CardTile({required this.card, this.onTap});
   final NotebookCard card;
@@ -1018,6 +1128,16 @@ String _categoryLabel(String value) => switch (value) {
       'trabalho' => 'Trabalho',
       'litoral' => 'Litoral',
       'misterio' => 'Mistério',
+      _ => value,
+    };
+
+String _pointCategoryLabel(String value) => switch (value) {
+      'historia' => 'História',
+      'praias' => 'Praias',
+      'natureza' => 'Natureza',
+      'caminhos' => 'Caminhos',
+      'cultura' => 'Cultura',
+      'sabores' => 'Sabores',
       _ => value,
     };
 

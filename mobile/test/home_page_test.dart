@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mais1km/core/models/catalog_snapshot.dart';
 import 'package:mais1km/core/theme/brand_theme.dart';
 import 'package:mais1km/features/notebook/notebook_pages.dart';
 import 'package:mais1km/core/models/notebook_snapshot.dart';
@@ -54,8 +55,8 @@ void main() {
           },
         ],
         'colecao': {
-          'total': 2,
-          'capturadas': 1,
+          'total': 3,
+          'capturadas': 2,
           'por_categoria': {
             'cultura': {'total': 2, 'capturadas': 1},
           },
@@ -78,8 +79,52 @@ void main() {
               'raridade': 'raro',
               'capturada': false,
             },
+            {
+              'codigo': 'eu-003',
+              'carta': 3,
+              'ponto': 'Parque do Gravatá',
+              'categoria': 'natureza',
+              'raridade': 'comum',
+              'capturada': true,
+            },
           ],
         },
+      });
+
+  CatalogSnapshot sampleCatalog() => CatalogSnapshot.fromJson({
+        'pontos': [
+          {
+            'codigo': 'eu-001',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['historia', 'cultura'],
+          },
+          {
+            'codigo': 'eu-002',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['cultura', 'natureza'],
+          },
+          {
+            'codigo': 'eu-003',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['natureza'],
+          },
+          {
+            'codigo': 'eu-004',
+            'status': 'pendente',
+            'oculto': false,
+            'categorias': ['historia'],
+          },
+          {
+            'codigo': 'eu-005',
+            'status': 'publicado',
+            'oculto': true,
+            'categorias': ['praias'],
+          },
+        ],
+        'circuitos': [],
       });
 
   Future<void> pumpHome(
@@ -99,6 +144,7 @@ void main() {
           body: NotebookPages(
             page: 0,
             snapshot: sampleSnapshot(),
+            catalog: sampleCatalog(),
             user: const {'nome': 'Romulo Costa'},
             onOpenMap: onMap ?? () {},
             onOpenStamp: onStamp,
@@ -118,7 +164,7 @@ void main() {
     await pumpHome(tester);
 
     expect(find.text('Olá, Romulo.'), findsOneWidget);
-    expect(find.text('1 de 2 cartas'), findsOneWidget);
+    expect(find.text('2 de 3 cartas'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Circuito Cultural'),
@@ -133,6 +179,30 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Evento encerrado'), findsOneWidget);
+  });
+
+  testWidgets('mostra progresso por categorias com pontos públicos confirmados', (tester) async {
+    await pumpHome(tester);
+
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Progresso por categoria'),
+      240,
+      scrollable: scrollable,
+    );
+    expect(find.text('Progresso por categoria'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('História'), 180, scrollable: scrollable);
+    expect(find.text('História'), findsOneWidget);
+    expect(find.text('1/1 pontos'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Natureza'), 180, scrollable: scrollable);
+    expect(find.text('Natureza'), findsOneWidget);
+    expect(find.text('1/2 pontos'), findsWidgets);
+
+    await tester.scrollUntilVisible(find.text('Cultura'), 180, scrollable: scrollable);
+    expect(find.text('Cultura'), findsOneWidget);
+    expect(find.text('1/2 pontos'), findsWidgets);
   });
 
   testWidgets('atalhos do mapa e leitura NFC executam suas ações', (tester) async {
@@ -159,9 +229,11 @@ void main() {
 
     await pumpHome(tester, onPoint: (code) => openedCode = code);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -320));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Detalhes do ponto'));
+    await tester.scrollUntilVisible(
+      find.text('Detalhes do ponto'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Detalhes do ponto'));
     await tester.pump();
 
