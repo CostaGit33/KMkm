@@ -44,7 +44,11 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
-app.use(express.json());
+// A API só recebe pequenos documentos JSON. Uploads de imagem usam um parser raw
+// próprio e continuam sujeitos aos limites definidos em server/midia/rotas-admin.js.
+// Sem limite global, um cliente não autenticado poderia consumir memória antes
+// de chegar ao rate limit ou à autenticação da rota.
+app.use(express.json({ limit: '256kb', strict: true }));
 // Proteção contra CSRF: pedidos que alteram dados só valem vindos do próprio site. Bloqueia quando o navegador
 // declara origem de outro site (Sec-Fetch-Site) ou quando o cabeçalho Origin não é o host do app nem está em
 // ORIGENS_PERMITIDAS (lista separada por vírgula, ex.: https://app.exemplo.com). Clientes que usam o cabeçalho

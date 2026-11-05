@@ -1,0 +1,13 @@
+{
+  "routes": [
+    { "path": "/", "title": "Caderneta" },
+    { "path": "/t/:codigo", "title": "Carimbar ponto" },
+    { "path": "/privacidade", "title": "Privacidade" },
+    { "path": "/termos-de-uso", "title": "Termos de uso" },
+    { "path": "/cookies", "title": "Cookies" },
+    { "path": "/excluir-conta", "title": "Excluir conta" },
+    { "path": "/como-funciona", "title": "Como funciona" },
+    { "path": "/parceiros", "title": "Parceiros" },
+    { "path": "/admin", "title": "Administração" }
+  ]
+}

@@ -73,7 +73,7 @@ Os pontos nascem `pendente`. Publicar exige responsável, autorização e vistor
 | `GOOGLE_MAPS_API_KEY` | Mapa do Google; sem ela o app usa OpenStreetMap |
 | `SENTRY_DSN`, `RELEASE_VERSION` | Erros e rótulo da versão em `/api/saude` |
 
-`/api/saude` informa banco, versão, estado das chaves, geofence e tipo de armazenamento de mídia.
+`/api/saude` informa banco, versão, estado das chaves, geofence e tipo de armazenamento de mídia. A API limita corpos JSON a 256 KB; uploads de fotos seguem limites próprios de tipo, tamanho e pixels. O inventário de páginas fica disponível em `/manus-routes.json`, incluindo a rota dinâmica `/t/:codigo` usada por tags NFC/QR.
 
 ## Comandos de operação
 

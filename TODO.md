@@ -1,6 +1,6 @@
 # Pendências (lista viva)
 
-Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
+Atualizado em 05/11/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Antes de abrir ao público
 - [x] `TAG_KEY_SECRET` definido (confirmado pelo responsável em 31/10/2026).
@@ -14,6 +14,7 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 - [ ] `CONTATO_EMAIL`, `RELEASE_VERSION`, limpar carimbos de teste (`teste-podio limpar`).
 
 ## Técnico
+- [x] Limite global de 256 KB para JSON da API e manifesto `manus-routes.json` publicado com rotas públicas e de tag (05/11/2026).
 - [ ] Teste de ponta a ponta: criar conta → carimbar → abrir em outro aparelho (hoje só testes unitários e `smoke.mjs` manual).
 - [x] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
 - [ ] Limite de tentativas fora da memória (tabela ou Redis) se houver mais de uma instância.
