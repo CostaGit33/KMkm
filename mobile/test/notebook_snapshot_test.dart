@@ -79,6 +79,26 @@ void main() {
     expect(notebook.categories['cultura']?['total'], 2);
   });
 
+  test('interpreta fotos públicas do ponto com créditos e comparação histórica', () {
+    final photo = NotebookPointImage.fromJson({
+      'url': '/midia/12.abcdef0123456789.g.webp',
+      'miniatura_url': '/midia/12.abcdef0123456789.m.webp',
+      'titulo': 'Praça antiga',
+      'legenda': 'Registro do acervo.',
+      'periodo_historico': 'Década de 1980',
+      'tipo_registro': 'historica',
+      'autor': 'Arquivo municipal',
+      'fonte': 'Acervo público',
+    });
+
+    expect(photo.url, startsWith('/midia/'));
+    expect(photo.thumbnailUrl, contains('.m.webp'));
+    expect(photo.type, 'historica');
+    expect(photo.historicPeriod, 'Década de 1980');
+    expect(photo.author, 'Arquivo municipal');
+    expect(photo.source, 'Acervo público');
+  });
+
   test('aceita caderneta vazia sem criar progresso fictício', () {
     final notebook = NotebookSnapshot.fromJson({});
     expect(notebook.routes, isEmpty);
