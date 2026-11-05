@@ -122,7 +122,9 @@ class _HomePage extends StatelessWidget {
     final pending = route?.points.where((point) => point.published && !point.completed).toList()
         ?? const <NotebookRoutePoint>[];
     final next = pending.isEmpty ? null : pending.first;
-    final events = snapshot.events.toList();
+    final events = snapshot.events
+        .where((event) => event.state != 'encerrado' || event.completed > 0)
+        .toList();
     final activityByCode = <String, ({String name, DateTime date})>{};
     for (final routePoint in snapshot.routes.expand((item) => item.points)) {
       final date = routePoint.stamp?.createdAt;
