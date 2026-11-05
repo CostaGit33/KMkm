@@ -50,6 +50,10 @@ void main() {
         PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir=$token&redefinir=$token'),
         isNull,
       );
+      expect(
+        PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?origem=email&redefinir=$token'),
+        isNull,
+      );
     });
   });
 }
