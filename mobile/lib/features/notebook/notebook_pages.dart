@@ -289,8 +289,7 @@ class _HomePage extends StatelessWidget {
           const _HomeSectionHeading(title: 'Sua atividade'),
           _Panel(child: Column(children: activities.take(4).map((entry) {
             final date = entry.value.date.toLocal();
-            final formatted = date.day.toString().padLeft(2, '0') + '/' +
-                date.month.toString().padLeft(2, '0') + '/' + date.year.toString();
+            final formatted = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 7),
               child: Row(children: [
@@ -301,7 +300,7 @@ class _HomePage extends StatelessWidget {
                   children: [
                     Text(entry.value.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700)),
-                    Text('Carimbo confirmado · ' + formatted,
+                    Text('Carimbo confirmado · $formatted,
                       style: const TextStyle(color: _C.muted, fontSize: 10)),
                   ],
                 )),
