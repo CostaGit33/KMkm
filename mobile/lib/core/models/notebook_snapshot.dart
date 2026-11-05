@@ -228,6 +228,39 @@ class NotebookEvent {
   }
 }
 
+class NotebookPointImage {
+  const NotebookPointImage({
+    required this.url,
+    required this.thumbnailUrl,
+    this.title,
+    this.caption,
+    this.historicPeriod,
+    this.type = 'outra',
+    this.author,
+    this.source,
+  });
+
+  final String url;
+  final String thumbnailUrl;
+  final String? title;
+  final String? caption;
+  final String? historicPeriod;
+  final String type;
+  final String? author;
+  final String? source;
+
+  factory NotebookPointImage.fromJson(Map<String, dynamic> json) => NotebookPointImage(
+    url: json['url']?.toString() ?? '',
+    thumbnailUrl: json['miniatura_url']?.toString() ?? json['url']?.toString() ?? '',
+    title: json['titulo']?.toString(),
+    caption: json['legenda']?.toString(),
+    historicPeriod: json['periodo_historico']?.toString(),
+    type: json['tipo_registro']?.toString() ?? 'outra',
+    author: json['autor']?.toString(),
+    source: json['fonte']?.toString(),
+  );
+}
+
 class NotebookSnapshot {
   const NotebookSnapshot({
     required this.routes,
