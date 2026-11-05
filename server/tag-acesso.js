@@ -19,12 +19,14 @@ export function chaveDoPonto(codigo, versao, segredo) {
   return crypto.createHmac('sha256', segredo).update(`tag:${String(codigo).toLowerCase()}:${Number(versao)}`).digest().subarray(0, 16).toString('base64url');
 }
 
-export function exigeChave(tag, segredo) {
-  return Boolean(segredo) && Number(tag?.chave_versao) > 0;
+// A exigência pertence à TAG, não à disponibilidade do segredo. Se o segredo faltar,
+// chaveConfere deve bloquear (fail-closed), nunca desativar a proteção silenciosamente.
+export function exigeChave(tag) {
+  return Number(tag?.chave_versao) > 0;
 }
 
 export function chaveConfere(informada, tag, segredo) {
-  if (!exigeChave(tag, segredo)) return true;
+  if (!exigeChave(tag)) return true;
   const esperada = chaveDoPonto(tag.codigo, tag.chave_versao, segredo);
   const recebida = String(informada || '');
   if (!esperada || recebida.length !== esperada.length) return false;
@@ -32,9 +34,9 @@ export function chaveConfere(informada, tag, segredo) {
 }
 
 export function urlDoPonto(base, tag, segredo) {
-  const raiz = String(base || '').replace(/\/+$/, '');
+  const raiz = String(base || '').replace(/\\/+$/, '');
   const caminho = `/t/${encodeURIComponent(tag.codigo)}`;
-  const chave = exigeChave(tag, segredo) ? chaveDoPonto(tag.codigo, tag.chave_versao, segredo) : null;
+  const chave = exigeChave(tag) ? chaveDoPonto(tag.codigo, tag.chave_versao, segredo) : null;
   return `${raiz}${caminho}${chave ? `?k=${chave}` : ''}`;
 }
 
