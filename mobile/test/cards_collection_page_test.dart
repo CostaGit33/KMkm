@@ -53,6 +53,7 @@ void main() {
       home: Scaffold(body: CardsCollectionPage(snapshot: fixture(), onOpenPoint: (_) {})),
     ));
 
+    await tester.scrollUntilVisible(find.text('Guardião da Praça'), 240);
     await tester.tap(find.text('Guardião da Praça'));
     await tester.pumpAndSettle();
 
