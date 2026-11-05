@@ -273,7 +273,7 @@ class _HomePage extends StatelessWidget {
             height: 150,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: recent.length > 5 ? 5 : recent.length,
+              itemCount: recent.length > 3 ? 3 : recent.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) => SizedBox(
                 width: 286,
