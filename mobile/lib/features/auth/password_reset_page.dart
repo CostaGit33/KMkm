@@ -143,7 +143,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, role: null, style: const TextStyle(color: BrandPalette.darkDanger)),
+              Text(_error!, style: const TextStyle(color: BrandPalette.darkDanger)),
             ],
             const SizedBox(height: 18),
             FilledButton(
