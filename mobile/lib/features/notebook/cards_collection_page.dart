@@ -526,7 +526,7 @@ class _PointPhotoGallery extends StatelessWidget {
       final before = photos.where((photo) => photo.type == 'historica').firstOrNull;
       final today = photos.where((photo) => photo.type == 'atual').firstOrNull;
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('FOTOS DO LUGAR · \${photos.length}', style: const TextStyle(
+        Text('FOTOS DO LUGAR · ${photos.length}', style: const TextStyle(
           color: BrandPalette.gold, fontSize: 9, letterSpacing: 1.3, fontWeight: FontWeight.w800)),
         const SizedBox(height: 9),
         SizedBox(height: 118, child: ListView.separated(
@@ -593,7 +593,7 @@ class _PointPhotoGallery extends StatelessWidget {
                     Text(credits, textAlign: TextAlign.center,
                       style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
                   ],
-                  Text('\${index + 1} de \${photos.length}', style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+                  Text('${index + 1} de ${photos.length}', style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
                 ])),
               ]);
             },
