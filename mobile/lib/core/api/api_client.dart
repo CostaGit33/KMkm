@@ -240,6 +240,20 @@ class ApiClient {
     );
   }
 
+  /// Consome um token de redefinição de uso único e atualiza a senha no servidor.
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    final response = await _request(
+      'POST',
+      '/api/conta/redefinir-senha',
+      body: {'token': token, 'senha': password},
+      authenticated: false,
+    );
+    return _asMap(response.data);
+  }
+
   Future<String?> _readSessionCookie() async {
     final reader = _sessionCookieReader;
     if (reader != null) return reader();
