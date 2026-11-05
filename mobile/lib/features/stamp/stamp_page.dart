@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
+import 'package:nfc_manager/ndef_record.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/theme/brand_theme.dart';
 import 'stamp_link_parser.dart';
+import 'ndef_uri_parser.dart';
 
 /// Tela de captura de carimbo por link Mais1km recebido ou colado.
 ///
@@ -34,6 +40,7 @@ class _StampPageState extends State<StampPage> {
   bool _showLocationSettings = false;
   bool _openDeviceLocationSettings = false;
   bool _submitting = false;
+  bool _nfcScanning = false;
 
   @override
   void initState() {
@@ -44,6 +51,94 @@ class _StampPageState extends State<StampPage> {
       if (_stampLink != null) {
         _message = 'Link reconhecido. Toque em “Enviar carimbo” para continuar.';
       }
+    }
+  }
+
+  Future<void> _startNfcScan() async {
+    if (_nfcScanning || _submitting) return;
+    setState(() {
+      _nfcScanning = true;
+      _message = 'Aproxime a parte traseira do celular da TAG Mais1km.';
+      _stampLink = null;
+    });
+    try {
+      final availability = await NfcManager.instance.checkAvailability();
+      if (!mounted) return;
+      if (availability != NfcAvailability.enabled) {
+        setState(() {
+          _nfcScanning = false;
+          _message = 'NFC indisponível. Confira se o aparelho tem NFC e se ele está ativado. Você também pode colar o link da TAG.';
+        });
+        return;
+      }
+      await NfcManager.instance.startSession(
+        pollingOptions: {NfcPollingOption.iso14443},
+        onDiscovered: (tag) async {
+          try {
+            final ndef = NdefAndroid.from(tag);
+            final message = ndef?.cachedNdefMessage ?? await ndef?.getNdefMessage();
+            String? uriText;
+            if (message != null) {
+              for (final record in message.records) {
+                final isUriRecord = record.typeNameFormat == TypeNameFormat.wellKnown &&
+                    record.type.length == 1 &&
+                    record.type.first == 0x55;
+                if (isUriRecord) {
+                  uriText = NdefUriParser.decodeUriPayload(record.payload);
+                } else if (record.typeNameFormat == TypeNameFormat.wellKnown &&
+                    record.type.length == 1 &&
+                    record.type.first == 0x54) {
+                  // Algumas ferramentas gravam a URL como texto NDEF em vez
+                  // do registro URI. Aceita ambos, sem relaxar o host/caminho.
+                  uriText = NdefUriParser.decodeTextPayload(record.payload);
+                }
+                if (uriText != null) break;
+              }
+            }
+            await NfcManager.instance.stopSession();
+            if (!mounted) return;
+            final parsed = uriText == null ? null : StampLinkParser.parse(uriText);
+            setState(() {
+              _nfcScanning = false;
+              if (parsed == null) {
+                _stampLink = null;
+                _message = 'TAG detectada, mas não contém um link NDEF válido do Mais1km. Verifique se ela foi gravada com a URL completa da TAG.';
+              } else {
+                _stampLink = parsed;
+                _message = 'TAG Mais1km lida. Confirme o envio para validar o carimbo.';
+              }
+            });
+          } catch (_) {
+            await NfcManager.instance.stopSession();
+            if (!mounted) return;
+            setState(() {
+              _nfcScanning = false;
+              _message = 'A TAG foi detectada, mas não foi possível ler o conteúdo. Tente novamente mantendo o celular próximo por alguns segundos.';
+            });
+          }
+        },
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _nfcScanning = false;
+        _message = 'Não foi possível iniciar a leitura NFC. Ative o NFC nas configurações e tente novamente.';
+      });
+    }
+  }
+
+  Future<void> _stopNfcScan() async {
+    if (!_nfcScanning) return;
+    try {
+      await NfcManager.instance.stopSession();
+    } catch (_) {
+      // A sessão pode já ter sido encerrada pelo Android.
+    }
+    if (mounted) {
+      setState(() {
+        _nfcScanning = false;
+        _message = 'Leitura NFC cancelada.';
+      });
     }
   }
 
@@ -174,6 +269,9 @@ class _StampPageState extends State<StampPage> {
 
   @override
   void dispose() {
+    if (_nfcScanning) {
+      unawaited(NfcManager.instance.stopSession());
+    }
     _linkController.dispose();
     super.dispose();
   }
@@ -214,7 +312,18 @@ class _StampPageState extends State<StampPage> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _nfcScanning ? _stopNfcScan : _startNfcScan,
+            icon: Icon(_nfcScanning ? Icons.close : Icons.nfc),
+            label: Text(_nfcScanning ? 'Cancelar leitura NFC' : 'Ler TAG agora'),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'A leitura NFC funciona com a TAG próxima ao celular. Depois da leitura, o app valida a chave, a conta e a localização exigida pelo servidor.',
+            style: TextStyle(color: BrandPalette.darkMuted, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 18),
           TextField(
             controller: _linkController,
             keyboardType: TextInputType.url,
@@ -231,7 +340,7 @@ class _StampPageState extends State<StampPage> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: _submitting ? null : _parseManualLink,
+            onPressed: _submitting || _nfcScanning ? null : _parseManualLink,
             icon: const Icon(Icons.content_paste_go),
             label: const Text('Usar link colado'),
           ),
@@ -258,7 +367,7 @@ class _StampPageState extends State<StampPage> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: _submitting
+              onPressed: _submitting || _nfcScanning
                   ? null
                   : () => _submit(includeLocation: _locationRequired),
               icon: _submitting

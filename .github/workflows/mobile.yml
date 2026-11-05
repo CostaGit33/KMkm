@@ -1,4 +1,5 @@
-# Pipeline de validacao do aplicativo Flutter Android.
+# Pipeline de validação do aplicativo Flutter Android.
+# Publica APKs debug e release de teste somente após análise e testes aprovados.
 name: Mobile - Flutter CI
 
 on:
@@ -6,6 +7,8 @@ on:
     branches:
       - main
       - 'feature/**'
+      - 'fix/**'
+      - 'feat/**'
     paths:
       - 'mobile/**'
       - '.github/workflows/mobile.yml'
@@ -63,10 +66,31 @@ jobs:
       - name: Gerar APK de depuração
         run: flutter build apk --debug
 
-      - name: Publicar APK como artefato
+      - name: Gerar APK otimizado para teste
+        run: flutter build apk --release
+
+      - name: Gerar checksums
+        run: |
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk > app-debug.apk.sha256
+          sha256sum build/app/outputs/flutter-apk/app-release.apk > app-release.apk.sha256
+          ls -lh build/app/outputs/flutter-apk/*.apk
+
+      - name: Publicar APK debug
         uses: actions/upload-artifact@v4
         with:
           name: mais1km-android-debug
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-debug.apk
+            mobile/app-debug.apk.sha256
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
+
+      - name: Publicar APK release de teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: mais1km-android-release-test
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-release.apk
+            mobile/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 14

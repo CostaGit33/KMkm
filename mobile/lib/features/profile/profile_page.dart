@@ -38,6 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late final TextEditingController _emailController;
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   late String _originalName;
   late String _originalEmail;
   bool _busy = false;
@@ -59,6 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _emailController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -88,6 +90,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _originalEmail = _email;
         _currentPasswordController.clear();
         _newPasswordController.clear();
+        _confirmPasswordController.clear();
         _message = 'Dados da conta salvos com sucesso.';
         _messageIsError = false;
       });
@@ -202,7 +205,13 @@ class _ProfilePageState extends State<ProfilePage> {
     final password = value ?? '';
     if (password.isEmpty) return null;
     if (password.length < 8) return 'Use pelo menos 8 caracteres.';
+    if (password.length > 128) return 'Use no máximo 128 caracteres.';
     return null;
+  }
+
+  String? _validatePasswordConfirmation(String? value) {
+    if (_newPassword.isEmpty) return null;
+    return value == _newPassword ? null : 'As novas senhas não são iguais.';
   }
 
   @override
@@ -211,7 +220,14 @@ class _ProfilePageState extends State<ProfilePage> {
         ? 'Sua conta'
         : _nameController.text.trim();
     final initial = displayName.substring(0, 1).toUpperCase();
-    return ListView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Meu perfil'),
+        backgroundColor: BrandPalette.darkCardStrong,
+        foregroundColor: BrandPalette.cream,
+        elevation: 0,
+      ),
+      body: ListView(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
       children: [
         Container(
@@ -292,6 +308,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 validator: _validateNewPassword,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _confirmPasswordController,
+                enabled: !_busy,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirmar nova senha',
+                  prefixIcon: Icon(Icons.lock_reset_outlined),
+                ),
+                validator: _validatePasswordConfirmation,
+              ),
               if (_message != null) ...[
                 const SizedBox(height: 14),
                 _StatusMessage(message: _message!, isError: _messageIsError),
@@ -345,6 +372,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ],
+      ),
     );
   }
 }

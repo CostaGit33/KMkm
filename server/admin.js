@@ -169,11 +169,11 @@ async function gravarPatrocinador(conn, nome) {
 // Catálogo público: o app usa isto no lugar do catálogo fixo do front-end (pontos e circuitos publicados no admin).
 export async function catalogoPublico() {
   const pontos = await q(`SELECT t.id, t.codigo, t.nome, t.status, t.lat, t.lng, t.endereco, t.nota, t.categorias, t.icone, t.fonte_mapa, t.oculto
-    FROM tags t JOIN rotas r ON r.id = t.rota_id WHERE t.status <> 'arquivado' AND r.status <> 'arquivado' ORDER BY t.codigo`);
+    FROM tags t JOIN rotas r ON r.id = t.rota_id WHERE t.status = 'publicado' AND r.status = 'publicado' ORDER BY t.codigo`);
   const circuitos = await q("SELECT id, slug, nome, subtitulo, icone, cor FROM circuitos WHERE status = 'publicado' ORDER BY ordem, id");
   const capas = await capasPorPonto();
-  const ligacoes = circuitos.length ? await q(`SELECT cp.circuito_id, t.codigo FROM circuito_pontos cp JOIN tags t ON t.id = cp.tag_id
-    WHERE t.status <> 'arquivado' AND cp.circuito_id IN (${circuitos.map(() => '?').join(',')}) ORDER BY cp.circuito_id, cp.ordem`, circuitos.map((c) => c.id)) : [];
+  const ligacoes = circuitos.length ? await q(`SELECT cp.circuito_id, t.codigo FROM circuito_pontos cp JOIN tags t ON t.id = cp.tag_id JOIN rotas r ON r.id = t.rota_id
+    WHERE t.status = 'publicado' AND r.status = 'publicado' AND cp.circuito_id IN (${circuitos.map(() => '?').join(',')}) ORDER BY cp.circuito_id, cp.ordem`, circuitos.map((c) => c.id)) : [];
   return {
     pontos: pontos.map((p) => ({
       codigo: p.codigo, nome: p.nome, status: p.status,

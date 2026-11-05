@@ -11,7 +11,8 @@ Aplicativo Android Flutter desenvolvido em paralelo à PWA existente. Usa o mesm
 - Perfil: atualização de nome/e-mail/senha e solicitação de exclusão de conta, com confirmação.
 - Catálogo público (somente pontos publicados e não ocultos), busca, categorias, rotas e caderneta.
 - Pódio/XP, medalhas e participação pública opcional.
-- Carimbo por App Link NFC/QR ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
+- Carimbo por leitura NFC NDEF dentro do app, App Link ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
+- Leitura NFC aceita registros NDEF URI e texto contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; o app não consegue ler uma TAG vazia ou sem NDEF.
 
 A redefinição de senha pelo token/deep link enviado por e-mail e as telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
 
@@ -41,6 +42,8 @@ O app só solicita permissão de localização após o backend responder `locali
 
 Na pasta `mobile/`:
 
+O botão **Ler TAG agora** abre uma sessão NFC em primeiro plano. Mantenha o celular desbloqueado e aproxime a região da antena NFC da TAG. Se o Android não suportar NFC ou a TAG não tiver um registro NDEF com URL Mais1km, o app informa o motivo e mantém a opção de colar o link.
+
 ```bash
 flutter pub get
 flutter analyze --fatal-infos
@@ -48,13 +51,16 @@ flutter test --reporter expanded
 flutter run
 ```
 
-APK de depuração (usa OSM por padrão):
+APK local:
 
 ```bash
 flutter build apk --debug
+flutter build apk --release
 ```
 
-O workflow `.github/workflows/mobile.yml` executa análise, testes, build do APK debug e publica o APK/lockfile resolvido como artefatos temporários do GitHub Actions. APK debug não é uma versão assinada para distribuição na Play Store.
+O workflow `.github/workflows/mobile.yml` executa dependências, análise estática, testes, builds debug e release e publica APKs com checksum SHA-256 como artefatos temporários do GitHub Actions.
+
+**Atenção à assinatura:** o Gradle ainda assina o build release com a chave debug padrão. Esse APK é adequado para instalação e teste controlado, mas não para Google Play nem para atualização contínua entre builds de CI (a chave debug do runner é temporária). Para distribuição pública, será necessário configurar uma chave de assinatura permanente em GitHub Secrets, sem versioná-la no repositório, e publicar `assetlinks.json` com o fingerprint correspondente.
 
 ## Segurança e teste manual
 

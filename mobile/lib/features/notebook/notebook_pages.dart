@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/models/catalog_snapshot.dart';
 import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
 
@@ -9,10 +10,16 @@ class NotebookPages extends StatelessWidget {
     super.key,
     required this.page,
     required this.snapshot,
+    this.catalog,
     required this.user,
     required this.onOpenMap,
     required this.onOpenCollection,
     required this.onOpenPoint,
+    this.onOpenStamp,
+    this.onOpenRoutes,
+    this.onRefresh,
+    this.onFindNearby,
+    this.showingStaleData = false,
     this.loading = false,
     this.error,
     this.onRetry,
@@ -20,10 +27,16 @@ class NotebookPages extends StatelessWidget {
 
   final int page;
   final NotebookSnapshot? snapshot;
+  final CatalogSnapshot? catalog;
   final Map<String, dynamic> user;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
   final ValueChanged<String> onOpenPoint;
+  final VoidCallback? onOpenStamp;
+  final VoidCallback? onOpenRoutes;
+  final Future<void> Function()? onRefresh;
+  final Future<void> Function()? onFindNearby;
+  final bool showingStaleData;
   final bool loading;
   final String? error;
   final VoidCallback? onRetry;
@@ -48,10 +61,16 @@ class NotebookPages extends StatelessWidget {
     }
     return _HomePage(
       snapshot: data,
+      catalog: catalog,
       user: user,
       onOpenMap: onOpenMap,
       onOpenCollection: onOpenCollection,
       onOpenPoint: onOpenPoint,
+      onOpenStamp: onOpenStamp,
+      onOpenRoutes: onOpenRoutes,
+      onRefresh: onRefresh,
+      onFindNearby: onFindNearby,
+      showingStaleData: showingStaleData,
     );
   }
 }
@@ -69,122 +88,245 @@ class _C {
 class _HomePage extends StatelessWidget {
   const _HomePage({
     required this.snapshot,
+    this.catalog,
     required this.user,
     required this.onOpenMap,
     required this.onOpenCollection,
     required this.onOpenPoint,
+    this.onOpenStamp,
+    this.onOpenRoutes,
+    this.onRefresh,
+    this.onFindNearby,
+    this.showingStaleData = false,
   });
 
   final NotebookSnapshot snapshot;
+  final CatalogSnapshot? catalog;
   final Map<String, dynamic> user;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenCollection;
   final ValueChanged<String> onOpenPoint;
+  final VoidCallback? onOpenStamp;
+  final VoidCallback? onOpenRoutes;
+  final Future<void> Function()? onRefresh;
+  final Future<void> Function()? onFindNearby;
+  final bool showingStaleData;
 
   @override
   Widget build(BuildContext context) {
-    final name = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString();
+    final rawName = (user['nome'] ?? snapshot.alias ?? 'Viajante').toString().trim();
+    final firstName = rawName.isEmpty ? 'Viajante' : rawName.split(' ').first;
     final recent = snapshot.cards.where((card) => card.captured).toList()
       ..sort((a, b) => (b.capturedAt ?? DateTime(1970))
           .compareTo(a.capturedAt ?? DateTime(1970)));
-    final next = snapshot.routes
-        .expand((route) => route.points)
-        .where((point) => point.published && !point.completed)
+    final routes = snapshot.routes.where((route) => !route.isComplete && route.total > 0).toList()
+      ..sort((a, b) => (b.completed > 0 ? 1 : 0).compareTo(a.completed > 0 ? 1 : 0));
+    final route = routes.isEmpty ? null : routes.first;
+    final pending = route?.points.where((point) => point.published && !point.completed).toList()
+        ?? const <NotebookRoutePoint>[];
+    final next = pending.isEmpty ? null : pending.first;
+    final events = snapshot.events
+        .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
+        .take(3)
         .toList();
+    final completedCodes = snapshot.cards
+        .where((card) => card.captured)
+        .map((card) => card.code.toUpperCase())
+        .toSet();
+    final categoryTotals = <String, List<int>>{};
+    for (final point in catalog?.points ?? const <CatalogPoint>[]) {
+      for (final category in point.categories) {
+        final counts = categoryTotals.putIfAbsent(category, () => [0, 0]);
+        counts[1]++;
+        if (completedCodes.contains(point.code.toUpperCase())) counts[0]++;
+      }
+    }
+    const categoryOrder = [
+      'historia',
+      'praias',
+      'natureza',
+      'caminhos',
+      'cultura',
+      'sabores',
+    ];
+    final categories = categoryTotals.keys.toList()
+      ..sort((a, b) {
+        final indexA = categoryOrder.indexOf(a);
+        final indexB = categoryOrder.indexOf(b);
+        if (indexA < 0 && indexB < 0) return a.compareTo(b);
+        if (indexA < 0) return 1;
+        if (indexB < 0) return -1;
+        return indexA.compareTo(indexB);
+      });
+    final activityByCode = <String, ({String name, DateTime date})>{};
+    for (final routePoint in snapshot.routes.expand((item) => item.points)) {
+      final date = routePoint.stamp?.createdAt;
+      if (routePoint.completed && date != null) {
+        activityByCode[routePoint.code] = (name: routePoint.name, date: date);
+      }
+    }
+    for (final card in recent) {
+      final date = card.capturedAt;
+      if (date != null) {
+        activityByCode.putIfAbsent(card.code, () => (name: card.pointName, date: date));
+      }
+    }
+    final activities = activityByCode.entries.toList()
+      ..sort((a, b) => b.value.date.compareTo(a.value.date));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+    final content = ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
-            ),
-            boxShadow: const [
-              BoxShadow(color: Color(0x55000000), blurRadius: 24, offset: Offset(0, 10)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('+1 KM · EUNÁPOLIS',
-                  style: GoogleFonts.montserrat(
-                      color: _C.gold,
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
-              Text(
-                snapshot.capturedCards == 0
-                    ? 'Sua próxima descoberta começa aqui, $name.'
-                    : 'Continue descobrindo Eunápolis, $name.',
-                style: GoogleFonts.cinzel(
-                    color: BrandPalette.cream,
-                    fontSize: 23,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 9),
-              const Text(
-                'Encontre um ponto participante, aproxime o celular da tag NFC e conquiste cartas da cidade.',
-                style: TextStyle(color: Color(0xFFE6E9E2), height: 1.45),
-              ),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: onOpenMap,
-                style: FilledButton.styleFrom(
-                    backgroundColor: _C.gold,
-                    foregroundColor: BrandPalette.forestDeep,
-                    minimumSize: const Size(0, 48),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w800)),
-                icon: const Icon(Icons.explore_outlined),
-                label: const Text('Encontrar um ponto'),
-              ),
-            ],
-          ),
+        if (showingStaleData) const _OfflineNotice(),
+        _HomeHero(
+          firstName: firstName,
+          capturedCards: snapshot.capturedCards,
+          totalCards: snapshot.totalCards,
         ),
-        const SizedBox(height: 18),
-        _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
-        const SizedBox(height: 24),
-        const _Heading('Próximo passo'),
-        if (next.isNotEmpty)
-          _Panel(
-            child: Column(
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(child: _HomeAction(
+            icon: Icons.explore_outlined,
+            label: 'Explorar mapa',
+            onTap: onOpenMap,
+            primary: true,
+          )),
+          const SizedBox(width: 10),
+          Expanded(child: _HomeAction(
+            icon: Icons.nfc,
+            label: 'Ler TAG',
+            onTap: onOpenStamp,
+          )),
+        ]),
+        const SizedBox(height: 14),
+        _Panel(
+          child: Row(children: [
+            const Icon(Icons.near_me_outlined, color: _C.gold, size: 23),
+            const SizedBox(width: 11),
+            const Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CONTINUE SUA JORNADA',
-                    style: TextStyle(
-                        color: _C.muted,
-                        fontSize: 10,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 7),
-                Text(next.first.name,
-                    style: const TextStyle(
-                        color: _C.ink,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(next.first.code,
-                    style: const TextStyle(color: _C.muted)),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                    onPressed: onOpenMap,
-                    icon: const Icon(Icons.map_outlined),
-                    label: const Text('Ver no mapa')),
+                Text('Descobertas próximas', style: TextStyle(color: _C.ink, fontWeight: FontWeight.w800)),
+                SizedBox(height: 3),
+                Text('Encontre pontos publicados perto de você.', style: TextStyle(color: _C.muted, fontSize: 11)),
               ],
+            )),
+            IconButton(
+              tooltip: 'Encontrar pontos próximos',
+              onPressed: onFindNearby,
+              icon: const Icon(Icons.arrow_forward_rounded, color: _C.gold),
             ),
-          )
+          ]),
+        ),
+        const SizedBox(height: 20),
+        _HomeSectionHeading(
+          title: 'Sua jornada',
+          action: 'Ver coleção',
+          onTap: onOpenCollection,
+        ),
+        _ProgressCard(snapshot: snapshot, onTap: onOpenCollection),
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _HomeSectionHeading(
+            title: 'Progresso por categoria',
+            action: 'Explorar mapa',
+            onTap: onOpenMap,
+          ),
+          LayoutBuilder(builder: (context, constraints) {
+            const gap = 10.0;
+            final columns = constraints.maxWidth >= 400 ? 2 : 1;
+            final cardWidth = columns == 2
+                ? (constraints.maxWidth - gap) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: categories.map((category) {
+                final counts = categoryTotals[category]!;
+                return SizedBox(
+                  width: cardWidth,
+                  child: _HomeCategoryProgress(
+                    label: _pointCategoryLabel(category),
+                    completed: counts[0],
+                    total: counts[1],
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+        ],
+        const SizedBox(height: 20),
+        _HomeSectionHeading(
+          title: 'Continue de onde parou',
+          action: route == null ? null : 'Ver rotas',
+          onTap: onOpenRoutes,
+        ),
+        if (route != null && next != null)
+          _Panel(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.route_outlined, color: _C.gold),
+                const SizedBox(width: 9),
+                Expanded(child: Text(route.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w800),
+                )),
+                _Tag(label: '${(route.progress * 100).round()}%'),
+              ]),
+              const SizedBox(height: 10),
+              _Bar(value: route.progress),
+              const SizedBox(height: 13),
+              const Text('PRÓXIMA DESCOBERTA',
+                style: TextStyle(color: _C.gold, fontSize: 9, letterSpacing: 1.3, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 5),
+              Text(next.name, style: const TextStyle(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(next.code, style: const TextStyle(color: _C.muted, fontSize: 11)),
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                OutlinedButton.icon(
+                  onPressed: onOpenMap,
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Abrir mapa'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () => onOpenPoint(next.code),
+                  icon: const Icon(Icons.info_outline),
+                  label: const Text('Detalhes do ponto'),
+                ),
+              ]),
+            ],
+          ))
         else
-          const _Panel(
-              child: Text('Você concluiu todos os pontos publicados nas rotas disponíveis.')),
-        const SizedBox(height: 24),
-        _Heading('Cartas conquistadas', action: 'Ver coleção', onTap: onOpenCollection),
+          _Panel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.flag_outlined, color: _C.gold, size: 26),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                snapshot.routes.isEmpty ? 'Sua primeira rota está esperando' : 'Você chegou ao fim das rotas disponíveis',
+                style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text('Explore o mapa para descobrir outros pontos publicados.',
+                style: TextStyle(color: _C.muted, height: 1.4, fontSize: 12),
+              ),
+              TextButton.icon(
+                onPressed: onOpenMap,
+                icon: const Icon(Icons.explore_outlined),
+                label: const Text('Descobrir pontos'),
+              ),
+            ])),
+          ])),
+        const SizedBox(height: 20),
+        _HomeSectionHeading(
+          title: 'Conquistas recentes',
+          action: recent.isEmpty ? null : 'Ver todas',
+          onTap: onOpenCollection,
+        ),
         if (recent.isEmpty)
           const _Empty(
             icon: Icons.auto_awesome_outlined,
@@ -192,21 +334,244 @@ class _HomePage extends StatelessWidget {
             description: 'Sua primeira carta será desbloqueada quando uma visita for confirmada pelo servidor.',
           )
         else
-          ...recent.take(3).map((card) => Padding(
-                padding: const EdgeInsets.only(bottom: 9),
-                child: _CardTile(card: card, onTap: () => onOpenPoint(card.code)),
-              )),
-        if (snapshot.events.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          const _Heading('Eventos e patrocínios'),
-          ...snapshot.events.map((event) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _EventTile(event: event),
-              )),
+          SizedBox(
+            height: 150,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: recent.length > 5 ? 5 : recent.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => SizedBox(
+                width: 286,
+                child: _CardTile(
+                  card: recent[index],
+                  onTap: () => onOpenPoint(recent[index].code),
+                ),
+              ),
+            ),
+          ),
+        if (activities.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const _HomeSectionHeading(title: 'Sua atividade'),
+          _Panel(child: Column(children: activities.take(4).map((entry) {
+            final date = entry.value.date.toLocal();
+            final formatted = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Row(children: [
+                const Icon(Icons.check_circle_outline, color: _C.gold, size: 19),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(entry.value.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700)),
+                    Text('Carimbo confirmado · $formatted',
+                      style: const TextStyle(color: _C.muted, fontSize: 10)),
+                  ],
+                )),
+              ]),
+            );
+          }).toList())),
         ],
+        if (events.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const _HomeSectionHeading(title: 'Eventos ativos'),
+          ...events.map((event) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _EventTile(event: event),
+          )),
+        ],
+        const SizedBox(height: 10),
+        Center(child: Text(
+          'Cada caminho conta uma história.',
+          style: GoogleFonts.cinzel(color: _C.muted, fontSize: 12, fontStyle: FontStyle.italic),
+        )),
       ],
     );
+
+    if (onRefresh == null) return content;
+    return RefreshIndicator(
+      color: _C.gold,
+      backgroundColor: _C.paper,
+      onRefresh: onRefresh!,
+      child: content,
+    );
   }
+}
+
+class _OfflineNotice extends StatelessWidget {
+  const _OfflineNotice();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFF5B4825).withValues(alpha: .28),
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(color: _C.gold.withValues(alpha: .35)),
+    ),
+    child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(Icons.cloud_off_outlined, color: _C.gold, size: 19),
+      SizedBox(width: 9),
+      Expanded(child: Text(
+        'Sem conexão. Exibindo os últimos dados carregados neste acesso. Carimbos só são confirmados online.',
+        style: TextStyle(color: _C.ink, fontSize: 11, height: 1.4),
+      )),
+    ]),
+  );
+}
+
+class _HomeHero extends StatelessWidget {
+  const _HomeHero({
+    required this.firstName,
+    required this.capturedCards,
+    required this.totalCards,
+  });
+
+  final String firstName;
+  final int capturedCards;
+  final int totalCards;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalCards == 0 ? 0.0 : capturedCards / totalCards;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: BrandPalette.darkGreen.withValues(alpha: .55)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [BrandPalette.darkCardStrong, BrandPalette.darkCard],
+        ),
+        boxShadow: const [
+          BoxShadow(color: Color(0x44000000), blurRadius: 22, offset: Offset(0, 9)),
+        ],
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -8,
+          top: -10,
+          child: Icon(Icons.explore_outlined, size: 112, color: _C.gold.withValues(alpha: .07)),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('+1 KM  /  EUNÁPOLIS',
+            style: GoogleFonts.montserrat(color: _C.gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Text('Olá, $firstName.',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.cinzel(color: _C.ink, fontSize: 25, height: 1.18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 7),
+          const Text('A cidade guarda histórias. Seu próximo passo é descobrir uma delas.',
+            style: TextStyle(color: _C.muted, height: 1.5, fontSize: 12),
+          ),
+          const SizedBox(height: 18),
+          Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                totalCards == 0 ? 'Sua coleção começa aqui' : '$capturedCards de $totalCards cartas',
+                style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0).toDouble(),
+                  minHeight: 5,
+                  backgroundColor: _C.border,
+                  color: _C.gold,
+                ),
+              ),
+            ])),
+            const SizedBox(width: 14),
+            Text('${(progress * 100).round()}%',
+              style: GoogleFonts.cinzel(color: _C.gold, fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+          ]),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = primary ? BrandPalette.forestDeep : _C.ink;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: primary ? _C.gold : _C.paper,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: primary ? _C.gold : _C.border),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 22, color: foreground),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeSectionHeading extends StatelessWidget {
+  const _HomeSectionHeading({required this.title, this.action, this.onTap});
+  final String title;
+  final String? action;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(children: [
+      Expanded(child: Text(title,
+        style: GoogleFonts.cinzel(color: _C.ink, fontSize: 17, fontWeight: FontWeight.w700),
+      )),
+      if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
+    ]),
+  );
 }
 
 class _RoutesPage extends StatelessWidget {
@@ -395,13 +760,41 @@ class _ProgressCard extends StatelessWidget {
           const SizedBox(height: 12),
           _Bar(value: snapshot.progress),
           const SizedBox(height: 8),
-          Row(children: [
-            Text('$percent% concluído',
-                style: const TextStyle(color: _C.muted, fontSize: 12)),
-            const Spacer(),
-            if (onTap != null)
-              TextButton(onPressed: onTap, child: const Text('Ver coleção')),
-          ]),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final progressLabel = Text(
+                '$percent% concluído',
+                style: const TextStyle(color: _C.muted, fontSize: 12),
+              );
+              if (constraints.maxWidth < 340) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    progressLabel,
+                    if (onTap != null)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: onTap,
+                          child: const Text('Ver coleção'),
+                        ),
+                      ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  progressLabel,
+                  const Spacer(),
+                  if (onTap != null)
+                    TextButton(
+                      onPressed: onTap,
+                      child: const Text('Ver coleção'),
+                    ),
+                ],
+              );
+            },
+          ),
           Row(children: [
             _Stat(label: 'rotas completas', value: snapshot.completedRoutes.toString()),
             const SizedBox(width: 18),
@@ -411,6 +804,51 @@ class _ProgressCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HomeCategoryProgress extends StatelessWidget {
+  const _HomeCategoryProgress({
+    required this.label,
+    required this.completed,
+    required this.total,
+  });
+
+  final String label;
+  final int completed;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) => _Panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$completed/$total pontos',
+                style: const TextStyle(
+                  color: _C.gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ]),
+            const SizedBox(height: 9),
+            _Bar(value: total == 0 ? 0 : completed / total),
+          ],
+        ),
+      );
 }
 
 class _CardTile extends StatelessWidget {
@@ -668,22 +1106,6 @@ class _Intro extends StatelessWidget {
       );
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.title, {this.action, this.onTap});
-  final String title;
-  final String? action;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 11),
-        child: Row(children: [
-          Expanded(child: Text(title, style: GoogleFonts.cinzel(color: _C.ink, fontSize: 18, fontWeight: FontWeight.w700))),
-          if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
-        ]),
-      );
-}
-
 class _Panel extends StatelessWidget {
   const _Panel({required this.child});
   final Widget child;
@@ -826,6 +1248,16 @@ String _categoryLabel(String value) => switch (value) {
       'trabalho' => 'Trabalho',
       'litoral' => 'Litoral',
       'misterio' => 'Mistério',
+      _ => value,
+    };
+
+String _pointCategoryLabel(String value) => switch (value) {
+      'historia' => 'História',
+      'praias' => 'Praias',
+      'natureza' => 'Natureza',
+      'caminhos' => 'Caminhos',
+      'cultura' => 'Cultura',
+      'sabores' => 'Sabores',
       _ => value,
     };
 
