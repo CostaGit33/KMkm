@@ -120,14 +120,18 @@ void main() {
     expect(find.text('Olá, Romulo.'), findsOneWidget);
     expect(find.text('1 de 2 cartas'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -320));
-    await tester.pumpAndSettle();
-    expect(find.text('Circuito Cultural'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Circuito Cultural'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Praça da Liberdade'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -300));
-    await tester.pumpAndSettle();
-    expect(find.text('Festival da Cidade'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Festival da Cidade'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Evento encerrado'), findsNothing);
   });
 
@@ -169,8 +173,11 @@ void main() {
     await pumpHome(tester, showingStaleData: true);
 
     expect(find.textContaining('Sem conexão.'), findsOneWidget);
-    await tester.drag(find.byType(ListView).first, const Offset(0, -620));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Sua atividade'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Sua atividade'), findsOneWidget);
     expect(find.textContaining('Carimbo confirmado'), findsOneWidget);
     expect(find.textContaining('01/10/2026'), findsOneWidget);
