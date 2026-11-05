@@ -34,7 +34,7 @@ export function chaveConfere(informada, tag, segredo) {
 }
 
 export function urlDoPonto(base, tag, segredo) {
-  const raiz = String(base || '').replace(/\\/+$/, '');
+  const raiz = String(base || '').replace(/\/+$/, '');
   const caminho = `/t/${encodeURIComponent(tag.codigo)}`;
   const chave = exigeChave(tag) ? chaveDoPonto(tag.codigo, tag.chave_versao, segredo) : null;
   return `${raiz}${caminho}${chave ? `?k=${chave}` : ''}`;
