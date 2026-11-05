@@ -749,112 +749,6 @@ class _CardTile extends StatelessWidget {
   }
 }
 
-class _CollectionCard extends StatelessWidget {
-  const _CollectionCard({required this.card, this.onTap});
-  final NotebookCard card;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final captured = card.captured;
-    final accent = switch (card.rarity) {
-      'lendario' => const Color(0xFFE5BD52),
-      'epico' => const Color(0xFFB68AD8),
-      'raro' => const Color(0xFF7FD0A4),
-      _ => BrandPalette.gold,
-    };
-    return Material(
-      color: BrandPalette.darkCard,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: accent.withValues(alpha: captured ? .85 : .35), width: 1.2),
-            boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 16, offset: Offset(0, 7))],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 7,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      color: BrandPalette.forestDeep,
-                      child: captured && _cardArtUrl(card) != null
-                          ? Image.network(
-                              _cardArtUrl(card)!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
-                            )
-                          : _CardPlaceholder(card: card),
-                    ),
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: BrandPalette.forestDeep.withValues(alpha: .9),
-                          border: Border.all(color: accent),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          card.number > 0 ? card.number.toString().padLeft(3, '0') : '---',
-                          style: GoogleFonts.cinzel(color: accent, fontSize: 10, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                    if (!captured)
-                      Positioned.fill(
-                        child: Container(
-                          color: BrandPalette.forestDeep.withValues(alpha: .35),
-                          child: const Center(child: Icon(Icons.lock_outline, color: BrandPalette.darkMuted, size: 28)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        captured ? (card.creature ?? card.pointName) : 'Carta bloqueada',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cinzel(color: captured ? BrandPalette.cream : BrandPalette.darkMuted, fontSize: 11, fontWeight: FontWeight.w700, height: 1.25),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(card.pointName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
-                      const Spacer(),
-                      Row(children: [
-                        Expanded(child: Text(_categoryLabel(card.category).toUpperCase(),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: accent, fontSize: 8, letterSpacing: .7, fontWeight: FontWeight.w800))),
-                        Text(_rarityLabel(card.rarity), style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w700)),
-                      ]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CardPlaceholder extends StatelessWidget {
   const _CardPlaceholder({required this.card});
   final NotebookCard card;
@@ -889,11 +783,11 @@ class _EventTile extends StatelessWidget {
     final tiragem = int.tryParse(edition?['tiragem']?.toString() ?? '') ?? 0;
     final emitidos = int.tryParse(edition?['emitidos']?.toString() ?? '') ?? 0;
     final numero = int.tryParse(edition?['numero']?.toString() ?? '');
-    final dateFormat = (DateTime? value) {
+    String dateFormat(DateTime? value) {
       if (value == null) return '';
       final date = value.toLocal();
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-    };
+    }
     final period = event.startAt != null || event.endAt != null
         ? '${dateFormat(event.startAt)} a ${dateFormat(event.endAt)}'
         : null;
@@ -1051,24 +945,6 @@ class _Tag extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: _C.cream, borderRadius: BorderRadius.circular(20)),
         child: Text(label, style: const TextStyle(color: _C.forest, fontSize: 10, fontWeight: FontWeight.w700)),
-      );
-}
-
-class _Filter extends StatelessWidget {
-  const _Filter({required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
-        selectedColor: _C.gold.withValues(alpha: .2),
-        labelStyle: TextStyle(
-            color: selected ? _C.gold : _C.muted,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w500),
       );
 }
 
