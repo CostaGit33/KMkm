@@ -27,7 +27,9 @@ class PasswordResetLinkParser {
       return null;
     }
 
-    final tokens = uri.queryParametersAll['redefinir'];
+    final parameters = uri.queryParametersAll;
+    if (parameters.length != 1) return null;
+    final tokens = parameters['redefinir'];
     if (tokens == null || tokens.length != 1) return null;
     final token = tokens.single;
     return _tokenPattern.hasMatch(token) ? token : null;
