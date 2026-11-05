@@ -87,6 +87,24 @@ void main() {
     expect(clearedSessions, 1);
   });
 
+  test('redefinição envia token e senha sem cookie e limpa a sessão local', () async {
+    final result = await api.resetPassword(
+      token: 'token-de-recuperacao-de-teste-1234567890',
+      password: 'nova-senha-segura',
+    );
+
+    expect(result, {'ok': true});
+    expect(requests, hasLength(1));
+    expect(requests.single['method'], 'POST');
+    expect(requests.single['path'], '/api/conta/redefinir-senha');
+    expect(requests.single['body'], {
+      'token': 'token-de-recuperacao-de-teste-1234567890',
+      'senha': 'nova-senha-segura',
+    });
+    expect(requests.single['cookie'], isNull);
+    expect(clearedSessions, 1);
+  });
+
   test('opcionais ausentes não são enviados e pódio mensal usa contrato padrão', () async {
     await api.updateAccount(name: 'Ana', email: 'ana@example.test');
     await api.fetchGamificationPodium();
