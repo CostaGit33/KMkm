@@ -50,14 +50,18 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: [
-            _filterChip('Todas', 'todas', data.cards.length),
+            _filterChip('Todas', 'todas', '${data.capturedCards}/${data.totalCards}'),
             const SizedBox(width: 7),
-            _filterChip('Conquistadas', 'conquistadas', data.capturedCards),
+            _filterChip('Conquistadas', 'conquistadas', '${data.capturedCards}'),
             const SizedBox(width: 7),
-            _filterChip('Bloqueadas', 'bloqueadas', data.totalCards - data.capturedCards),
+            _filterChip('Bloqueadas', 'bloqueadas', '${(data.totalCards - data.capturedCards).clamp(0, data.totalCards)}'),
             for (final category in categories) ...[
               const SizedBox(width: 7),
-              _filterChip(_categories[category]!, category, data.categories[category]?['total'] ?? 0),
+              _filterChip(
+                _categories[category]!,
+                category,
+                '${data.categories[category]?['capturadas'] ?? 0}/${data.categories[category]?['total'] ?? 0}',
+              ),
             ],
           ]),
         ),
@@ -171,7 +175,7 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
     ]),
   );
 
-  Widget _filterChip(String label, String value, int count) {
+  Widget _filterChip(String label, String value, String count) {
     final selected = _filter == value;
     return ChoiceChip(
       label: Text('$label · $count'),
@@ -333,7 +337,7 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
   }
 
   Future<void> _showCard(NotebookCard card) async {
-    final photosFuture = widget.onLoadPointImages?.call(card.code);
+    final photosFuture = card.captured ? widget.onLoadPointImages?.call(card.code) : null;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -399,7 +403,8 @@ class _CardTile extends StatelessWidget {
                   Expanded(child: Text(_categoryLabel(card.category).toUpperCase(), maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: accent, fontSize: 8, letterSpacing: .5, fontWeight: FontWeight.w800))),
-                  Text(_rarityLabel(card.rarity), style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w700)),
+                  if (card.captured)
+                    Text(_rarityLabel(card.rarity), style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w700)),
                 ]),
               ]),
             )),
@@ -669,7 +674,7 @@ class _CardArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = _artUrl(card, detail: detail);
+    final url = card.captured ? _artUrl(card, detail: detail) : null;
     return Container(
       decoration: BoxDecoration(
         color: BrandPalette.forest,
