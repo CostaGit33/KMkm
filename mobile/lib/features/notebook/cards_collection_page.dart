@@ -145,7 +145,7 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text('${(percent * 100).round()}% concluído · ${data.totalCards - data.capturedCards} cartas restantes',
+        Text('${(percent * 100).round()}% concluído · ${(data.totalCards - data.capturedCards).clamp(0, data.totalCards)} cartas restantes',
           style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 11)),
         const Divider(height: 23, color: BrandPalette.darkRule),
         Row(children: [
@@ -316,22 +316,45 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
   }
 
   Widget _history(NotebookSnapshot data) {
-    final entries = data.cards.where((card) => card.captured && card.capturedAt != null).toList()
-      ..sort((a, b) => b.capturedAt!.compareTo(a.capturedAt!));
-    if (entries.isEmpty) {
+    final entries = <String, ({String name, DateTime date, int number})>{};
+    for (final routePoint in data.routes.expand((route) => route.points)) {
+      final date = routePoint.stamp?.createdAt;
+      if (routePoint.completed && date != null) {
+        entries[routePoint.code.toLowerCase()] = (
+          name: routePoint.name,
+          date: date,
+          number: 0,
+        );
+      }
+    }
+    for (final card in data.cards) {
+      final date = card.capturedAt;
+      if (card.captured && date != null) {
+        entries[card.code.toLowerCase()] = (
+          name: card.pointName,
+          date: date,
+          number: card.number,
+        );
+      }
+    }
+    final ordered = entries.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    if (ordered.isEmpty) {
       return const _CollectionPanel(child: Text('Sua primeira carta começa com uma descoberta confirmada.',
         textAlign: TextAlign.center, style: TextStyle(color: BrandPalette.darkMuted, fontSize: 12)));
     }
-    return _CollectionPanel(child: Column(children: entries.take(5).map((card) {
-      final date = card.capturedAt!.toLocal();
+    return _CollectionPanel(child: Column(children: ordered.take(5).map((entry) {
+      final date = entry.date.toLocal();
       final formatted = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
       return ListTile(
         dense: true,
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.verified_outlined, color: BrandPalette.gold, size: 20),
-        title: Text(card.pointName, style: const TextStyle(color: BrandPalette.cream, fontSize: 12, fontWeight: FontWeight.w700)),
+        title: Text(entry.name, style: const TextStyle(color: BrandPalette.cream, fontSize: 12, fontWeight: FontWeight.w700)),
         subtitle: Text('Carimbo confirmado · $formatted', style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 10)),
-        trailing: Text(card.number.toString().padLeft(3, '0'), style: const TextStyle(color: BrandPalette.gold, fontSize: 10)),
+        trailing: entry.number > 0
+            ? Text(entry.number.toString().padLeft(3, '0'), style: const TextStyle(color: BrandPalette.gold, fontSize: 10))
+            : null,
       );
     }).toList()));
   }
@@ -357,7 +380,7 @@ class _CardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _rarityColor(card.rarity);
+    final accent = card.captured ? _rarityColor(card.rarity) : BrandPalette.darkMuted;
     return Material(
       color: BrandPalette.darkCard,
       borderRadius: BorderRadius.circular(15),
@@ -678,7 +701,7 @@ class _CardArtwork extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: BrandPalette.forest,
-        border: Border.all(color: _rarityColor(card.rarity).withValues(alpha: .55)),
+        border: Border.all(color: (card.captured ? _rarityColor(card.rarity) : BrandPalette.darkMuted).withValues(alpha: .55)),
       ),
       child: url == null
           ? _ArtworkFallback(card: card)
