@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
+import 'cards_collection_page.dart';
 
 class NotebookPages extends StatelessWidget {
   const NotebookPages({
@@ -595,81 +596,14 @@ class _RoutesPage extends StatelessWidget {
   }
 }
 
-class _CollectionPage extends StatefulWidget {
+class _CollectionPage extends StatelessWidget {
   const _CollectionPage({required this.snapshot, required this.onOpenPoint});
   final NotebookSnapshot snapshot;
   final ValueChanged<String> onOpenPoint;
 
   @override
-  State<_CollectionPage> createState() => _CollectionPageState();
-}
-
-class _CollectionPageState extends State<_CollectionPage> {
-  String _filter = 'todas';
-
-  @override
-  Widget build(BuildContext context) {
-    final data = widget.snapshot;
-    final cards = data.cards.where((card) {
-      if (_filter == 'conquistadas') return card.captured;
-      if (_filter == 'bloqueadas') return !card.captured;
-      if (_filter == 'todas') return true;
-      return card.category == _filter;
-    }).toList();
-    final categories = data.categories.keys.toList()..sort();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
-      children: [
-        const _Intro(
-          eyebrow: 'SUA COLEÇÃO',
-          title: 'Caderneta de cartas',
-          subtitle: 'Cada visita confirmada desbloqueia uma carta única.',
-        ),
-        _ProgressCard(snapshot: data),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: [
-            _Filter(label: 'Todas', selected: _filter == 'todas', onTap: () => setState(() => _filter = 'todas')),
-            _Filter(label: 'Conquistadas', selected: _filter == 'conquistadas', onTap: () => setState(() => _filter = 'conquistadas')),
-            _Filter(label: 'Bloqueadas', selected: _filter == 'bloqueadas', onTap: () => setState(() => _filter = 'bloqueadas')),
-            ...categories.map((category) => _Filter(
-                  label: _categoryLabel(category),
-                  selected: _filter == category,
-                  onTap: () => setState(() => _filter = category),
-                )),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (cards.isEmpty)
-          const _Empty(
-            icon: Icons.collections_bookmark_outlined,
-            title: 'Nenhuma carta neste filtro',
-            description: 'Experimente outra categoria ou volte para todas.',
-          ),
-        if (cards.isNotEmpty)
-          LayoutBuilder(builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 620 ? 3 : 2;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: cards.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 14,
-                childAspectRatio: .68,
-              ),
-              itemBuilder: (context, index) => _CollectionCard(
-                card: cards[index],
-                onTap: () => widget.onOpenPoint(cards[index].code),
-              ),
-            );
-          }),
-      ],
-    );
-  }
+  Widget build(BuildContext context) =>
+      CardsCollectionPage(snapshot: snapshot, onOpenPoint: onOpenPoint);
 }
 
 class _ProgressCard extends StatelessWidget {
