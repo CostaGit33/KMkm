@@ -42,10 +42,39 @@ void main() {
     expect(find.text('Guardião da Praça'), findsOneWidget);
     expect(find.text('Carta bloqueada'), findsOneWidget);
 
-    await tester.tap(find.text('Natureza · 1'));
+    await tester.tap(find.text('Natureza · 0/1'));
     await tester.pumpAndSettle();
     expect(find.text('Carta bloqueada'), findsOneWidget);
     expect(find.text('Guardião da Praça'), findsNothing);
+  });
+
+  testWidgets('não revela arte nem raridade na grade de cartas bloqueadas', (tester) async {
+    final data = NotebookSnapshot.fromJson({
+      'colecao': {
+        'total': 1,
+        'capturadas': 0,
+        'por_categoria': {'natureza': {'total': 1, 'capturadas': 0}},
+        'itens': [
+          {
+            'codigo': 'eu-locked',
+            'carta': 9,
+            'ponto': 'Ponto reservado',
+            'categoria': 'natureza',
+            'raridade': 'lendario',
+            'capturada': false,
+            'arte': 'arte-secreta.webp',
+            'arte_foto': {'m': '/midia/arte-secreta.m.webp', 'g': '/midia/arte-secreta.g.webp'},
+          },
+        ],
+      },
+    });
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: CardsCollectionPage(snapshot: data, onOpenPoint: (_) {})),
+    ));
+
+    expect(find.text('Carta bloqueada'), findsOneWidget);
+    expect(find.text('Lendária'), findsNothing);
+    expect(find.byType(Image), findsNothing);
   });
 
   testWidgets('abre detalhe com história, frase e metadados da carta', (tester) async {
