@@ -14,7 +14,7 @@ Aplicativo Android Flutter desenvolvido em paralelo à PWA existente. Usa o mesm
 - Carimbo por leitura NFC NDEF dentro do app, App Link ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
 - Leitura NFC aceita registros NDEF URI e texto contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; o app não consegue ler uma TAG vazia ou sem NDEF.
 
-A redefinição de senha pelo token/deep link enviado por e-mail e as telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
+A redefinição de senha pelo token enviado por e-mail agora abre no app por App Link e consome o endpoint de uso único. As telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
 
 ## Mapas
 
