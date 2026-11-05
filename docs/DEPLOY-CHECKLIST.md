@@ -6,6 +6,7 @@
 | `DATABASE_URL` | MySQL (`mysql://usuario:senha@host:3306/banco`) | sim |
 | `CONTATO_EMAIL` | e-mail exibido em /privacidade e /excluir-conta (exigido pela Google Play) | sim |
 | `GOOGLE_MAPS_API_KEY` | chave `AIza...` do Maps JavaScript API | recomendada |
+| `ANDROID_SHA256_CERT_FINGERPRINTS` | SHA-256 do certificado do app Android; publica `/.well-known/assetlinks.json` (App Links das tags NFC) | antes do app na Play |
 | `GOOGLE_MAP_ID` | Map ID para estilo próprio (verde e dourado) | opcional |
 | `RELEASE_VERSION` | rótulo da versão publicada (commit curto ou versão semântica), devolvido em `/api/saude`; se ausente, o código usa `V8.15` como fallback até a próxima versão | recomendada |
 | `RESEND_API_KEY` | chave de envio do Resend (segredo: só variável de execução, nunca Build Args nem `VITE_*`). Liga a recuperação de senha | para recuperar senha |
