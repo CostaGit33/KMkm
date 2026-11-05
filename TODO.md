@@ -1,6 +1,6 @@
 # Pendências (lista viva)
 
-Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
+Atualizado em 05/11/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Antes de abrir ao público
 - [x] `TAG_KEY_SECRET` definido (confirmado pelo responsável em 31/10/2026).
@@ -11,6 +11,8 @@ Atualizado em 25/10/2026. Histórico das versões antigas em `docs/historico/`.
 - [x] Senha do MySQL exposta em log de build trocada (31/10/2026).
 - [ ] Conferir CSP no celular (mapa, fontes, GA4 após consentimento).
 - [ ] Coordenadas validadas em campo antes de ligar localização por raio.
+- [ ] App Android: gerar a chave de release, cadastrar os 4 secrets do GitHub e rodar *Mobile - Release assinado* (`docs/PLAY-STORE.md`, passo 2).
+- [ ] Definir `ANDROID_SHA256_CERT_FINGERPRINTS` no Easypanel e conferir que `/.well-known/assetlinks.json` devolve JSON (passo 3).
 - [ ] `CONTATO_EMAIL`, `RELEASE_VERSION`, limpar carimbos de teste (`teste-podio limpar`).
 
 ## Técnico
