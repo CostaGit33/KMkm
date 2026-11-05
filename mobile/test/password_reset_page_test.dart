@@ -13,7 +13,7 @@ void main() {
       home: PasswordResetPage(
         api: api,
         token: 'token-de-teste-comprido-12345678901234567890',
-        onCompleted: () => completed = true,
+        onCompleted: (_) => completed = true,
       ),
     ));
 
@@ -36,7 +36,7 @@ void main() {
       home: PasswordResetPage(
         api: api,
         token: 'token-de-teste-comprido-12345678901234567890',
-        onCompleted: () {},
+        onCompleted: (_) {},
       ),
     ));
 
