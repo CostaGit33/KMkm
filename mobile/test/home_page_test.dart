@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mais1km/core/models/catalog_snapshot.dart';
 import 'package:mais1km/core/theme/brand_theme.dart';
 import 'package:mais1km/features/notebook/notebook_pages.dart';
 import 'package:mais1km/core/models/notebook_snapshot.dart';
@@ -54,8 +55,8 @@ void main() {
           },
         ],
         'colecao': {
-          'total': 2,
-          'capturadas': 1,
+          'total': 3,
+          'capturadas': 2,
           'por_categoria': {
             'cultura': {'total': 2, 'capturadas': 1},
           },
@@ -78,8 +79,52 @@ void main() {
               'raridade': 'raro',
               'capturada': false,
             },
+            {
+              'codigo': 'eu-003',
+              'carta': 3,
+              'ponto': 'Parque do Gravatá',
+              'categoria': 'natureza',
+              'raridade': 'comum',
+              'capturada': true,
+            },
           ],
         },
+      });
+
+  CatalogSnapshot sampleCatalog() => CatalogSnapshot.fromJson({
+        'pontos': [
+          {
+            'codigo': 'eu-001',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['historia', 'cultura'],
+          },
+          {
+            'codigo': 'eu-002',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['cultura', 'natureza'],
+          },
+          {
+            'codigo': 'eu-003',
+            'status': 'publicado',
+            'oculto': false,
+            'categorias': ['natureza'],
+          },
+          {
+            'codigo': 'eu-004',
+            'status': 'pendente',
+            'oculto': false,
+            'categorias': ['historia'],
+          },
+          {
+            'codigo': 'eu-005',
+            'status': 'publicado',
+            'oculto': true,
+            'categorias': ['praias'],
+          },
+        ],
+        'circuitos': [],
       });
 
   Future<void> pumpHome(
@@ -99,6 +144,7 @@ void main() {
           body: NotebookPages(
             page: 0,
             snapshot: sampleSnapshot(),
+            catalog: sampleCatalog(),
             user: const {'nome': 'Romulo Costa'},
             onOpenMap: onMap ?? () {},
             onOpenStamp: onStamp,
@@ -118,7 +164,7 @@ void main() {
     await pumpHome(tester);
 
     expect(find.text('Olá, Romulo.'), findsOneWidget);
-    expect(find.text('1 de 2 cartas'), findsOneWidget);
+    expect(find.text('2 de 3 cartas'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Circuito Cultural'),
@@ -133,6 +179,18 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Evento encerrado'), findsNothing);
+  });
+
+  testWidgets('mostra progresso por categorias com pontos públicos confirmados', (tester) async {
+    await pumpHome(tester);
+
+    expect(find.text('Progresso por categoria'), findsOneWidget);
+    expect(find.text('História'), findsOneWidget);
+    expect(find.text('1/1 pontos'), findsOneWidget);
+    expect(find.text('Cultura'), findsOneWidget);
+    expect(find.text('Natureza'), findsOneWidget);
+    expect(find.text('1/2 pontos'), findsNWidgets(2));
+    expect(find.text('Praias'), findsNothing);
   });
 
   testWidgets('atalhos do mapa e leitura NFC executam suas ações', (tester) async {

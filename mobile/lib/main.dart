@@ -1068,6 +1068,7 @@ class _HomeShellState extends State<HomeShell> {
               : NotebookPages(
               page: _tab,
               snapshot: _notebook,
+              catalog: _catalog,
               user: widget.user,
               loading: _loadingNotebook,
               error: _notebookError,
