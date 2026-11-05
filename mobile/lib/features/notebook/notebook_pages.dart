@@ -16,6 +16,8 @@ class NotebookPages extends StatelessWidget {
     this.onOpenStamp,
     this.onOpenRoutes,
     this.onRefresh,
+    this.onFindNearby,
+    this.showingStaleData = false,
     this.loading = false,
     this.error,
     this.onRetry,
@@ -30,6 +32,8 @@ class NotebookPages extends StatelessWidget {
   final VoidCallback? onOpenStamp;
   final VoidCallback? onOpenRoutes;
   final Future<void> Function()? onRefresh;
+  final Future<void> Function()? onFindNearby;
+  final bool showingStaleData;
   final bool loading;
   final String? error;
   final VoidCallback? onRetry;
@@ -61,6 +65,8 @@ class NotebookPages extends StatelessWidget {
       onOpenStamp: onOpenStamp,
       onOpenRoutes: onOpenRoutes,
       onRefresh: onRefresh,
+      onFindNearby: onFindNearby,
+      showingStaleData: showingStaleData,
     );
   }
 }
@@ -85,6 +91,8 @@ class _HomePage extends StatelessWidget {
     this.onOpenStamp,
     this.onOpenRoutes,
     this.onRefresh,
+    this.onFindNearby,
+    this.showingStaleData = false,
   });
 
   final NotebookSnapshot snapshot;
@@ -95,6 +103,8 @@ class _HomePage extends StatelessWidget {
   final VoidCallback? onOpenStamp;
   final VoidCallback? onOpenRoutes;
   final Future<void> Function()? onRefresh;
+  final Future<void> Function()? onFindNearby;
+  final bool showingStaleData;
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +123,27 @@ class _HomePage extends StatelessWidget {
         .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
         .take(3)
         .toList();
+    final activityByCode = <String, ({String name, DateTime date})>{};
+    for (final routePoint in snapshot.routes.expand((item) => item.points)) {
+      final date = routePoint.stamp?.createdAt;
+      if (routePoint.completed && date != null) {
+        activityByCode[routePoint.code] = (name: routePoint.name, date: date);
+      }
+    }
+    for (final card in recent) {
+      final date = card.capturedAt;
+      if (date != null) {
+        activityByCode.putIfAbsent(card.code, () => (name: card.pointName, date: date));
+      }
+    }
+    final activities = activityByCode.entries.toList()
+      ..sort((a, b) => b.value.date.compareTo(a.value.date));
 
     final content = ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
+        if (showingStaleData) const _OfflineNotice(),
         _HomeHero(
           firstName: firstName,
           capturedCards: snapshot.capturedCards,
@@ -138,6 +164,26 @@ class _HomePage extends StatelessWidget {
             onTap: onOpenStamp,
           )),
         ]),
+        const SizedBox(height: 14),
+        _Panel(
+          child: Row(children: [
+            const Icon(Icons.near_me_outlined, color: _C.gold, size: 23),
+            const SizedBox(width: 11),
+            const Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Descobertas próximas', style: TextStyle(color: _C.ink, fontWeight: FontWeight.w800)),
+                SizedBox(height: 3),
+                Text('Encontre pontos publicados perto de você.', style: TextStyle(color: _C.muted, fontSize: 11)),
+              ],
+            )),
+            IconButton(
+              tooltip: 'Encontrar pontos próximos',
+              onPressed: onFindNearby,
+              icon: const Icon(Icons.arrow_forward_rounded, color: _C.gold),
+            ),
+          ]),
+        ),
         const SizedBox(height: 20),
         _HomeSectionHeading(
           title: 'Sua jornada',
@@ -238,6 +284,31 @@ class _HomePage extends StatelessWidget {
               ),
             ),
           ),
+        if (activities.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const _HomeSectionHeading(title: 'Sua atividade'),
+          _Panel(child: Column(children: activities.take(4).map((entry) {
+            final date = entry.value.date.toLocal();
+            final formatted = date.day.toString().padLeft(2, '0') + '/' +
+                date.month.toString().padLeft(2, '0') + '/' + date.year.toString();
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Row(children: [
+                const Icon(Icons.check_circle_outline, color: _C.gold, size: 19),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(entry.value.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _C.ink, fontWeight: FontWeight.w700)),
+                    Text('Carimbo confirmado · ' + formatted,
+                      style: const TextStyle(color: _C.muted, fontSize: 10)),
+                  ],
+                )),
+              ]),
+            );
+          }).toList())),
+        ],
         if (events.isNotEmpty) ...[
           const SizedBox(height: 20),
           const _HomeSectionHeading(title: 'Eventos ativos'),
@@ -262,6 +333,29 @@ class _HomePage extends StatelessWidget {
       child: content,
     );
   }
+}
+
+class _OfflineNotice extends StatelessWidget {
+  const _OfflineNotice();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFF5B4825).withValues(alpha: .28),
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(color: _C.gold.withValues(alpha: .35)),
+    ),
+    child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(Icons.cloud_off_outlined, color: _C.gold, size: 19),
+      SizedBox(width: 9),
+      Expanded(child: Text(
+        'Sem conexão. Exibindo os últimos dados carregados neste acesso. Carimbos só são confirmados online.',
+        style: TextStyle(color: _C.ink, fontSize: 11, height: 1.4),
+      )),
+    ]),
+  );
 }
 
 class _HomeHero extends StatelessWidget {
