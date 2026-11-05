@@ -10,6 +10,8 @@ import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
 import 'core/models/notebook_snapshot.dart';
 import 'core/theme/brand_theme.dart';
+import 'features/auth/password_reset_link_parser.dart';
+import 'features/auth/password_reset_page.dart';
 import 'features/gamification/podium_page.dart';
 import 'features/map/catalog_map.dart';
 import 'features/notebook/notebook_pages.dart';
@@ -78,6 +80,7 @@ class _AuthGateState extends State<AuthGate> {
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _appLinkSubscription;
   Uri? _pendingStampUri;
+  String? _pendingPasswordResetToken;
   int _stampVersion = 0;
 
   @override
@@ -101,12 +104,37 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _handleIncomingUri(Uri uri) {
-    if (!mounted || StampLinkParser.parse(uri.toString()) == null) return;
+    if (!mounted) return;
+    final resetToken = PasswordResetLinkParser.parse(uri.toString());
+    if (resetToken != null) {
+      _pendingPasswordResetToken = resetToken;
+      if (!_checking) _openPendingPasswordReset();
+      return;
+    }
+    if (StampLinkParser.parse(uri.toString()) == null) return;
     if (_user == null) {
       _pendingStampUri = uri;
       return;
     }
     unawaited(_openStampPage(uri));
+  }
+
+  void _openPendingPasswordReset() {
+    final token = _pendingPasswordResetToken;
+    if (token == null) return;
+    _pendingPasswordResetToken = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => PasswordResetPage(
+            api: widget.api,
+            token: token,
+            onCompleted: _sessionEnded,
+          ),
+        ),
+      ));
+    });
   }
 
   Future<void> _openStampPage(Uri? uri) async {
@@ -146,7 +174,11 @@ class _AuthGateState extends State<AuthGate> {
       // Falha de rede não apaga uma sessão que ainda pode ser válida.
     } finally {
       if (mounted) setState(() => _checking = false);
-      _openPendingStampAfterAuthentication();
+      if (_pendingPasswordResetToken != null) {
+        _openPendingPasswordReset();
+      } else {
+        _openPendingStampAfterAuthentication();
+      }
     }
   }
 
