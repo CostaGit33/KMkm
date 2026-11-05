@@ -625,17 +625,23 @@ class _HomeShellState extends State<HomeShell> {
     }
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ative a localização do aparelho para encontrar pontos próximos.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ative a localização do aparelho para encontrar pontos próximos.')),
+          );
+        }
         return;
       }
       var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('A permissão de localização é necessária apenas para esta busca.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A permissão de localização é necessária apenas para esta busca.')),
+          );
+        }
         return;
       }
       final position = await Geolocator.getCurrentPosition(
@@ -661,8 +667,8 @@ class _HomeShellState extends State<HomeShell> {
             const SizedBox(height: 12),
             ...nearby.take(5).map((item) {
               final distance = item.meters < 1000
-                  ? item.meters.round().toString() + ' m'
-                  : (item.meters / 1000).toStringAsFixed(1).replaceAll('.', ',') + ' km';
+                  ? '${item.meters.round()} m'
+                  : '${(item.meters / 1000).toStringAsFixed(1).replaceAll('.', ',')} km';
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.place_outlined, color: AppColors.gold),
@@ -679,17 +685,23 @@ class _HomeShellState extends State<HomeShell> {
         )),
       );
     } on LocationServiceDisabledException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A localização está desativada no aparelho.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('A localização está desativada no aparelho.')),
+        );
+      }
     } on TimeoutException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível obter a localização a tempo. Tente novamente.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível obter a localização a tempo. Tente novamente.')),
+        );
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível localizar pontos próximos agora.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível localizar pontos próximos agora.')),
+        );
+      }
     }
   }
 
