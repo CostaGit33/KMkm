@@ -49,23 +49,22 @@ void main() {
   });
 
   testWidgets('abre detalhe com história, frase e metadados da carta', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: CardsCollectionPage(snapshot: fixture(), onOpenPoint: (_) {})),
     ));
 
-    await tester.ensureVisible(find.text('Guardião da Praça'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Guardião da Praça'));
     await tester.pumpAndSettle();
 
     expect(find.text('Rara'), findsOneWidget);
-    final detailScroll = find.byWidgetPredicate((widget) => widget is ListView && widget.controller != null);
-    await tester.scrollUntilVisible(find.text('HISTÓRIA'), 160, scrollable: detailScroll);
-    expect(find.text('HISTÓRIA'), findsOneWidget);
+        expect(find.text('HISTÓRIA'), findsOneWidget);
     expect(find.text('Uma história da cidade.'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('“Cada caminho conta.”'), 120, scrollable: detailScroll);
-    expect(find.text('“Cada caminho conta.”'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Ver ponto no mapa'), 120, scrollable: detailScroll);
-    expect(find.text('Ver ponto no mapa'), findsOneWidget);
+        expect(find.text('“Cada caminho conta.”'), findsOneWidget);
+        expect(find.text('Ver ponto no mapa'), findsOneWidget);
   });
 }
