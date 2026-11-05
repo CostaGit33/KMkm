@@ -540,7 +540,7 @@ class _PointPhotoGallery extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
               child: SizedBox(width: 112, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(10),
-                  child: Image.network(photo.thumbnailUrl, width: 112, fit: BoxFit.cover,
+                  child: Image.network(_publicPhotoUrl(photo.thumbnailUrl), width: 112, fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard,
                       child: Center(child: Icon(Icons.broken_image_outlined, color: BrandPalette.darkMuted)))))),
                 const SizedBox(height: 4),
@@ -573,7 +573,7 @@ class _PointPhotoGallery extends StatelessWidget {
               final photo = photos[index];
               final credits = [photo.author, photo.source].where((value) => value?.isNotEmpty == true).join(' · ');
               return Column(children: [
-                Expanded(child: InteractiveViewer(child: Image.network(photo.url, fit: BoxFit.contain,
+                Expanded(child: InteractiveViewer(child: Image.network(_publicPhotoUrl(photo.url), fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined,
                     color: BrandPalette.darkMuted, size: 48))))),
                 Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 14), child: Column(children: [
@@ -626,13 +626,13 @@ class _PhotoComparisonState extends State<_PhotoComparison> {
       ClipRRect(borderRadius: BorderRadius.circular(10), child: AspectRatio(
         aspectRatio: 16 / 9,
         child: LayoutBuilder(builder: (context, constraints) => Stack(fit: StackFit.expand, children: [
-          Image.network(widget.today.url, fit: BoxFit.cover,
+          Image.network(_publicPhotoUrl(widget.today.url), fit: BoxFit.cover,
             errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard)),
           ClipRect(child: Align(
             alignment: Alignment.centerLeft,
             widthFactor: _position / 100,
             child: SizedBox(width: constraints.maxWidth, height: constraints.maxHeight,
-              child: Image.network(widget.before.url, fit: BoxFit.cover,
+              child: Image.network(_publicPhotoUrl(widget.before.url), fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard))),
           )),
           Positioned(left: 7, top: 7, child: _DetailPill(label: 'Antes')),
@@ -647,6 +647,12 @@ class _PhotoComparisonState extends State<_PhotoComparison> {
         style: TextStyle(color: BrandPalette.darkMuted, fontSize: 10)),
     ],
   ));
+}
+
+String _publicPhotoUrl(String value) {
+  if (value.startsWith('/midia/')) return 'https://mais1km.novaagencian8n.online$value';
+  if (value.startsWith('https://')) return value;
+  return '';
 }
 
 String _photoType(String type) => switch (type) {
