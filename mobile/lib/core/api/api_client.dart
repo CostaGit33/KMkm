@@ -240,6 +240,23 @@ class ApiClient {
     );
   }
 
+  /// Redefine a senha com token de uso único recebido por e-mail.
+  /// O servidor revoga todas as sessões; por isso a sessão local também é apagada.
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    final response = await _request(
+      'POST',
+      '/api/conta/redefinir-senha',
+      body: {'token': token, 'senha': password},
+      authenticated: false,
+    );
+    final payload = _asMap(response.data);
+    await clearSession();
+    return payload;
+  }
+
   Future<String?> _readSessionCookie() async {
     final reader = _sessionCookieReader;
     if (reader != null) return reader();
@@ -368,6 +385,10 @@ class ApiClient {
         return 'A senha atual não confere.';
       case 'chave_invalida':
         return 'A chave deste ponto não é válida.';
+      case 'token_ou_senha_invalidos':
+        return 'O link ou a nova senha não são válidos.';
+      case 'token_invalido_ou_expirado':
+        return 'Este link já foi usado ou expirou. Solicite uma nova recuperação.';
       case 'rate_limited':
       case 'muitas_tentativas':
       case 'muitos_carimbos':
