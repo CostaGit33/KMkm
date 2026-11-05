@@ -130,7 +130,7 @@ class _AuthGateState extends State<AuthGate> {
           builder: (_) => PasswordResetPage(
             api: widget.api,
             token: token,
-            onCompleted: _sessionEnded,
+            onCompleted: _passwordResetCompleted,
           ),
         ),
       ));
@@ -203,6 +203,16 @@ class _AuthGateState extends State<AuthGate> {
 
   void _sessionEnded() {
     if (mounted) setState(() => _user = null);
+  }
+
+  void _passwordResetCompleted(String? email) {
+    final target = email?.trim().toLowerCase();
+    final current = _user?['email']?.toString().trim().toLowerCase();
+    // Não encerra uma sessão de outra conta que esteja aberta no aparelho.
+    if (current == null || (target != null && target.isNotEmpty && current == target)) {
+      unawaited(widget.api.clearSession());
+      if (_user != null && mounted) setState(() => _user = null);
+    }
   }
 
   @override
