@@ -89,6 +89,8 @@ void main() {
     VoidCallback? onCollection,
     VoidCallback? onRoutes,
     ValueChanged<String>? onPoint,
+    Future<void> Function()? onNearby,
+    bool showingStaleData = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -103,6 +105,8 @@ void main() {
             onOpenRoutes: onRoutes,
             onOpenCollection: onCollection ?? () {},
             onOpenPoint: onPoint ?? (_) {},
+            onFindNearby: onNearby,
+            showingStaleData: showingStaleData,
           ),
         ),
       ),
@@ -159,6 +163,26 @@ void main() {
 
     expect(openedCode, 'eu-002');
     expect(find.byType(RefreshIndicator), findsNothing);
+  });
+
+  testWidgets('mostra atividade recente confirmada e aviso quando usa dados antigos', (tester) async {
+    await pumpHome(tester, showingStaleData: true);
+
+    expect(find.textContaining('Sem conexão.'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -620));
+    await tester.pumpAndSettle();
+    expect(find.text('Sua atividade'), findsOneWidget);
+    expect(find.textContaining('Carimbo confirmado'), findsOneWidget);
+    expect(find.textContaining('01/10/2026'), findsOneWidget);
+  });
+
+  testWidgets('atalho de descobertas próximas dispara apenas a ação solicitada', (tester) async {
+    var requested = false;
+    await pumpHome(tester, onNearby: () async { requested = true; });
+
+    await tester.tap(find.byTooltip('Encontrar pontos próximos'));
+    await tester.pump();
+    expect(requested, isTrue);
   });
 
   testWidgets('adapta o painel a uma largura estreita sem overflow', (tester) async {
