@@ -66,8 +66,8 @@ test('chaveConfere: link aberto (versão 0) passa; com chave, só a certa; girar
   assert.equal(chaveConfere('x'.repeat(22), v1, SEGREDO), false);
   assert.equal(chaveConfere(k1, { codigo: 'eu-001', chave_versao: 2 }, SEGREDO), false);
   assert.equal(chaveConfere(k1, { codigo: 'eu-002', chave_versao: 1 }, SEGREDO), false);
-  // sem segredo configurado, nada é exigido (o servidor avisa no log e em /api/saude)
-  assert.equal(chaveConfere('', v1, null), true);
+  // sem segredo configurado, a TAG protegida deve falhar fechada.
+  assert.equal(chaveConfere('', v1, null), false);
 });
 
 test('urlDoPonto monta o link com a chave e sem barra dupla', () => {
