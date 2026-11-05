@@ -211,6 +211,21 @@ class ApiClient {
     return CatalogSnapshot.fromJson(_asMap(response.data));
   }
 
+  Future<List<NotebookPointImage>> fetchPointImages(String code) async {
+    final response = await _request(
+      'GET',
+      '/api/pontos/${Uri.encodeComponent(code)}/imagens',
+    );
+    final payload = _asMap(response.data);
+    final rawImages = payload['imagens'];
+    if (rawImages is! List) return const <NotebookPointImage>[];
+    return rawImages
+        .whereType<Map>()
+        .map((item) => NotebookPointImage.fromJson(Map<String, dynamic>.from(item)))
+        .where((image) => image.url.isNotEmpty)
+        .toList();
+  }
+
   Future<NotebookSnapshot> fetchNotebook() async {
     final response = await _request('GET', '/api/caderneta', authenticated: true);
     return NotebookSnapshot.fromJson(_asMap(response.data));

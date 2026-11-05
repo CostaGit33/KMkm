@@ -1080,6 +1080,7 @@ class _HomeShellState extends State<HomeShell> {
               onOpenRoutes: () => setState(() => _tab = 2),
               onRefresh: _refresh,
               onFindNearby: _findNearbyPoints,
+              onLoadPointImages: widget.api.fetchPointImages,
               showingStaleData: _notebookError != null && _notebook != null,
             ),
       bottomNavigationBar: SafeArea(

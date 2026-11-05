@@ -47,7 +47,9 @@ void main() {
             'capturada': true,
             'criatura': 'Guardião da Praça',
             'frase': 'Cada caminho conta.',
-            'capturada_em': '2026-10-01T12:00:00.000Z'
+            'capturada_em': '2026-10-01T12:00:00.000Z',
+            'arte_foto': {'m': '/midia/thumb.webp', 'g': '/midia/full.webp'},
+            'historia': 'História do ponto.'
           },
           {
             'codigo': 'eu-002',
@@ -70,8 +72,31 @@ void main() {
     expect(notebook.totalCards, 2);
     expect(notebook.capturedCards, 1);
     expect(notebook.cards.first.creature, 'Guardião da Praça');
+    expect(notebook.cards.first.artThumbnail, '/midia/thumb.webp');
+    expect(notebook.cards.first.artLarge, '/midia/full.webp');
+    expect(notebook.cards.first.story, 'História do ponto.');
     expect(notebook.cards.last.captured, isFalse);
     expect(notebook.categories['cultura']?['total'], 2);
+  });
+
+  test('interpreta fotos públicas do ponto com créditos e comparação histórica', () {
+    final photo = NotebookPointImage.fromJson({
+      'url': '/midia/12.abcdef0123456789.g.webp',
+      'miniatura_url': '/midia/12.abcdef0123456789.m.webp',
+      'titulo': 'Praça antiga',
+      'legenda': 'Registro do acervo.',
+      'periodo_historico': 'Década de 1980',
+      'tipo_registro': 'historica',
+      'autor': 'Arquivo municipal',
+      'fonte': 'Acervo público',
+    });
+
+    expect(photo.url, startsWith('/midia/'));
+    expect(photo.thumbnailUrl, contains('.m.webp'));
+    expect(photo.type, 'historica');
+    expect(photo.historicPeriod, 'Década de 1980');
+    expect(photo.author, 'Arquivo municipal');
+    expect(photo.source, 'Acervo público');
   });
 
   test('aceita caderneta vazia sem criar progresso fictício', () {

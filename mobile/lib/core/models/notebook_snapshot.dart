@@ -105,6 +105,7 @@ class NotebookCard {
     this.story,
     this.art,
     this.artThumbnail,
+    this.artLarge,
     this.capturedAt,
   });
 
@@ -119,6 +120,7 @@ class NotebookCard {
   final String? story;
   final String? art;
   final String? artThumbnail;
+  final String? artLarge;
   final DateTime? capturedAt;
 
   factory NotebookCard.fromJson(Map<String, dynamic> json) {
@@ -136,6 +138,7 @@ class NotebookCard {
       story: json['historia']?.toString(),
       art: json['arte']?.toString(),
       artThumbnail: photo is Map ? photo['m']?.toString() : null,
+      artLarge: photo is Map ? photo['g']?.toString() : null,
       capturedAt: rawDate == null ? null : DateTime.tryParse(rawDate.toString()),
     );
   }
@@ -223,6 +226,39 @@ class NotebookEvent {
           : null,
     );
   }
+}
+
+class NotebookPointImage {
+  const NotebookPointImage({
+    required this.url,
+    required this.thumbnailUrl,
+    this.title,
+    this.caption,
+    this.historicPeriod,
+    this.type = 'outra',
+    this.author,
+    this.source,
+  });
+
+  final String url;
+  final String thumbnailUrl;
+  final String? title;
+  final String? caption;
+  final String? historicPeriod;
+  final String type;
+  final String? author;
+  final String? source;
+
+  factory NotebookPointImage.fromJson(Map<String, dynamic> json) => NotebookPointImage(
+    url: json['url']?.toString() ?? '',
+    thumbnailUrl: json['miniatura_url']?.toString() ?? json['url']?.toString() ?? '',
+    title: json['titulo']?.toString(),
+    caption: json['legenda']?.toString(),
+    historicPeriod: json['periodo_historico']?.toString(),
+    type: json['tipo_registro']?.toString() ?? 'outra',
+    author: json['autor']?.toString(),
+    source: json['fonte']?.toString(),
+  );
 }
 
 class NotebookSnapshot {

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/models/catalog_snapshot.dart';
 import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
+import 'cards_collection_page.dart';
 
 class NotebookPages extends StatelessWidget {
   const NotebookPages({
@@ -19,6 +20,7 @@ class NotebookPages extends StatelessWidget {
     this.onOpenRoutes,
     this.onRefresh,
     this.onFindNearby,
+    this.onLoadPointImages,
     this.showingStaleData = false,
     this.loading = false,
     this.error,
@@ -36,6 +38,7 @@ class NotebookPages extends StatelessWidget {
   final VoidCallback? onOpenRoutes;
   final Future<void> Function()? onRefresh;
   final Future<void> Function()? onFindNearby;
+  final Future<List<NotebookPointImage>> Function(String code)? onLoadPointImages;
   final bool showingStaleData;
   final bool loading;
   final String? error;
@@ -57,7 +60,7 @@ class NotebookPages extends StatelessWidget {
       return _RoutesPage(snapshot: data, onOpenPoint: onOpenPoint);
     }
     if (page == 3) {
-      return _CollectionPage(snapshot: data, onOpenPoint: onOpenPoint);
+      return _CollectionPage(snapshot: data, user: user, onOpenPoint: onOpenPoint, onLoadPointImages: onLoadPointImages);
     }
     return _HomePage(
       snapshot: data,
@@ -126,8 +129,7 @@ class _HomePage extends StatelessWidget {
         ?? const <NotebookRoutePoint>[];
     final next = pending.isEmpty ? null : pending.first;
     final events = snapshot.events
-        .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
-        .take(3)
+        .where((event) => event.state != 'encerrado' || event.completed > 0)
         .toList();
     final completedCodes = snapshot.cards
         .where((card) => card.captured)
@@ -338,7 +340,7 @@ class _HomePage extends StatelessWidget {
             height: 150,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: recent.length > 5 ? 5 : recent.length,
+              itemCount: recent.length > 3 ? 3 : recent.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) => SizedBox(
                 width: 286,
@@ -660,81 +662,15 @@ class _RoutesPage extends StatelessWidget {
   }
 }
 
-class _CollectionPage extends StatefulWidget {
-  const _CollectionPage({required this.snapshot, required this.onOpenPoint});
+class _CollectionPage extends StatelessWidget {
+  const _CollectionPage({required this.snapshot, required this.user, required this.onOpenPoint, this.onLoadPointImages});
   final NotebookSnapshot snapshot;
+  final Map<String, dynamic> user;
   final ValueChanged<String> onOpenPoint;
+  final Future<List<NotebookPointImage>> Function(String code)? onLoadPointImages;
 
   @override
-  State<_CollectionPage> createState() => _CollectionPageState();
-}
-
-class _CollectionPageState extends State<_CollectionPage> {
-  String _filter = 'todas';
-
-  @override
-  Widget build(BuildContext context) {
-    final data = widget.snapshot;
-    final cards = data.cards.where((card) {
-      if (_filter == 'conquistadas') return card.captured;
-      if (_filter == 'bloqueadas') return !card.captured;
-      if (_filter == 'todas') return true;
-      return card.category == _filter;
-    }).toList();
-    final categories = data.categories.keys.toList()..sort();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
-      children: [
-        const _Intro(
-          eyebrow: 'SUA COLEÇÃO',
-          title: 'Caderneta de cartas',
-          subtitle: 'Cada visita confirmada desbloqueia uma carta única.',
-        ),
-        _ProgressCard(snapshot: data),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: [
-            _Filter(label: 'Todas', selected: _filter == 'todas', onTap: () => setState(() => _filter = 'todas')),
-            _Filter(label: 'Conquistadas', selected: _filter == 'conquistadas', onTap: () => setState(() => _filter = 'conquistadas')),
-            _Filter(label: 'Bloqueadas', selected: _filter == 'bloqueadas', onTap: () => setState(() => _filter = 'bloqueadas')),
-            ...categories.map((category) => _Filter(
-                  label: _categoryLabel(category),
-                  selected: _filter == category,
-                  onTap: () => setState(() => _filter = category),
-                )),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (cards.isEmpty)
-          const _Empty(
-            icon: Icons.collections_bookmark_outlined,
-            title: 'Nenhuma carta neste filtro',
-            description: 'Experimente outra categoria ou volte para todas.',
-          ),
-        if (cards.isNotEmpty)
-          LayoutBuilder(builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 620 ? 3 : 2;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: cards.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 14,
-                childAspectRatio: .68,
-              ),
-              itemBuilder: (context, index) => _CollectionCard(
-                card: cards[index],
-                onTap: () => widget.onOpenPoint(cards[index].code),
-              ),
-            );
-          }),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => CardsCollectionPage(snapshot: snapshot, user: user, onOpenPoint: onOpenPoint, onLoadPointImages: onLoadPointImages);
 }
 
 class _ProgressCard extends StatelessWidget {
@@ -925,112 +861,6 @@ class _CardTile extends StatelessWidget {
   }
 }
 
-class _CollectionCard extends StatelessWidget {
-  const _CollectionCard({required this.card, this.onTap});
-  final NotebookCard card;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final captured = card.captured;
-    final accent = switch (card.rarity) {
-      'lendario' => const Color(0xFFE5BD52),
-      'epico' => const Color(0xFFB68AD8),
-      'raro' => const Color(0xFF7FD0A4),
-      _ => BrandPalette.gold,
-    };
-    return Material(
-      color: BrandPalette.darkCard,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: accent.withValues(alpha: captured ? .85 : .35), width: 1.2),
-            boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 16, offset: Offset(0, 7))],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 7,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      color: BrandPalette.forestDeep,
-                      child: captured && _cardArtUrl(card) != null
-                          ? Image.network(
-                              _cardArtUrl(card)!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _CardPlaceholder(card: card),
-                            )
-                          : _CardPlaceholder(card: card),
-                    ),
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: BrandPalette.forestDeep.withValues(alpha: .9),
-                          border: Border.all(color: accent),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          card.number > 0 ? card.number.toString().padLeft(3, '0') : '---',
-                          style: GoogleFonts.cinzel(color: accent, fontSize: 10, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                    if (!captured)
-                      Positioned.fill(
-                        child: Container(
-                          color: BrandPalette.forestDeep.withValues(alpha: .35),
-                          child: const Center(child: Icon(Icons.lock_outline, color: BrandPalette.darkMuted, size: 28)),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        captured ? (card.creature ?? card.pointName) : 'Carta bloqueada',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cinzel(color: captured ? BrandPalette.cream : BrandPalette.darkMuted, fontSize: 11, fontWeight: FontWeight.w700, height: 1.25),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(card.pointName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
-                      const Spacer(),
-                      Row(children: [
-                        Expanded(child: Text(_categoryLabel(card.category).toUpperCase(),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: accent, fontSize: 8, letterSpacing: .7, fontWeight: FontWeight.w800))),
-                        Text(_rarityLabel(card.rarity), style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w700)),
-                      ]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CardPlaceholder extends StatelessWidget {
   const _CardPlaceholder({required this.card});
   final NotebookCard card;
@@ -1060,28 +890,96 @@ class _EventTile extends StatelessWidget {
         ? 'Ao vivo'
         : event.state == 'em_breve'
             ? 'Em breve'
-            : 'Encerrado';
+            : 'Coleção encerrada';
+    final edition = event.edition;
+    final tiragem = int.tryParse(edition?['tiragem']?.toString() ?? '') ?? 0;
+    final emitidos = int.tryParse(edition?['emitidos']?.toString() ?? '') ?? 0;
+    final numero = int.tryParse(edition?['numero']?.toString() ?? '');
+    String dateFormat(DateTime? value) {
+      if (value == null) return '';
+      final date = value.toLocal();
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    }
+    final period = event.startAt != null || event.endAt != null
+        ? '${dateFormat(event.startAt)} a ${dateFormat(event.endAt)}'
+        : null;
+    final editionLabel = tiragem <= 0
+        ? null
+        : numero != null
+            ? 'Seu carimbo nº $numero/$tiragem'
+            : emitidos >= tiragem
+                ? 'Edição esgotada'
+                : 'Edição numerada · ${tiragem - emitidos} de $tiragem disponíveis';
+
     return _Panel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(event.name,
-              style: const TextStyle(color: _C.ink, fontSize: 16, fontWeight: FontWeight.w800))),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(event.type == 'patrocinio' ? 'CAMPANHA' : 'EVENTO',
+                style: const TextStyle(color: _C.gold, fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(event.name,
+                style: const TextStyle(color: _C.ink, fontSize: 16, fontWeight: FontWeight.w800)),
+          ])),
           _Tag(label: label),
         ]),
+        if (period != null && period.isNotEmpty) ...[
+          const SizedBox(height: 5),
+          Text(period, style: const TextStyle(color: _C.muted, fontSize: 10)),
+        ],
         if (event.sponsor?.isNotEmpty == true) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
           Text('Patrocinado por ${event.sponsor}',
               style: const TextStyle(color: _C.muted, fontSize: 11)),
         ],
         if (event.description?.isNotEmpty == true) ...[
           const SizedBox(height: 8),
-          Text(event.description!, style: const TextStyle(color: _C.ink, height: 1.4)),
+          Text(event.description!, style: const TextStyle(color: _C.ink, height: 1.4, fontSize: 12)),
         ],
-        const SizedBox(height: 10),
+        if (editionLabel != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _C.gold.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.gold.withValues(alpha: .3)),
+            ),
+            child: Text(editionLabel, style: const TextStyle(color: _C.gold, fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+        ],
+        const SizedBox(height: 12),
         _Bar(value: event.progress),
         const SizedBox(height: 6),
         Text('${event.completed}/${event.total} pontos do card',
-            style: const TextStyle(color: _C.muted, fontSize: 12)),
+            style: const TextStyle(color: _C.muted, fontSize: 11)),
+        if (event.points.isNotEmpty) ...[
+          const Divider(height: 20, color: _C.border),
+          ...event.points.map((point) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(children: [
+              Icon(point.completed ? Icons.check_circle : Icons.circle_outlined,
+                size: 16, color: point.completed ? _C.gold : _C.muted),
+              const SizedBox(width: 8),
+              Expanded(child: Text(point.name, style: const TextStyle(color: _C.ink, fontSize: 11))),
+              if (point.completed) const Text('Carimbado', style: TextStyle(color: _C.gold, fontSize: 9)),
+            ]),
+          )),
+        ],
+        if (event.state == 'encerrado') ...[
+          const SizedBox(height: 8),
+          const Text('A coleção terminou. Os carimbos que você fez continuam guardados.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ] else if (event.state == 'em_breve') ...[
+          const SizedBox(height: 8),
+          const Text('Os pontos continuam valendo para a rota normal. O carimbo deste card começa na data.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ] else ...[
+          const SizedBox(height: 8),
+          const Text('Encoste nos pontos dentro do período. O mesmo toque vale para a rota e para este card.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ],
       ]),
     );
   }
@@ -1159,24 +1057,6 @@ class _Tag extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: _C.cream, borderRadius: BorderRadius.circular(20)),
         child: Text(label, style: const TextStyle(color: _C.forest, fontSize: 10, fontWeight: FontWeight.w700)),
-      );
-}
-
-class _Filter extends StatelessWidget {
-  const _Filter({required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
-        selectedColor: _C.gold.withValues(alpha: .2),
-        labelStyle: TextStyle(
-            color: selected ? _C.gold : _C.muted,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w500),
       );
 }
 

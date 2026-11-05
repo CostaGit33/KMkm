@@ -178,7 +178,7 @@ void main() {
       260,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Evento encerrado'), findsNothing);
+    expect(find.text('Evento encerrado'), findsOneWidget);
   });
 
   testWidgets('mostra progresso por categorias com pontos públicos confirmados', (tester) async {
