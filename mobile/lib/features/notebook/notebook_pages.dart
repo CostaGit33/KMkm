@@ -55,7 +55,7 @@ class NotebookPages extends StatelessWidget {
       return _RoutesPage(snapshot: data, onOpenPoint: onOpenPoint);
     }
     if (page == 3) {
-      return _CollectionPage(snapshot: data, onOpenPoint: onOpenPoint);
+      return _CollectionPage(snapshot: data, user: user, onOpenPoint: onOpenPoint);
     }
     return _HomePage(
       snapshot: data,
@@ -594,13 +594,14 @@ class _RoutesPage extends StatelessWidget {
 }
 
 class _CollectionPage extends StatelessWidget {
-  const _CollectionPage({required this.snapshot, required this.onOpenPoint});
+  const _CollectionPage({required this.snapshot, required this.user, required this.onOpenPoint});
   final NotebookSnapshot snapshot;
+  final Map<String, dynamic> user;
   final ValueChanged<String> onOpenPoint;
 
   @override
   Widget build(BuildContext context) =>
-      CardsCollectionPage(snapshot: snapshot, onOpenPoint: onOpenPoint);
+      CardsCollectionPage(snapshot: snapshot, user: user, onOpenPoint: onOpenPoint);
 }
 
 class _ProgressCard extends StatelessWidget {
