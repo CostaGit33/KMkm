@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
@@ -612,6 +613,98 @@ class _HomeShellState extends State<HomeShell> {
     await Future.wait([_loadCatalog(), _loadNotebook(), _loadPodium()]);
   }
 
+  Future<void> _findNearbyPoints() async {
+    final points = (_catalog?.points ?? const <CatalogPoint>[])
+        .where((point) => point.latitude != null && point.longitude != null)
+        .toList();
+    if (points.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ainda não há pontos publicados com coordenadas disponíveis.')),
+      );
+      return;
+    }
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ative a localização do aparelho para encontrar pontos próximos.')),
+          );
+        }
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A permissão de localização é necessária apenas para esta busca.')),
+          );
+        }
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 12)),
+      );
+      if (!mounted) return;
+      final nearby = points.map((point) => (
+        point: point,
+        meters: Geolocator.distanceBetween(position.latitude, position.longitude, point.latitude!, point.longitude!),
+      )).toList()..sort((a, b) => a.meters.compareTo(b.meters));
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppColors.paper,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+        builder: (sheetContext) => SafeArea(child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('PONTOS PERTO DE VOCÊ', style: GoogleFonts.montserrat(
+              color: AppColors.gold, fontSize: 10, letterSpacing: 1.7, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 5),
+            const Text('Descobertas próximas', style: TextStyle(color: AppColors.ink, fontSize: 21, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            ...nearby.take(5).map((item) {
+              final distance = item.meters < 1000
+                  ? '${item.meters.round()} m'
+                  : '${(item.meters / 1000).toStringAsFixed(1).replaceAll('.', ',')} km';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.place_outlined, color: AppColors.gold),
+                title: Text(item.point.name, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w700)),
+                subtitle: Text(item.point.address ?? item.point.code, style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+                trailing: Text(distance, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800)),
+                onTap: () { Navigator.of(sheetContext).pop(); _showPoint(item.point); },
+              );
+            }),
+            const SizedBox(height: 4),
+            const Text('Distâncias aproximadas em linha reta. A localização não fica ativa em segundo plano.',
+              style: TextStyle(color: AppColors.muted, fontSize: 10, height: 1.4)),
+          ]),
+        )),
+      );
+    } on LocationServiceDisabledException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('A localização está desativada no aparelho.')),
+        );
+      }
+    } on TimeoutException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível obter a localização a tempo. Tente novamente.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível localizar pontos próximos agora.')),
+        );
+      }
+    }
+  }
+
   Future<void> _openStamp() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -975,6 +1068,7 @@ class _HomeShellState extends State<HomeShell> {
               : NotebookPages(
               page: _tab,
               snapshot: _notebook,
+              catalog: _catalog,
               user: widget.user,
               loading: _loadingNotebook,
               error: _notebookError,
@@ -982,6 +1076,11 @@ class _HomeShellState extends State<HomeShell> {
               onOpenMap: () => setState(() => _tab = 1),
               onOpenCollection: () => setState(() => _tab = 3),
               onOpenPoint: _showPointByCode,
+              onOpenStamp: _openStamp,
+              onOpenRoutes: () => setState(() => _tab = 2),
+              onRefresh: _refresh,
+              onFindNearby: _findNearbyPoints,
+              showingStaleData: _notebookError != null && _notebook != null,
             ),
       bottomNavigationBar: SafeArea(
         top: false,

@@ -1,4 +1,5 @@
 # Pipeline de validação do aplicativo Flutter Android.
+# Publica APKs debug e release de teste somente após análise e testes aprovados.
 name: Mobile - Flutter CI
 
 on:
@@ -7,6 +8,7 @@ on:
       - main
       - 'feature/**'
       - 'fix/**'
+      - 'feat/**'
     paths:
       - 'mobile/**'
       - '.github/workflows/mobile.yml'
