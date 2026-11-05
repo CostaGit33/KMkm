@@ -5,11 +5,12 @@ import '../../core/models/notebook_snapshot.dart';
 import '../../core/theme/brand_theme.dart';
 
 class CardsCollectionPage extends StatefulWidget {
-  const CardsCollectionPage({super.key, required this.snapshot, required this.onOpenPoint, this.user = const {}});
+  const CardsCollectionPage({super.key, required this.snapshot, required this.onOpenPoint, this.user = const {}, this.onLoadPointImages});
 
   final NotebookSnapshot snapshot;
   final ValueChanged<String> onOpenPoint;
   final Map<String, dynamic> user;
+  final Future<List<NotebookPointImage>> Function(String code)? onLoadPointImages;
 
   @override
   State<CardsCollectionPage> createState() => _CardsCollectionPageState();
@@ -332,11 +333,12 @@ class _CardsCollectionPageState extends State<CardsCollectionPage> {
   }
 
   Future<void> _showCard(NotebookCard card) async {
+    final photosFuture = widget.onLoadPointImages?.call(card.code);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _CardDetailSheet(card: card, onOpenPoint: () {
+      builder: (context) => _CardDetailSheet(card: card, photosFuture: photosFuture, onOpenPoint: () {
         Navigator.of(context).pop();
         widget.onOpenPoint(card.code);
       }),
@@ -409,9 +411,10 @@ class _CardTile extends StatelessWidget {
 }
 
 class _CardDetailSheet extends StatelessWidget {
-  const _CardDetailSheet({required this.card, required this.onOpenPoint});
+  const _CardDetailSheet({required this.card, required this.onOpenPoint, this.photosFuture});
   final NotebookCard card;
   final VoidCallback onOpenPoint;
+  final Future<List<NotebookPointImage>>? photosFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -468,6 +471,10 @@ class _CardDetailSheet extends StatelessWidget {
             _CollectionPanel(child: Text('“${card.phrase}”', textAlign: TextAlign.center,
               style: GoogleFonts.cinzel(color: BrandPalette.gold, fontSize: 14, fontStyle: FontStyle.italic, height: 1.5))),
           ],
+          if (card.captured && photosFuture != null) ...[
+            const SizedBox(height: 14),
+            _PointPhotoGallery(future: photosFuture!),
+          ],
           if (!card.captured) ...[
             const SizedBox(height: 12),
             const _CollectionPanel(child: Text('Encoste na TAG deste ponto e confirme sua visita para desbloquear esta carta.',
@@ -494,6 +501,160 @@ class _CardDetailSheet extends StatelessWidget {
     ]),
   );
 }
+
+class _PointPhotoGallery extends StatelessWidget {
+  const _PointPhotoGallery({required this.future});
+  final Future<List<NotebookPointImage>> future;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<NotebookPointImage>>(
+    future: future,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const _CollectionPanel(child: Row(children: [
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: BrandPalette.gold)),
+          SizedBox(width: 10),
+          Text('Carregando fotos do lugar…', style: TextStyle(color: BrandPalette.darkMuted, fontSize: 11)),
+        ]));
+      }
+      if (snapshot.hasError) {
+        return const _CollectionPanel(child: Text('Não foi possível carregar as fotos deste ponto agora.',
+          style: TextStyle(color: BrandPalette.darkMuted, fontSize: 11)));
+      }
+      final photos = snapshot.data ?? const <NotebookPointImage>[];
+      if (photos.isEmpty) return const SizedBox.shrink();
+      final before = photos.where((photo) => photo.type == 'historica').firstOrNull;
+      final today = photos.where((photo) => photo.type == 'atual').firstOrNull;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('FOTOS DO LUGAR · \${photos.length}', style: const TextStyle(
+          color: BrandPalette.gold, fontSize: 9, letterSpacing: 1.3, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 9),
+        SizedBox(height: 118, child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: photos.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 9),
+          itemBuilder: (context, index) {
+            final photo = photos[index];
+            return InkWell(
+              onTap: () => _showPhoto(context, photos, index),
+              borderRadius: BorderRadius.circular(11),
+              child: SizedBox(width: 112, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(10),
+                  child: Image.network(photo.thumbnailUrl, width: 112, fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard,
+                      child: Center(child: Icon(Icons.broken_image_outlined, color: BrandPalette.darkMuted)))))),
+                const SizedBox(height: 4),
+                Text(_photoType(photo.type), maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+              ])),
+            );
+          },
+        )),
+        if (before != null && today != null) ...[
+          const SizedBox(height: 16),
+          _PhotoComparison(before: before, today: today),
+        ],
+      ]);
+    },
+  );
+
+  Future<void> _showPhoto(BuildContext context, List<NotebookPointImage> photos, int initial) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: BrandPalette.darkCardStrong,
+        insetPadding: const EdgeInsets.all(12),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .78,
+          child: PageView.builder(
+            controller: PageController(initialPage: initial),
+            itemCount: photos.length,
+            itemBuilder: (context, index) {
+              final photo = photos[index];
+              final credits = [photo.author, photo.source].where((value) => value?.isNotEmpty == true).join(' · ');
+              return Column(children: [
+                Expanded(child: InteractiveViewer(child: Image.network(photo.url, fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined,
+                    color: BrandPalette.darkMuted, size: 48))))),
+                Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 14), child: Column(children: [
+                  Text(photo.title?.isNotEmpty == true ? photo.title! : _photoType(photo.type),
+                    textAlign: TextAlign.center, style: const TextStyle(color: BrandPalette.cream, fontWeight: FontWeight.w800)),
+                  if (photo.caption?.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    Text(photo.caption!, textAlign: TextAlign.center,
+                      style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 11)),
+                  ],
+                  if (photo.historicPeriod?.isNotEmpty == true) ...[
+                    const SizedBox(height: 3),
+                    Text(photo.historicPeriod!, style: const TextStyle(color: BrandPalette.gold, fontSize: 10)),
+                  ],
+                  if (credits.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(credits, textAlign: TextAlign.center,
+                      style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+                  ],
+                  Text('\${index + 1} de \${photos.length}', style: const TextStyle(color: BrandPalette.darkMuted, fontSize: 9)),
+                ])),
+              ]);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoComparison extends StatefulWidget {
+  const _PhotoComparison({required this.before, required this.today});
+  final NotebookPointImage before;
+  final NotebookPointImage today;
+
+  @override
+  State<_PhotoComparison> createState() => _PhotoComparisonState();
+}
+
+class _PhotoComparisonState extends State<_PhotoComparison> {
+  double _position = 50;
+
+  @override
+  Widget build(BuildContext context) => _CollectionPanel(child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('ANTES E HOJE', style: TextStyle(color: BrandPalette.gold,
+        fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      ClipRRect(borderRadius: BorderRadius.circular(10), child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: LayoutBuilder(builder: (context, constraints) => Stack(fit: StackFit.expand, children: [
+          Image.network(widget.today.url, fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard)),
+          ClipRect(child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: _position / 100,
+            child: SizedBox(width: constraints.maxWidth, height: constraints.maxHeight,
+              child: Image.network(widget.before.url, fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const ColoredBox(color: BrandPalette.darkCard))),
+          )),
+          Positioned(left: 7, top: 7, child: _DetailPill(label: 'Antes')),
+          Positioned(right: 7, top: 7, child: _DetailPill(label: 'Hoje')),
+          Positioned(left: constraints.maxWidth * _position / 100 - 1, top: 0, bottom: 0,
+            child: Container(width: 2, color: BrandPalette.gold)),
+        ])),
+      )),
+      Slider(value: _position, min: 0, max: 100, onChanged: (value) => setState(() => _position = value),
+        activeColor: BrandPalette.gold, inactiveColor: BrandPalette.darkRule),
+      const Text('Arraste para comparar a foto histórica com a atual.',
+        style: TextStyle(color: BrandPalette.darkMuted, fontSize: 10)),
+    ],
+  ));
+}
+
+String _photoType(String type) => switch (type) {
+  'historica' => 'Foto histórica',
+  'atual' => 'Foto atual',
+  'restauracao' => 'Versão restaurada',
+  _ => 'Foto do ponto',
+};
 
 class _CardArtwork extends StatelessWidget {
   const _CardArtwork({required this.card, this.detail = false});
