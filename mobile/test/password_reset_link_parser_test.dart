@@ -46,6 +46,8 @@ void main() {
     });
 
     test('rejeita token vazio, curto, longo ou com caracteres fora do formato', () {
+      final tooLong = List<String>.filled(201, 'a').join();
+      final invalidCharacters = '${List<String>.filled(40, 'a').join()}%2F';
       expect(
         PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir='),
         isNull,
@@ -55,11 +57,11 @@ void main() {
         isNull,
       );
       expect(
-        PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir=NaN'),
+        PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir=$tooLong'),
         isNull,
       );
       expect(
-        PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir=NaN%2F'),
+        PasswordResetLinkParser.parse('https://mais1km.novaagencian8n.online/?redefinir=$invalidCharacters'),
         isNull,
       );
     });
