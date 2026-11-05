@@ -509,11 +509,11 @@ String _rarityLabel(String value) => switch (value) {
 
 String? _artUrl(NotebookCard card, {required bool detail}) {
   final image = detail ? (card.artLarge ?? card.artThumbnail) : card.artThumbnail;
-  if (image != null && RegExp(r'^/midia/[\\w.]+\\.webp$').hasMatch(image)) {
+  if (image != null && RegExp(r'^/midia/[\w.]+\.webp$').hasMatch(image)) {
     return 'https://mais1km.novaagencian8n.online$image';
   }
   final art = card.art;
-  if (art != null && RegExp(r'^[\\w.-]{1,80}$').hasMatch(art)) {
+  if (art != null && RegExp(r'^[\w.-]{1,80}$').hasMatch(art)) {
     return 'https://mais1km.novaagencian8n.online/cartas/$art';
   }
   return null;
