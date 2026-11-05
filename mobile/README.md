@@ -7,14 +7,14 @@ Aplicativo Android Flutter desenvolvido em paralelo à PWA existente. Usa o mesm
 - Base URL: `https://mais1km.novaagencian8n.online` (produção).
 - Prefixo da API: `/api`.
 - Sessão: cookie `mais1km_session` persistido com `flutter_secure_storage`.
-- Login, cadastro, solicitação de recuperação, restauração de sessão e logout.
+- Login, cadastro, solicitação de recuperação, redefinição por App Link, restauração de sessão e logout.
 - Perfil: atualização de nome/e-mail/senha e solicitação de exclusão de conta, com confirmação.
 - Catálogo público (somente pontos publicados e não ocultos), busca, categorias, rotas e caderneta.
 - Pódio/XP, medalhas e participação pública opcional.
 - Carimbo por leitura NFC NDEF dentro do app, App Link ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
 - Leitura NFC aceita registros NDEF URI e texto contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; o app não consegue ler uma TAG vazia ou sem NDEF.
 
-A redefinição de senha pelo token/deep link enviado por e-mail e as telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
+A redefinição de senha usa o link HTTPS `/?redefinir=TOKEN` enviado por e-mail. O Android valida domínio, caminho e formato do token; mantém o token apenas em memória e o envia uma única vez ao endpoint do servidor. Após sucesso, a sessão local é apagada porque o backend revoga todas as sessões. As telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
 
 ## Mapas
 
