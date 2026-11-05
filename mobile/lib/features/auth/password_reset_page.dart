@@ -13,7 +13,7 @@ class PasswordResetPage extends StatefulWidget {
 
   final ApiClient api;
   final String token;
-  final VoidCallback onCompleted;
+  final ValueChanged<String?> onCompleted;
 
   @override
   State<PasswordResetPage> createState() => _PasswordResetPageState();
@@ -49,14 +49,16 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
     });
 
     try {
-      await widget.api.resetPassword(
+      final result = await widget.api.resetPassword(
         token: widget.token,
         password: _password.text,
       );
       if (!mounted) return;
+      _password.clear();
+      _confirmation.clear();
       setState(() => _completed = true);
-      // A API revoga todas as sessões da conta após redefinir a senha.
-      widget.onCompleted();
+      // A API informa o e-mail afetado e revoga todas as sessões dessa conta.
+      widget.onCompleted(result['email']?.toString());
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {
