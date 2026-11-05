@@ -105,6 +105,22 @@ void main() {
     expect(clearedSessions, 1);
   });
 
+  test('token expirado não apaga a sessão local antes de confirmar sucesso', () async {
+    responseStatus = 400;
+    responseCode = 'token_invalido_ou_expirado';
+
+    await expectLater(
+      api.resetPassword(
+        token: 'token-expirado-de-teste-123456789012',
+        password: 'nova-senha-segura',
+      ),
+      throwsA(isA<ApiException>()),
+    );
+
+    expect(requests.single['path'], '/api/conta/redefinir-senha');
+    expect(clearedSessions, 0);
+  });
+
   test('opcionais ausentes não são enviados e pódio mensal usa contrato padrão', () async {
     await api.updateAccount(name: 'Ana', email: 'ana@example.test');
     await api.fetchGamificationPodium();
