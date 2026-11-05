@@ -57,10 +57,13 @@ void main() {
     await tester.tap(find.text('Guardião da Praça'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Rara'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('HISTÓRIA'), 160, scrollable: find.byType(Scrollable).last);
     expect(find.text('HISTÓRIA'), findsOneWidget);
     expect(find.text('Uma história da cidade.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('“Cada caminho conta.”'), 120, scrollable: find.byType(Scrollable).last);
     expect(find.text('“Cada caminho conta.”'), findsOneWidget);
-    expect(find.text('Rara'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Ver ponto no mapa'), 120, scrollable: find.byType(Scrollable).last);
     expect(find.text('Ver ponto no mapa'), findsOneWidget);
   });
 }
