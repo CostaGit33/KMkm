@@ -26,5 +26,5 @@ test('TAG sem versão de chave mantém compatibilidade legada', () => {
 });
 
 test('exportação de link não inventa chave quando o segredo está indisponível', () => {
-  assert.equal(urlDoPonto('https://exemplo.test', tagProtegida, null), 'https://exemplo.test/t/eu-001');
+  assert.equal(urlDoPonto('https://exemplo.test///', tagProtegida, null), 'https://exemplo.test/t/eu-001');
 });
