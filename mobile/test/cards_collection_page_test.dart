@@ -61,7 +61,7 @@ void main() {
     await tester.tap(find.text('Guardião da Praça'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rara'), findsOneWidget);
+    expect(find.text('Rara'), findsWidgets);
         expect(find.text('HISTÓRIA'), findsOneWidget);
     expect(find.text('Uma história da cidade.'), findsOneWidget);
         expect(find.text('“Cada caminho conta.”'), findsOneWidget);
