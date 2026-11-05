@@ -105,6 +105,7 @@ class NotebookCard {
     this.story,
     this.art,
     this.artThumbnail,
+    this.artLarge,
     this.capturedAt,
   });
 
@@ -119,6 +120,7 @@ class NotebookCard {
   final String? story;
   final String? art;
   final String? artThumbnail;
+  final String? artLarge;
   final DateTime? capturedAt;
 
   factory NotebookCard.fromJson(Map<String, dynamic> json) {
@@ -136,6 +138,7 @@ class NotebookCard {
       story: json['historia']?.toString(),
       art: json['arte']?.toString(),
       artThumbnail: photo is Map ? photo['m']?.toString() : null,
+      artLarge: photo is Map ? photo['g']?.toString() : null,
       capturedAt: rawDate == null ? null : DateTime.tryParse(rawDate.toString()),
     );
   }
