@@ -34,7 +34,7 @@ flutter run \
 
 ## App Links e carimbo
 
-O filtro Android aceita `https://mais1km.novaagencian8n.online/t/...`. A verificação do domínio depende de hospedar `/.well-known/assetlinks.json` com o applicationId e SHA-256 do certificado correto. O Manifest não substitui essa publicação. Sem verificação, use link colado dentro do app como alternativa.
+O Manifest Android aceita App Links para `https://mais1km.novaagencian8n.online/t/...` e para `https://mais1km.novaagencian8n.online/?redefinir=<token>`. A verificação do domínio depende de hospedar `/.well-known/assetlinks.json` com o applicationId e SHA-256 do certificado correto. O Manifest não substitui essa publicação. Sem verificação, o Android pode abrir o navegador em vez do app; mantenha alternativa de link colado para TAGs.
 
 O app só solicita permissão de localização após o backend responder `localizacao_necessaria`. A API valida precisão de GPS de até 50 metros e o raio do ponto. A coordenada não é coletada em segundo plano nem antes da ação do usuário. O link pode conter uma chave privada do ponto: não registre nem compartilhe a URL completa.
 
