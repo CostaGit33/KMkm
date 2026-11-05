@@ -120,10 +120,7 @@ class _HomePage extends StatelessWidget {
     final pending = route?.points.where((point) => point.published && !point.completed).toList()
         ?? const <NotebookRoutePoint>[];
     final next = pending.isEmpty ? null : pending.first;
-    final events = snapshot.events
-        .where((event) => event.state == 'ao_vivo' || event.state == 'em_breve')
-        .take(3)
-        .toList();
+    final events = snapshot.events.take(3).toList();
     final activityByCode = <String, ({String name, DateTime date})>{};
     for (final routePoint in snapshot.routes.expand((item) => item.points)) {
       final date = routePoint.stamp?.createdAt;
@@ -884,28 +881,96 @@ class _EventTile extends StatelessWidget {
         ? 'Ao vivo'
         : event.state == 'em_breve'
             ? 'Em breve'
-            : 'Encerrado';
+            : 'Coleção encerrada';
+    final edition = event.edition;
+    final tiragem = int.tryParse(edition?['tiragem']?.toString() ?? '') ?? 0;
+    final emitidos = int.tryParse(edition?['emitidos']?.toString() ?? '') ?? 0;
+    final numero = int.tryParse(edition?['numero']?.toString() ?? '');
+    final dateFormat = (DateTime? value) {
+      if (value == null) return '';
+      final date = value.toLocal();
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    };
+    final period = event.startAt != null || event.endAt != null
+        ? '${dateFormat(event.startAt)} a ${dateFormat(event.endAt)}'
+        : null;
+    final editionLabel = tiragem <= 0
+        ? null
+        : numero != null
+            ? 'Seu carimbo nº $numero/$tiragem'
+            : emitidos >= tiragem
+                ? 'Edição esgotada'
+                : 'Edição numerada · ${tiragem - emitidos} de $tiragem disponíveis';
+
     return _Panel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(event.name,
-              style: const TextStyle(color: _C.ink, fontSize: 16, fontWeight: FontWeight.w800))),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(event.type == 'patrocinio' ? 'CAMPANHA' : 'EVENTO',
+                style: const TextStyle(color: _C.gold, fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(event.name,
+                style: const TextStyle(color: _C.ink, fontSize: 16, fontWeight: FontWeight.w800)),
+          ])),
           _Tag(label: label),
         ]),
+        if (period != null && period.isNotEmpty) ...[
+          const SizedBox(height: 5),
+          Text(period, style: const TextStyle(color: _C.muted, fontSize: 10)),
+        ],
         if (event.sponsor?.isNotEmpty == true) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 5),
           Text('Patrocinado por ${event.sponsor}',
               style: const TextStyle(color: _C.muted, fontSize: 11)),
         ],
         if (event.description?.isNotEmpty == true) ...[
           const SizedBox(height: 8),
-          Text(event.description!, style: const TextStyle(color: _C.ink, height: 1.4)),
+          Text(event.description!, style: const TextStyle(color: _C.ink, height: 1.4, fontSize: 12)),
         ],
-        const SizedBox(height: 10),
+        if (editionLabel != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _C.gold.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.gold.withValues(alpha: .3)),
+            ),
+            child: Text(editionLabel, style: const TextStyle(color: _C.gold, fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+        ],
+        const SizedBox(height: 12),
         _Bar(value: event.progress),
         const SizedBox(height: 6),
         Text('${event.completed}/${event.total} pontos do card',
-            style: const TextStyle(color: _C.muted, fontSize: 12)),
+            style: const TextStyle(color: _C.muted, fontSize: 11)),
+        if (event.points.isNotEmpty) ...[
+          const Divider(height: 20, color: _C.border),
+          ...event.points.map((point) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(children: [
+              Icon(point.completed ? Icons.check_circle : Icons.circle_outlined,
+                size: 16, color: point.completed ? _C.gold : _C.muted),
+              const SizedBox(width: 8),
+              Expanded(child: Text(point.name, style: const TextStyle(color: _C.ink, fontSize: 11))),
+              if (point.completed) const Text('Carimbado', style: TextStyle(color: _C.gold, fontSize: 9)),
+            ]),
+          )),
+        ],
+        if (event.state == 'encerrado') ...[
+          const SizedBox(height: 8),
+          const Text('A coleção terminou. Os carimbos que você fez continuam guardados.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ] else if (event.state == 'em_breve') ...[
+          const SizedBox(height: 8),
+          const Text('Os pontos continuam valendo para a rota normal. O carimbo deste card começa na data.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ] else ...[
+          const SizedBox(height: 8),
+          const Text('Encoste nos pontos dentro do período. O mesmo toque vale para a rota e para este card.',
+            style: TextStyle(color: _C.muted, fontSize: 10, height: 1.4)),
+        ],
       ]),
     );
   }
