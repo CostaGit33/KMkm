@@ -15,7 +15,7 @@ Atualizado em 05/11/2026. Histórico das versões antigas em `docs/historico/`.
 
 ## Técnico
 - [x] Baseline da auditoria integral registrado em `docs/AUDITORIA-INTEGRAL-2026-11-05.md`; execução por prioridade e validação com evidências.
-- [x] App Android: abrir link de redefinição de senha por App Link, validar token no servidor e confirmar nova senha (05/11/2026); associação do domínio depende de `assetlinks.json` e certificado configurado.
+- [ ] App Android: redefinição por App Link implementada nesta branch; concluir CI e teste em aparelho. A associação do domínio depende de `assetlinks.json` e certificado configurado.
 - [x] Limite global de 256 KB para JSON da API e manifesto `manus-routes.json` publicado com rotas públicas e de tag (05/11/2026).
 - [ ] Teste de ponta a ponta: criar conta → carimbar → abrir em outro aparelho (hoje só testes unitários e `smoke.mjs` manual).
 - [x] Remover do aparelho a cópia do hash da senha; conferir senha só no servidor.
