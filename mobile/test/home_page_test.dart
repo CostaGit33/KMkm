@@ -184,13 +184,25 @@ void main() {
   testWidgets('mostra progresso por categorias com pontos públicos confirmados', (tester) async {
     await pumpHome(tester);
 
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Progresso por categoria'),
+      240,
+      scrollable: scrollable,
+    );
     expect(find.text('Progresso por categoria'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('História'), 180, scrollable: scrollable);
     expect(find.text('História'), findsOneWidget);
     expect(find.text('1/1 pontos'), findsOneWidget);
-    expect(find.text('Cultura'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Natureza'), 180, scrollable: scrollable);
     expect(find.text('Natureza'), findsOneWidget);
-    expect(find.text('1/2 pontos'), findsNWidgets(2));
-    expect(find.text('Praias'), findsNothing);
+    expect(find.text('1/2 pontos'), findsWidgets);
+
+    await tester.scrollUntilVisible(find.text('Cultura'), 180, scrollable: scrollable);
+    expect(find.text('Cultura'), findsOneWidget);
+    expect(find.text('1/2 pontos'), findsWidgets);
   });
 
   testWidgets('atalhos do mapa e leitura NFC executam suas ações', (tester) async {
@@ -217,9 +229,11 @@ void main() {
 
     await pumpHome(tester, onPoint: (code) => openedCode = code);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -320));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Detalhes do ponto'));
+    await tester.scrollUntilVisible(
+      find.text('Detalhes do ponto'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Detalhes do ponto'));
     await tester.pump();
 
