@@ -18,6 +18,7 @@ class NotebookPages extends StatelessWidget {
     this.onOpenRoutes,
     this.onRefresh,
     this.onFindNearby,
+    this.onLoadPointImages,
     this.showingStaleData = false,
     this.loading = false,
     this.error,
@@ -34,6 +35,7 @@ class NotebookPages extends StatelessWidget {
   final VoidCallback? onOpenRoutes;
   final Future<void> Function()? onRefresh;
   final Future<void> Function()? onFindNearby;
+  final Future<List<NotebookPointImage>> Function(String code)? onLoadPointImages;
   final bool showingStaleData;
   final bool loading;
   final String? error;
@@ -55,7 +57,7 @@ class NotebookPages extends StatelessWidget {
       return _RoutesPage(snapshot: data, onOpenPoint: onOpenPoint);
     }
     if (page == 3) {
-      return _CollectionPage(snapshot: data, user: user, onOpenPoint: onOpenPoint);
+      return _CollectionPage(snapshot: data, user: user, onOpenPoint: onOpenPoint, onLoadPointImages: onLoadPointImages);
     }
     return _HomePage(
       snapshot: data,
@@ -594,14 +596,14 @@ class _RoutesPage extends StatelessWidget {
 }
 
 class _CollectionPage extends StatelessWidget {
-  const _CollectionPage({required this.snapshot, required this.user, required this.onOpenPoint});
+  const _CollectionPage({required this.snapshot, required this.user, required this.onOpenPoint, this.onLoadPointImages});
   final NotebookSnapshot snapshot;
   final Map<String, dynamic> user;
   final ValueChanged<String> onOpenPoint;
+  final Future<List<NotebookPointImage>> Function(String code)? onLoadPointImages;
 
   @override
-  Widget build(BuildContext context) =>
-      CardsCollectionPage(snapshot: snapshot, user: user, onOpenPoint: onOpenPoint);
+  Widget build(BuildContext context) => CardsCollectionPage(snapshot: snapshot, user: user, onOpenPoint: onOpenPoint, onLoadPointImages: onLoadPointImages);
 }
 
 class _ProgressCard extends StatelessWidget {
