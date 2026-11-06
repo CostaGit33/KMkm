@@ -48,6 +48,7 @@ export function assetLinksHandler(env = process.env) {
   return (_req, res) => {
     const documento = montarAssetLinks(lerConfiguracao(env));
     if (!documento) return res.status(404).json({ erro: 'assetlinks_nao_configurado' });
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     return res.json(documento);
   };

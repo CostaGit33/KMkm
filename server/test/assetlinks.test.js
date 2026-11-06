@@ -59,6 +59,7 @@ test('rota responde 404 em JSON quando não configurada e o documento quando con
   const comConfig = respostaFalsa();
   assetLinksHandler({ ANDROID_SHA256_CERT_FINGERPRINTS: CANONICA_A })({}, comConfig);
   assert.equal(comConfig.codigo, undefined);
+  assert.equal(comConfig.cabecalhos['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(comConfig.cabecalhos['Cache-Control'], 'public, max-age=300');
   assert.equal(comConfig.corpo[0].target.package_name, PACOTE_ANDROID_PADRAO);
   assert.deepEqual(comConfig.corpo[0].target.sha256_cert_fingerprints, [CANONICA_A]);
