@@ -10,6 +10,8 @@ import 'core/api/api_client.dart';
 import 'core/models/catalog_snapshot.dart';
 import 'core/models/notebook_snapshot.dart';
 import 'core/theme/brand_theme.dart';
+import 'features/auth/password_reset_link_parser.dart';
+import 'features/auth/password_reset_page.dart';
 import 'features/gamification/podium_page.dart';
 import 'features/map/catalog_map.dart';
 import 'features/notebook/notebook_pages.dart';
@@ -78,6 +80,7 @@ class _AuthGateState extends State<AuthGate> {
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _appLinkSubscription;
   Uri? _pendingStampUri;
+  String? _pendingPasswordResetToken;
   int _stampVersion = 0;
 
   @override
@@ -101,12 +104,41 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _handleIncomingUri(Uri uri) {
-    if (!mounted || StampLinkParser.parse(uri.toString()) == null) return;
+    if (!mounted) return;
+    final resetToken = PasswordResetLinkParser.parse(uri.toString());
+    if (resetToken != null) {
+      _pendingPasswordResetToken = resetToken;
+      if (!_checking) _openPendingPasswordReset();
+      return;
+    }
+    if (StampLinkParser.parse(uri.toString()) == null) return;
     if (_user == null) {
-      _pendingStampUri = uri;
+      setState(() => _pendingStampUri = uri);
       return;
     }
     unawaited(_openStampPage(uri));
+  }
+
+  void _openPendingPasswordReset() {
+    final token = _pendingPasswordResetToken;
+    if (token == null) return;
+    _pendingPasswordResetToken = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_checking) {
+        _pendingPasswordResetToken = token;
+        return;
+      }
+      unawaited(Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => PasswordResetPage(
+            api: widget.api,
+            token: token,
+            onCompleted: _passwordResetCompleted,
+          ),
+        ),
+      ));
+    });
   }
 
   Future<void> _openStampPage(Uri? uri) async {
@@ -146,7 +178,11 @@ class _AuthGateState extends State<AuthGate> {
       // Falha de rede não apaga uma sessão que ainda pode ser válida.
     } finally {
       if (mounted) setState(() => _checking = false);
-      _openPendingStampAfterAuthentication();
+      if (_pendingPasswordResetToken != null) {
+        _openPendingPasswordReset();
+      } else {
+        _openPendingStampAfterAuthentication();
+      }
     }
   }
 
@@ -171,6 +207,16 @@ class _AuthGateState extends State<AuthGate> {
 
   void _sessionEnded() {
     if (mounted) setState(() => _user = null);
+  }
+
+  void _passwordResetCompleted(String? email) {
+    final target = email?.trim().toLowerCase();
+    final current = _user?['email']?.toString().trim().toLowerCase();
+    // Não encerra uma sessão de outra conta que esteja aberta no aparelho.
+    if (current == null || (target != null && target.isNotEmpty && current == target)) {
+      unawaited(widget.api.clearSession().catchError((_) {}));
+      if (_user != null && mounted) setState(() => _user = null);
+    }
   }
 
   @override
@@ -198,7 +244,11 @@ class _AuthGateState extends State<AuthGate> {
         stampVersion: _stampVersion,
       );
     }
-    return AuthScreen(api: widget.api, onAuthenticated: _onAuthenticated);
+    return AuthScreen(
+      api: widget.api,
+      onAuthenticated: _onAuthenticated,
+      hasPendingStamp: _pendingStampUri != null,
+    );
   }
 }
 
@@ -209,10 +259,12 @@ class AuthScreen extends StatefulWidget {
     super.key,
     required this.api,
     required this.onAuthenticated,
+    this.hasPendingStamp = false,
   });
 
   final ApiClient api;
   final ValueChanged<Map<String, dynamic>> onAuthenticated;
+  final bool hasPendingStamp;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -309,7 +361,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? 'Recuperar acesso'
                           : isRegister
                               ? 'Crie sua conta'
-                              : 'Bem-vindo de volta',
+                              : 'Acesse sua conta',
                       style: const TextStyle(
                         color: AppColors.ink,
                         fontSize: 25,
@@ -323,7 +375,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? 'Vamos enviar as instruções para seu e-mail.'
                           : isRegister
                               ? 'Sua próxima descoberta começa aqui.'
-                              : 'Entre para continuar sua jornada pelo +1 KM.',
+                              : widget.hasPendingStamp
+                                  ? 'Entre ou crie sua conta para validar o carimbo desta TAG.'
+                                  : 'Entre com seus dados ou cadastre-se para começar sua jornada pelo +1 KM.',
                       style: const TextStyle(
                         color: AppColors.muted,
                         fontSize: 14,

@@ -122,6 +122,41 @@ void main() {
     });
   }
 
+  test('envia token e nova senha ao endpoint de redefinição sem autenticação', () async {
+    final result = await api.resetPassword(
+      token: 'token-de-teste-comprido-12345678901234567890',
+      password: 'nova-senha-segura',
+    );
+
+    expect(result, {'ok': true});
+    expect(requests.single['method'], 'POST');
+    expect(requests.single['path'], '/api/conta/redefinir-senha');
+    expect(requests.single['body'], {
+      'token': 'token-de-teste-comprido-12345678901234567890',
+      'senha': 'nova-senha-segura',
+    });
+    expect(requests.single['cookie'], isNull);
+    expect(clearedSessions, 0);
+  });
+
+  test('traduz token de recuperação expirado sem revelar detalhes internos', () async {
+    responseStatus = 400;
+    responseCode = 'token_invalido_ou_expirado';
+
+    await expectLater(
+      api.resetPassword(
+        token: 'token-de-teste-comprido-12345678901234567890',
+        password: 'nova-senha-segura',
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((error) => error.statusCode, 'statusCode', 400)
+            .having((error) => error.message, 'message',
+                contains('Solicite uma nova recuperação')),
+      ),
+    );
+  });
+
   test('falha ao excluir não remove a sessão armazenada', () async {
     responseStatus = 409;
     responseCode = 'conflito_teste';
