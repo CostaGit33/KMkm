@@ -14,7 +14,7 @@ Este documento diz o que está protegido, **o que não está** e como operar. Es
 **Prova de presença de verdade** só existe com tag de contador assinado (NTAG 424 DNA): cada leitura gera um código único que o servidor valida. Isso **não está implementado**. Se o patrocinador pagar por visita comprovada, esse é o próximo passo técnico (e muda a compra das tags).
 
 ### Rotina com as chaves
-1. Defina `TAG_KEY_SECRET` (32+ caracteres) e guarde uma cópia fora do servidor. Sem o segredo, os links já gravados deixam de funcionar.
+1. Defina `TAG_KEY_SECRET` (32+ caracteres) e guarde uma cópia fora do servidor. Sem o segredo, os links já gravados deixam de funcionar; a API agora bloqueia carimbos protegidos se o segredo estiver ausente.
 2. `npm --prefix server run chaves -- ativar-todos`, depois `... urls` (ou *Admin → Exportar links (CSV)*). Grave nas tags e gere os QR com esses links.
 3. Tag perdida, QR vazado ou troca de etiqueta: *Admin → Link da tag → Girar chave* e regrave **só aquela** tag.
 4. O CSV de links contém as chaves: trate como senha (não envie por mensagem aberta, não suba em pasta pública).
