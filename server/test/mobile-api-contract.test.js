@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 
 const fromHere = (relative) => fileURLToPath(new URL(relative, import.meta.url));
-const [openapiText, indexSource, recoverySource, gamificationSource] = await Promise.all([
+const [openapiText, indexSource, recoverySource, gamificationSource, adminSource] = await Promise.all([
   readFile(fromHere('../../docs/api/openapi.yaml'), 'utf8'),
   readFile(fromHere('../index.js'), 'utf8'),
   readFile(fromHere('../recuperacao-senha.js'), 'utf8'),
   readFile(fromHere('../gamificacao.js'), 'utf8'),
+  readFile(fromHere('../admin.js'), 'utf8'),
 ]);
 const api = YAML.parse(openapiText);
 
@@ -103,4 +104,21 @@ test('carimbos documentam os campos exatos de chave e localização aceitos pelo
   assert.ok(tag.responses['403']);
   assert.ok(event.responses['403']);
   assert.equal(event.responses['200'].content['application/json'].schema.$ref, '#/components/schemas/CarimboEventoResposta');
+});
+
+test('catálogo público e circuitos não expõem pontos ou rotas não publicados', () => {
+  const start = adminSource.indexOf('export async function catalogoPublico()');
+  const end = adminSource.indexOf('// Gate de publicação.', start);
+  assert.notEqual(start, -1, 'admin deve exportar catalogoPublico');
+  assert.notEqual(end, -1, 'a função de catálogo deve ter um limite reconhecível');
+  const catalogSource = adminSource.slice(start, end);
+
+  assert.match(
+    catalogSource,
+    /FROM tags t JOIN rotas r ON r\.id = t\.rota_id WHERE t\.status = 'publicado' AND r\.status = 'publicado'/,
+  );
+  assert.match(
+    catalogSource,
+    /JOIN rotas r ON r\.id = t\.rota_id\s+WHERE t\.status = 'publicado' AND r\.status = 'publicado'/,
+  );
 });
