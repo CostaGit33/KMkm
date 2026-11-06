@@ -125,6 +125,10 @@ class _AuthGateState extends State<AuthGate> {
     _pendingPasswordResetToken = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (_checking) {
+        _pendingPasswordResetToken = token;
+        return;
+      }
       unawaited(Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
           builder: (_) => PasswordResetPage(
