@@ -33,8 +33,9 @@ Cada ponto pode ter fotos atuais e históricas. O original fica intacto num buck
 | Servidor | Node.js (ES modules) + Express 4, MySQL via `mysql2`, migrações automáticas na subida, imagens com `sharp`, R2 via `aws4fetch` |
 | Cliente | Vite, JavaScript e CSS; telas montadas por templates de texto, com React só nos componentes de pódio e gamificação; Leaflet para o mapa de reserva; Service Worker (PWA) |
 | Compartilhado | `shared/`: regras de gamificação usadas pelo servidor e pelo cliente |
+| **Aplicativo Android** | `mobile/`: Flutter; usa a mesma API, domínio e banco da PWA; sessão em armazenamento seguro; NFC NDEF, App Links, GPS sob demanda, mapa, perfil, caderneta, cartas e pódio. Guia: [`mobile/README.md`](mobile/README.md) |
 | Integrações opcionais | Google Maps, Resend (recuperação de senha), Sentry (erros), Better Stack (monitor de `/api/saude`), GA4 (só com consentimento) |
-| Entrega | `Dockerfile` (Node 22) e CI no GitHub Actions: build do cliente e testes do servidor em PR e em `main` |
+| Entrega | `Dockerfile` (Node 22) e GitHub Actions: build PWA, testes API e análise/testes/builds Flutter. O APK de CI é para teste; publicação Play Store exige assinatura permanente e App Links configurados. |
 
 ## Estrutura do repositório
 
@@ -42,6 +43,7 @@ Cada ponto pode ter fotos atuais e históricas. O original fica intacto num buck
 server/    API Express, administração, mídia (server/midia), migrações (server/db), testes e scripts de operação (server/scripts)
 client/    PWA (client/src), página /admin (client/src/admin) e arquivos públicos (client/public)
 shared/    Regras compartilhadas entre servidor e cliente
+mobile/    Aplicativo Android Flutter (guia em mobile/README.md)
 docs/      Documentação (índice em docs/INDEX.md): arquitetura, fluxos, segurança, operação, API e piloto
 ```
 
@@ -56,6 +58,17 @@ docker compose up -d db
 npm run db:init
 npm run dev:server        # em outro terminal: npm run dev:client
 ```
+
+Para validar o aplicativo Android, na pasta `mobile/`:
+
+```bash
+flutter pub get
+flutter analyze --fatal-infos
+flutter test --reporter expanded
+flutter build apk --debug
+```
+
+O build release do CI é destinado a teste controlado. Antes de distribuir pela Google Play, configure uma chave de assinatura permanente e verifique os App Links conforme [`docs/PLAY-STORE.md`](docs/PLAY-STORE.md).
 
 Os pontos nascem `pendente`. Publicar exige responsável, autorização e vistoria registrados (em `/admin` → editar ponto), ou confirmação explícita que fica na auditoria, e coordenadas válidas.
 
@@ -93,4 +106,4 @@ npm --prefix server test                                        # testes
 
 ## Limites conhecidos
 
-Lista viva em [`TODO.md`](TODO.md). Os principais: o carimbo por NFC comum não prova presença (só uma tag com contador assinado, como a NTAG 424 DNA, prova); não há teste de ponta a ponta do fluxo conta → carimbo (existem e2e de mídia e de recuperação de senha, e um `smoke.mjs` manual); o limite de tentativas fica em memória (uma instância).
+Lista viva em [`TODO.md`](TODO.md). Baseline da auditoria integral: [`docs/AUDITORIA-INTEGRAL-2026-11-05.md`](docs/AUDITORIA-INTEGRAL-2026-11-05.md). Os principais: o carimbo por NFC comum não prova presença (só uma tag com contador assinado, como a NTAG 424 DNA, prova); não há teste de ponta a ponta do fluxo conta → carimbo (existem e2e de mídia e de recuperação de senha, e um `smoke.mjs` manual); o limite de tentativas fica em memória (uma instância).

@@ -240,6 +240,20 @@ class ApiClient {
     );
   }
 
+  /// Consome um token de redefinição de uso único e atualiza a senha no servidor.
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    final response = await _request(
+      'POST',
+      '/api/conta/redefinir-senha',
+      body: {'token': token, 'senha': password},
+      authenticated: false,
+    );
+    return _asMap(response.data);
+  }
+
   Future<String?> _readSessionCookie() async {
     final reader = _sessionCookieReader;
     if (reader != null) return reader();
@@ -366,6 +380,10 @@ class ApiClient {
         return 'A senha não pode ser igual ao e-mail.';
       case 'senha_atual_invalida':
         return 'A senha atual não confere.';
+      case 'token_ou_senha_invalidos':
+        return 'Confira o token e use uma senha de 8 a 128 caracteres.';
+      case 'token_invalido_ou_expirado':
+        return 'Este link expirou ou já foi utilizado. Solicite uma nova recuperação de senha.';
       case 'chave_invalida':
         return 'A chave deste ponto não é válida.';
       case 'rate_limited':
