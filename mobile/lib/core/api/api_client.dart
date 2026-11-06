@@ -323,7 +323,9 @@ class ApiClient {
       final text = await response.transform(utf8.decoder).join();
       final decoded = text.isEmpty ? <String, dynamic>{} : _decode(text);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        final payload = decoded is Map<String, dynamic> ? decoded : {};
+        final payload = decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{};
         final code = payload['erro']?.toString();
         throw ApiException(
           _friendlyMessage(code, response.statusCode, payload),
