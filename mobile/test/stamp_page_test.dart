@@ -69,6 +69,11 @@ void main() {
       ),
     );
 
+    await tester.scrollUntilVisible(
+      find.text('Enviar carimbo'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Enviar carimbo'));
     await tester.pumpAndSettle();
 
