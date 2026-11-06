@@ -69,12 +69,11 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('Enviar carimbo'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Enviar carimbo'));
+    final submitButton = find.widgetWithText(FilledButton, 'Enviar carimbo');
+    await tester.ensureVisible(submitButton);
+    await tester.pumpAndSettle();
+    expect(submitButton, findsOneWidget);
+    await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
     expect(
