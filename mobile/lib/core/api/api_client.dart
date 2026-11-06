@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,11 +9,19 @@ import '../models/catalog_snapshot.dart';
 import '../models/notebook_snapshot.dart';
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode, this.code});
+  const ApiException(
+    this.message, {
+    this.statusCode,
+    this.code,
+    this.details = const <String, dynamic>{},
+  });
 
   final String message;
   final int? statusCode;
   final String? code;
+  /// Dados seguros e estruturados retornados pela API (distância, raio, precisão).
+  /// Não inclui corpo bruto, chave da TAG nem cookie de sessão.
+  final Map<String, dynamic> details;
 
   @override
   String toString() => message;
@@ -329,12 +338,19 @@ class ApiClient {
       final text = await response.transform(utf8.decoder).join();
       final decoded = text.isEmpty ? <String, dynamic>{} : _decode(text);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        final payload = decoded is Map<String, dynamic> ? decoded : {};
+        final payload = decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{};
         final code = payload['erro']?.toString();
         throw ApiException(
-          _friendlyMessage(code, response.statusCode),
+          _friendlyMessage(code, response.statusCode, payload),
           statusCode: response.statusCode,
           code: code,
+          details: <String, dynamic>{
+            for (final field in const ['distancia', 'raio', 'precisao', 'request_id'])
+              if (payload[field] is num || payload[field] is String)
+                field: payload[field],
+          },
         );
       }
       return _ApiResponse(data: decoded, cookies: response.cookies);
@@ -343,6 +359,20 @@ class ApiClient {
     } on SocketException {
       throw const ApiException(
         'Não foi possível conectar. Verifique sua internet e tente novamente.',
+      );
+    } on HttpException catch (error, stackTrace) {
+      // Expõe a mensagem técnica do transporte, sem corpo da requisição ou credenciais.
+      developer.log(
+        'Erro HTTP no transporte ($method $path): ${error.message}',
+        name: 'mais1km.api',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      final reason = error.message.trim();
+      throw ApiException(
+        reason.isEmpty
+            ? 'A conexão HTTP foi interrompida antes de receber uma resposta completa.'
+            : 'A conexão HTTP foi interrompida: $reason',
       );
     } on TimeoutException {
       throw const ApiException(
@@ -354,9 +384,17 @@ class ApiClient {
       );
     } on FormatException {
       throw const ApiException('A API retornou uma resposta inválida.');
-    } catch (_) {
-      throw const ApiException(
-        'Não foi possível concluir a solicitação. Tente novamente.',
+    } catch (error, stackTrace) {
+      // Diagnóstico técnico sem registrar corpo, chave da TAG, cookie ou coordenadas.
+      developer.log(
+        'Falha inesperada na API ($method $path): ${error.runtimeType}',
+        name: 'mais1km.api',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw ApiException(
+        'Falha inesperada ao comunicar com o servidor (${error.runtimeType}). '
+        'Tente novamente. Se persistir, informe este código ao suporte.',
       );
     }
   }
@@ -368,7 +406,11 @@ class ApiClient {
     throw const ApiException('Formato de resposta inesperado da API.');
   }
 
-  String _friendlyMessage(String? code, int status) {
+  String _friendlyMessage(
+    String? code,
+    int status,
+    Map<String, dynamic> payload,
+  ) {
     switch (code) {
       case 'credenciais_invalidas':
         return 'E-mail ou senha incorretos.';
@@ -386,6 +428,23 @@ class ApiClient {
         return 'Este link expirou ou já foi utilizado. Solicite uma nova recuperação de senha.';
       case 'chave_invalida':
         return 'A chave deste ponto não é válida.';
+      case 'fora_do_raio':
+        final distancia = _inteiroPositivo(payload['distancia']);
+        final raio = _inteiroPositivo(payload['raio']);
+        if (distancia != null && raio != null) {
+          return 'Você está a aproximadamente $distancia m deste ponto. '
+              'O limite permitido é de $raio m. Aproxime-se da TAG e tente novamente.';
+        }
+        return 'Você está fora do raio permitido para este ponto. Aproxime-se da TAG e tente novamente.';
+      case 'gps_impreciso':
+        final precisao = _inteiroPositivo(payload['precisao']);
+        if (precisao != null) {
+          return 'A precisão atual do GPS é de aproximadamente $precisao m. '
+              'O limite aceito é de 50 m. Vá para uma área aberta e tente novamente.';
+        }
+        return 'O GPS está impreciso. Vá para uma área aberta e tente novamente.';
+      case 'localizacao_necessaria':
+        return 'Este ponto exige localização. Permita o GPS para validar o carimbo.';
       case 'rate_limited':
       case 'muitas_tentativas':
       case 'muitos_carimbos':
@@ -404,6 +463,11 @@ class ApiClient {
         }
         return 'Não foi possível concluir. Verifique os dados e tente novamente.';
     }
+  }
+
+  int? _inteiroPositivo(dynamic value) {
+    final parsed = value is num ? value.round() : int.tryParse('$value');
+    return parsed != null && parsed > 0 ? parsed : null;
   }
 
   void dispose() => _httpClient?.close(force: true);
