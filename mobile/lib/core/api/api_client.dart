@@ -307,30 +307,30 @@ class ApiClient {
   }) async {
     final uri = Uri.parse('$_baseUrl$path');
     try {
+      // Leia a sessão antes de abrir a requisição. HttpClientRequest.headers
+      // só pode ser alterado antes do envio; não faça await de storage entre
+      // openUrl() e a configuração dos headers.
+      String? sessionCookie;
+      if (authenticated ||
+          (method == 'GET' && path == '/api/conta/sessao')) {
+        sessionCookie = await _readSessionCookie();
+      }
+
       final request = await _client.openUrl(method, uri).timeout(
             const Duration(seconds: 20),
           );
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
       if (body != null) {
         request.headers.contentType = ContentType.json;
-        request.write(jsonEncode(body));
       }
-      if (authenticated) {
-        final cookie = await _readSessionCookie();
-        if (cookie != null && cookie.isNotEmpty) {
-          request.headers.set(
-            HttpHeaders.cookieHeader,
-            'mais1km_session=$cookie',
-          );
-        }
-      } else if (method == 'GET' && path == '/api/conta/sessao') {
-        final cookie = await _readSessionCookie();
-        if (cookie != null && cookie.isNotEmpty) {
-          request.headers.set(
-            HttpHeaders.cookieHeader,
-            'mais1km_session=$cookie',
-          );
-        }
+      if (sessionCookie != null && sessionCookie.isNotEmpty) {
+        request.headers.set(
+          HttpHeaders.cookieHeader,
+          'mais1km_session=$sessionCookie',
+        );
+      }
+      if (body != null) {
+        request.write(jsonEncode(body));
       }
       final response = await request.close().timeout(
             const Duration(seconds: 20),
