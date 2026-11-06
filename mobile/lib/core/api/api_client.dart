@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -355,9 +356,17 @@ class ApiClient {
       );
     } on FormatException {
       throw const ApiException('A API retornou uma resposta inválida.');
-    } catch (_) {
-      throw const ApiException(
-        'Não foi possível concluir a solicitação. Tente novamente.',
+    } catch (error, stackTrace) {
+      // Diagnóstico técnico sem registrar corpo, chave da TAG, cookie ou coordenadas.
+      developer.log(
+        'Falha inesperada na API ($method $path): ${error.runtimeType}',
+        name: 'mais1km.api',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw ApiException(
+        'Falha inesperada ao comunicar com o servidor (${error.runtimeType}). '
+        'Tente novamente. Se persistir, informe este código ao suporte.',
       );
     }
   }
