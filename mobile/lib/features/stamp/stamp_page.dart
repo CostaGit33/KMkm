@@ -238,7 +238,7 @@ class _StampPageState extends State<StampPage> {
           _message = 'Este ponto exige localização. Toque abaixo para permitir o GPS e tentar novamente.';
         } else if (error.statusCode == 409 && error.code == 'gps_impreciso') {
           _locationRequired = true;
-          _message = 'O servidor recebeu uma posição com precisão insuficiente. Vá para uma área aberta e tente novamente.';
+          _message = error.message;
         } else if (error.statusCode == 409 && error.code == 'fora_do_raio') {
           _locationRequired = true;
           // A ApiClient já traduz a resposta oficial e preserva distancia/raio
