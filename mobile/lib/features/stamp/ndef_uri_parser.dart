@@ -60,6 +60,21 @@ class NdefUriParser {
     }
   }
 
+  /// Algumas gravadoras salvam a URL em um registro MIME/external em vez de
+  /// usar RTD_URI ou RTD_TEXT. O formato ainda será validado pelo parser do
+  /// link, portanto este fallback não amplia o domínio aceito.
+  static String? decodePlainUriPayload(List<int> payload) {
+    if (payload.isEmpty) return null;
+    try {
+      final value = utf8.decode(payload, allowMalformed: false).trim();
+      final uri = Uri.tryParse(value);
+      if (uri == null || !uri.hasScheme) return null;
+      return value;
+    } on FormatException {
+      return null;
+    }
+  }
+
   static String? decodeUriPayload(List<int> payload) {
     if (payload.length < 2) return null;
     final prefix = _prefixes[payload.first];

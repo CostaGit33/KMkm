@@ -12,7 +12,7 @@ Aplicativo Android Flutter desenvolvido em paralelo à PWA existente. Usa o mesm
 - Catálogo público (somente pontos publicados e não ocultos), busca, categorias, rotas e caderneta.
 - Pódio/XP, medalhas e participação pública opcional.
 - Carimbo por leitura NFC NDEF dentro do app, App Link ou link colado; a localização é solicitada apenas quando a API exige validação do ponto.
-- Leitura NFC aceita registros NDEF URI e texto contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; o app não consegue ler uma TAG vazia ou sem NDEF.
+- Leitura NFC aceita TAGs NDEF ISO 14443, ISO 15693 e ISO 18092, com registros URI, texto ou payload simples contendo URL. A TAG precisa estar gravada com o link completo `/t/<código>?k=<chave>`; uma TAG vazia ou sem NDEF será detectada e informada como incompatível, sem tentativa de carimbo.
 
 A redefinição de senha usa o link HTTPS `/?redefinir=TOKEN` enviado por e-mail. O Android valida domínio, caminho e formato do token; mantém o token apenas em memória e o envia uma única vez ao endpoint do servidor. Após sucesso, a sessão local da conta afetada é encerrada porque o backend revoga suas sessões. As telas completas de eventos ainda precisam ser comparadas/implementadas. Os testes de contrato usam servidor local falso; não chamam a produção.
 
@@ -42,7 +42,7 @@ O app só solicita permissão de localização após o backend responder `locali
 
 Na pasta `mobile/`:
 
-O botão **Ler TAG agora** abre uma sessão NFC em primeiro plano. Mantenha o celular desbloqueado e aproxime a região da antena NFC da TAG. Se o Android não suportar NFC ou a TAG não tiver um registro NDEF com URL Mais1km, o app informa o motivo e mantém a opção de colar o link.
+O botão **Ler TAG agora** abre uma sessão NFC em primeiro plano. Mantenha o celular desbloqueado e aproxime a região da antena NFC da TAG por alguns segundos. Depois de uma leitura válida, o app tenta o carimbo automaticamente; se o servidor exigir geofence, pede o GPS explicitamente. O app diferencia NFC desativado, TAG não-NDEF, falha de leitura e URL inválida; em qualquer desses casos mantém a opção de colar o link. Se a TAG for detectada, mas não carimbar, confirme primeiro se o conteúdo é NDEF e se contém a URL completa gerada pelo comando `node server/scripts/chaves.js urls`, incluindo `?k=`.
 
 ```bash
 flutter pub get

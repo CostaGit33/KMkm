@@ -41,6 +41,7 @@ class _StampPageState extends State<StampPage> {
   bool _openDeviceLocationSettings = false;
   bool _submitting = false;
   bool _nfcScanning = false;
+  bool _nfcSessionStarted = false;
 
   @override
   void initState() {
@@ -71,12 +72,29 @@ class _StampPageState extends State<StampPage> {
         });
         return;
       }
+      _nfcSessionStarted = true;
       await NfcManager.instance.startSession(
-        pollingOptions: {NfcPollingOption.iso14443},
+        // NDEF pode estar em TAGs Type 2 (ISO 14443) ou Type 5 (ISO 15693).
+        // Restringir a ISO 14443 fazia o leitor parecer inerte em TAGs
+        // válidas de outra tecnologia.
+        pollingOptions: {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092,
+        },
         onDiscovered: (tag) async {
           try {
             final ndef = NdefAndroid.from(tag);
-            final message = ndef?.cachedNdefMessage ?? await ndef?.getNdefMessage();
+            if (ndef == null) {
+              await _stopNfcSessionSafely();
+              if (!mounted) return;
+              setState(() {
+                _nfcScanning = false;
+                _message = 'TAG detectada, mas ela não é NDEF. Grave nela a URL completa da TAG Mais1km ou use o QR Code.';
+              });
+              return;
+            }
+            final message = ndef.cachedNdefMessage ?? await ndef.getNdefMessage();
             String? uriText;
             if (message != null) {
               for (final record in message.records) {
@@ -92,10 +110,11 @@ class _StampPageState extends State<StampPage> {
                   // do registro URI. Aceita ambos, sem relaxar o host/caminho.
                   uriText = NdefUriParser.decodeTextPayload(record.payload);
                 }
+                uriText ??= NdefUriParser.decodePlainUriPayload(record.payload);
                 if (uriText != null) break;
               }
             }
-            await NfcManager.instance.stopSession();
+            await _stopNfcSessionSafely();
             if (!mounted) return;
             final parsed = uriText == null ? null : StampLinkParser.parse(uriText);
             setState(() {
@@ -105,11 +124,18 @@ class _StampPageState extends State<StampPage> {
                 _message = 'TAG detectada, mas não contém um link NDEF válido do Mais1km. Verifique se ela foi gravada com a URL completa da TAG.';
               } else {
                 _stampLink = parsed;
-                _message = 'TAG Mais1km lida. Confirme o envio para validar o carimbo.';
+                _message = 'TAG Mais1km lida. Validando o carimbo…';
               }
             });
+            if (parsed != null) {
+              // A leitura NFC é a ação explícita do participante. Tenta o
+              // carimbo imediatamente; se o servidor exigir geofence, o
+              // próximo passo continua sendo apresentado com consentimento
+              // explícito para obter o GPS.
+              unawaited(_submit());
+            }
           } catch (_) {
-            await NfcManager.instance.stopSession();
+            await _stopNfcSessionSafely();
             if (!mounted) return;
             setState(() {
               _nfcScanning = false;
@@ -119,6 +145,7 @@ class _StampPageState extends State<StampPage> {
         },
       );
     } catch (_) {
+      await _stopNfcSessionSafely();
       if (!mounted) return;
       setState(() {
         _nfcScanning = false;
@@ -127,13 +154,19 @@ class _StampPageState extends State<StampPage> {
     }
   }
 
-  Future<void> _stopNfcScan() async {
-    if (!_nfcScanning) return;
+  Future<void> _stopNfcSessionSafely() async {
+    if (!_nfcSessionStarted) return;
+    _nfcSessionStarted = false;
     try {
       await NfcManager.instance.stopSession();
     } catch (_) {
-      // A sessão pode já ter sido encerrada pelo Android.
+      // A sessão pode ter sido encerrada pelo Android ou pelo ciclo de vida.
     }
+  }
+
+  Future<void> _stopNfcScan() async {
+    if (!_nfcScanning) return;
+    await _stopNfcSessionSafely();
     if (mounted) {
       setState(() {
         _nfcScanning = false;
@@ -271,9 +304,7 @@ class _StampPageState extends State<StampPage> {
 
   @override
   void dispose() {
-    if (_nfcScanning) {
-      unawaited(NfcManager.instance.stopSession());
-    }
+    if (_nfcSessionStarted) unawaited(_stopNfcSessionSafely());
     _linkController.dispose();
     super.dispose();
   }

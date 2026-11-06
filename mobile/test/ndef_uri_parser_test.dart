@@ -30,6 +30,16 @@ void main() {
       expect(NdefUriParser.decodeTextPayload(payload), isNull);
     });
 
+    test('aceita URL em payload simples de registro MIME ou external', () {
+      final payload = utf8.encode(
+        'https://mais1km.novaagencian8n.online/t/eu-003?k=def',
+      );
+      expect(
+        NdefUriParser.decodePlainUriPayload(payload),
+        'https://mais1km.novaagencian8n.online/t/eu-003?k=def',
+      );
+    });
+
     test('rejeita payload vazio, curto ou com prefixo desconhecido', () {
       expect(NdefUriParser.decodeUriPayload([]), isNull);
       expect(NdefUriParser.decodeUriPayload([0x04]), isNull);
