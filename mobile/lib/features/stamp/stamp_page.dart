@@ -241,7 +241,9 @@ class _StampPageState extends State<StampPage> {
           _message = 'O servidor recebeu uma posição com precisão insuficiente. Vá para uma área aberta e tente novamente.';
         } else if (error.statusCode == 409 && error.code == 'fora_do_raio') {
           _locationRequired = true;
-          _message = 'Você está fora do raio permitido para este ponto. Aproxime-se do local e tente novamente.';
+          // A ApiClient já traduz a resposta oficial e preserva distancia/raio
+          // enviados pelo servidor; não recalculamos geofence no aparelho.
+          _message = error.message;
         } else {
           _message = error.message;
         }
