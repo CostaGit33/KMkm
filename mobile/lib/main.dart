@@ -113,7 +113,7 @@ class _AuthGateState extends State<AuthGate> {
     }
     if (StampLinkParser.parse(uri.toString()) == null) return;
     if (_user == null) {
-      _pendingStampUri = uri;
+      setState(() => _pendingStampUri = uri);
       return;
     }
     unawaited(_openStampPage(uri));
@@ -240,7 +240,11 @@ class _AuthGateState extends State<AuthGate> {
         stampVersion: _stampVersion,
       );
     }
-    return AuthScreen(api: widget.api, onAuthenticated: _onAuthenticated);
+    return AuthScreen(
+      api: widget.api,
+      onAuthenticated: _onAuthenticated,
+      hasPendingStamp: _pendingStampUri != null,
+    );
   }
 }
 
@@ -251,10 +255,12 @@ class AuthScreen extends StatefulWidget {
     super.key,
     required this.api,
     required this.onAuthenticated,
+    this.hasPendingStamp = false,
   });
 
   final ApiClient api;
   final ValueChanged<Map<String, dynamic>> onAuthenticated;
+  final bool hasPendingStamp;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -351,7 +357,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? 'Recuperar acesso'
                           : isRegister
                               ? 'Crie sua conta'
-                              : 'Bem-vindo de volta',
+                              : 'Acesse sua conta',
                       style: const TextStyle(
                         color: AppColors.ink,
                         fontSize: 25,
@@ -365,7 +371,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? 'Vamos enviar as instruções para seu e-mail.'
                           : isRegister
                               ? 'Sua próxima descoberta começa aqui.'
-                              : 'Entre para continuar sua jornada pelo +1 KM.',
+                              : widget.hasPendingStamp
+                                  ? 'Entre ou crie sua conta para validar o carimbo desta TAG.'
+                                  : 'Entre com seus dados ou cadastre-se para começar sua jornada pelo +1 KM.',
                       style: const TextStyle(
                         color: AppColors.muted,
                         fontSize: 14,
