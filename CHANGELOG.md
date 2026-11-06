@@ -1,5 +1,10 @@
 # Histórico de versões do +1 KM
 
+## Android · assinatura de release e App Links
+- **Chave de release fora do repositório**: o Gradle lê `android/key.properties` (local, ignorado pelo git) ou variáveis de ambiente; sem chave mantém o build de teste com a chave de debug, e `REQUIRE_RELEASE_SIGNING=true` faz o build falhar em vez de cair nela.
+- **Workflow manual `Mobile - Release assinado`** (`mobile-release.yml`): confere os 4 secrets, restaura o keystore, imprime o SHA-256 do certificado, roda análise e testes e publica o `.aab` e o APK assinados com checksum.
+- **`/.well-known/assetlinks.json` pelo servidor** (`server/assetlinks.js`), a partir de `ANDROID_SHA256_CERT_FINGERPRINTS` (e `ANDROID_PACKAGE_NAME`, opcional). Antes não havia como publicá-lo: o `express.static` ignora pastas com ponto e o fallback da SPA devolvia `index.html` com 200, o que faz a verificação dos App Links falhar sem aviso. Sem a variável a rota responde 404. `docs/PLAY-STORE.md` (que ainda descrevia TWA/Bubblewrap) foi atualizado para o fluxo Flutter.
+
 ## Sem hash de senha no aparelho
 - O app deixou de guardar salt/hash da senha no `localStorage`; a conferência é só do servidor. O hash antigo de contas pré-servidor é usado uma vez para migrar no login e apagado em seguida (também na sincronização e na redefinição de senha).
 

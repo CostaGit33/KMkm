@@ -19,6 +19,7 @@ import { recuperacaoSenhaRouter } from './recuperacao-senha.js';
 import { rotasPublicasMidia } from './midia/rotas-publicas.js';
 import { armazenamentoDeMidia } from './midia/estado.js';
 import { iniciarEntregaEventos, registrarEventoNaTransacao, resumoDaFila } from './integracoes/eventos-n8n.js';
+import { assetLinksHandler } from './assetlinks.js';
 
 const JANELA_REPETIDO_MIN = 30;
 const JANELA_TURMA_MIN = 4;
@@ -682,6 +683,8 @@ app.get(['/cookies', '/cookies/'], paginaPublica('cookies.html'));
 app.get(['/excluir-conta', '/excluir-conta/'], paginaPublica('excluir-conta.html'));
 app.get(['/como-funciona', '/como-funciona/'], paginaPublica('como-funciona.html'));
 app.get(['/parceiros', '/parceiros/'], paginaPublica('parceiros.html'));
+// Android App Links: precisa vir antes do express.static (que ignora dotfiles) e do fallback da SPA.
+app.get('/.well-known/assetlinks.json', assetLinksHandler());
 
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {

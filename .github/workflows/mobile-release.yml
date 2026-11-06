@@ -1,0 +1,109 @@
+# Build de release assinado do app Android (AAB para a Play Console + APK).
+# Manual de propósito: só roda quando alguém dispara em Actions → Run workflow,
+# e só com a chave de assinatura guardada em GitHub Secrets (nunca no repositório).
+#
+# Secrets necessários (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64    keystore .jks em base64 (base64 -w0 mais1km-release.jks)
+#   ANDROID_KEYSTORE_PASSWORD  senha do keystore
+#   ANDROID_KEY_ALIAS          alias da chave
+#   ANDROID_KEY_PASSWORD       senha da chave
+name: Mobile - Release assinado
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Gerar AAB e APK assinados
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      REQUIRE_RELEASE_SIGNING: 'true'
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v5
+
+      - name: Conferir secrets de assinatura
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          faltando=""
+          [ -n "$ANDROID_KEYSTORE_BASE64" ]   || faltando="$faltando ANDROID_KEYSTORE_BASE64"
+          [ -n "$ANDROID_KEYSTORE_PASSWORD" ] || faltando="$faltando ANDROID_KEYSTORE_PASSWORD"
+          [ -n "$ANDROID_KEY_ALIAS" ]         || faltando="$faltando ANDROID_KEY_ALIAS"
+          [ -n "$ANDROID_KEY_PASSWORD" ]      || faltando="$faltando ANDROID_KEY_PASSWORD"
+          if [ -n "$faltando" ]; then
+            echo "::error::Secrets ausentes:$faltando (veja docs/PLAY-STORE.md)"
+            exit 1
+          fi
+
+      - name: Restaurar keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mais1km-release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/mais1km-release.jks" >> "$GITHUB_ENV"
+
+      - name: Mostrar SHA-256 do certificado (para o assetlinks.json)
+        run: |
+          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD | grep -E "SHA256:|Owner:|Valid from:"
+
+      - name: Configurar Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Análise estática e testes
+        run: |
+          flutter analyze --fatal-infos
+          flutter test
+
+      - name: Gerar AAB de release
+        run: flutter build appbundle --release
+
+      - name: Gerar APK de release
+        run: flutter build apk --release
+
+      - name: Gerar checksums
+        run: |
+          sha256sum build/app/outputs/bundle/release/app-release.aab > app-release.aab.sha256
+          sha256sum build/app/outputs/flutter-apk/app-release.apk > app-release.apk.sha256
+
+      - name: Publicar artefatos assinados
+        uses: actions/upload-artifact@v4
+        with:
+          name: mais1km-android-release-assinado
+          path: |
+            mobile/build/app/outputs/bundle/release/app-release.aab
+            mobile/build/app/outputs/flutter-apk/app-release.apk
+            mobile/app-release.aab.sha256
+            mobile/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Apagar keystore do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/mais1km-release.jks"

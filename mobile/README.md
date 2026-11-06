@@ -34,7 +34,7 @@ flutter run \
 
 ## App Links e carimbo
 
-O filtro Android aceita `https://mais1km.novaagencian8n.online/t/...`. A verificação do domínio depende de hospedar `/.well-known/assetlinks.json` com o applicationId e SHA-256 do certificado correto. O Manifest não substitui essa publicação. Sem verificação, use link colado dentro do app como alternativa.
+O filtro Android aceita `https://mais1km.novaagencian8n.online/t/...`. A verificação do domínio depende de `/.well-known/assetlinks.json` com o applicationId e o SHA-256 do certificado correto. O servidor monta esse arquivo a partir da variável `ANDROID_SHA256_CERT_FINGERPRINTS` (responde 404 enquanto ela estiver vazia); o Manifest sozinho não basta. Sem verificação, use link colado dentro do app como alternativa.
 
 O app só solicita permissão de localização após o backend responder `localizacao_necessaria`. A API valida precisão de GPS de até 50 metros e o raio do ponto. A coordenada não é coletada em segundo plano nem antes da ação do usuário. O link pode conter uma chave privada do ponto: não registre nem compartilhe a URL completa.
 
@@ -60,7 +60,7 @@ flutter build apk --release
 
 O workflow `.github/workflows/mobile.yml` executa dependências, análise estática, testes, builds debug e release e publica APKs com checksum SHA-256 como artefatos temporários do GitHub Actions.
 
-**Atenção à assinatura:** o Gradle ainda assina o build release com a chave debug padrão. Esse APK é adequado para instalação e teste controlado, mas não para Google Play nem para atualização contínua entre builds de CI (a chave debug do runner é temporária). Para distribuição pública, será necessário configurar uma chave de assinatura permanente em GitHub Secrets, sem versioná-la no repositório, e publicar `assetlinks.json` com o fingerprint correspondente.
+**Assinatura:** o build do workflow `mobile.yml` (PRs e `main`) continua assinado com a chave de debug do runner. Esse APK serve para teste controlado, não para a Google Play nem para atualização contínua. O build de distribuição usa o workflow manual `.github/workflows/mobile-release.yml`, que lê a chave permanente de GitHub Secrets (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), falha se algum faltar e gera o `.aab` e o APK assinados. Localmente, `android/key.properties` (ignorado pelo git) faz o mesmo; sem chave de release o Gradle cai na chave de debug, a menos que `REQUIRE_RELEASE_SIGNING=true`. Passo a passo em `docs/PLAY-STORE.md`.
 
 ## Segurança e teste manual
 
