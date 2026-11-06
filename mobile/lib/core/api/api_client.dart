@@ -8,11 +8,19 @@ import '../models/catalog_snapshot.dart';
 import '../models/notebook_snapshot.dart';
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode, this.code});
+  const ApiException(
+    this.message, {
+    this.statusCode,
+    this.code,
+    this.details = const <String, dynamic>{},
+  });
 
   final String message;
   final int? statusCode;
   final String? code;
+  /// Dados seguros e estruturados retornados pela API (distância, raio, precisão).
+  /// Não inclui corpo bruto, chave da TAG nem cookie de sessão.
+  final Map<String, dynamic> details;
 
   @override
   String toString() => message;
@@ -318,9 +326,14 @@ class ApiClient {
         final payload = decoded is Map<String, dynamic> ? decoded : {};
         final code = payload['erro']?.toString();
         throw ApiException(
-          _friendlyMessage(code, response.statusCode),
+          _friendlyMessage(code, response.statusCode, payload),
           statusCode: response.statusCode,
           code: code,
+          details: <String, dynamic>{
+            for (final field in const ['distancia', 'raio', 'precisao', 'request_id'])
+              if (payload[field] is num || payload[field] is String)
+                field: payload[field],
+          },
         );
       }
       return _ApiResponse(data: decoded, cookies: response.cookies);
@@ -354,7 +367,11 @@ class ApiClient {
     throw const ApiException('Formato de resposta inesperado da API.');
   }
 
-  String _friendlyMessage(String? code, int status) {
+  String _friendlyMessage(
+    String? code,
+    int status,
+    Map<String, dynamic> payload,
+  ) {
     switch (code) {
       case 'credenciais_invalidas':
         return 'E-mail ou senha incorretos.';
@@ -368,6 +385,23 @@ class ApiClient {
         return 'A senha atual não confere.';
       case 'chave_invalida':
         return 'A chave deste ponto não é válida.';
+      case 'fora_do_raio':
+        final distancia = _inteiroPositivo(payload['distancia']);
+        final raio = _inteiroPositivo(payload['raio']);
+        if (distancia != null && raio != null) {
+          return 'Você está a aproximadamente $distancia m deste ponto. '
+              'O limite permitido é de $raio m. Aproxime-se da TAG e tente novamente.';
+        }
+        return 'Você está fora do raio permitido para este ponto. Aproxime-se da TAG e tente novamente.';
+      case 'gps_impreciso':
+        final precisao = _inteiroPositivo(payload['precisao']);
+        if (precisao != null) {
+          return 'A precisão atual do GPS é de aproximadamente $precisao m. '
+              'O limite aceito é de 50 m. Vá para uma área aberta e tente novamente.';
+        }
+        return 'O GPS está impreciso. Vá para uma área aberta e tente novamente.';
+      case 'localizacao_necessaria':
+        return 'Este ponto exige localização. Permita o GPS para validar o carimbo.';
       case 'rate_limited':
       case 'muitas_tentativas':
       case 'muitos_carimbos':
@@ -386,6 +420,11 @@ class ApiClient {
         }
         return 'Não foi possível concluir. Verifique os dados e tente novamente.';
     }
+  }
+
+  int? _inteiroPositivo(dynamic value) {
+    final parsed = value is num ? value.round() : int.tryParse('$value');
+    return parsed != null && parsed > 0 ? parsed : null;
   }
 
   void dispose() => _httpClient?.close(force: true);
