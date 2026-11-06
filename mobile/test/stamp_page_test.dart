@@ -52,4 +52,50 @@ void main() {
         findsNothing);
     expect(find.text('Link Mais1km pronto para validação.'), findsNothing);
   });
+
+  testWidgets('mostra distância real e raio permitido quando está fora do geofence',
+      (tester) async {
+    final api = _OutsideRadiusApi();
+    addTearDown(api.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StampPage(
+          api: api,
+          initialUri: Uri.parse(
+            'https://mais1km.novaagencian8n.online/t/ponto-123?k=segredo',
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Enviar carimbo'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Você está a aproximadamente 347 m deste ponto. '
+        'O limite permitido é de 100 m. Aproxime-se da TAG e tente novamente.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Carimbo confirmado com sucesso.'), findsNothing);
+  });
+}
+
+class _OutsideRadiusApi extends ApiClient {
+  @override
+  Future<Map<String, dynamic>> stampTag({
+    required String code,
+    String? key,
+    TagPosition? position,
+  }) async {
+    throw const ApiException(
+      'Você está a aproximadamente 347 m deste ponto. '
+      'O limite permitido é de 100 m. Aproxime-se da TAG e tente novamente.',
+      statusCode: 409,
+      code: 'fora_do_raio',
+      details: <String, dynamic>{'distancia': 347, 'raio': 100},
+    );
+  }
 }
