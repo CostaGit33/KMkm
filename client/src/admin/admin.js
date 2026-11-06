@@ -1,5 +1,6 @@
 // Página /admin do +1 KM: pontos, rotas, eventos, pessoas e registro. Só abre para conta com papel "admin".
 import { CATEGORIES } from '../data.js';
+import { apiUrl } from '../api.js';
 import { abrirFotos } from './fotos.js';
 import { $, $$, esc, req, mensagem, avisar, dialogo, confirmar, arrastavel, paraCampoLocal, legivel } from './ui.js';
 
@@ -103,7 +104,7 @@ function htmlPontos() {
   const contagem = (s) => pontos.filter((p) => p.status === s).length;
   return `<div class="barra"><input type="search" id="busca-ponto" placeholder="Buscar por código ou nome" value="${esc(S.busca)}" aria-label="Buscar ponto" />
     <select id="filtro-status" aria-label="Filtrar por status"><option value="todos">Todos os status</option>${['publicado', 'pendente', 'arquivado'].map((s) => `<option value="${s}" ${S.filtroStatus === s ? 'selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}</select>
-    <span class="espaco"></span><a class="btn" href="/api/admin/pontos-urls.csv" download>Exportar links (CSV)</a><button class="btn" data-act="chaves-todos">Ativar chave em todos</button><button class="btn pri" data-act="novo-ponto">+ Novo ponto</button></div>
+    <span class="espaco"></span><a class="btn" href="${apiUrl('/admin/pontos-urls.csv')}" download>Exportar links (CSV)</a><button class="btn" data-act="chaves-todos">Ativar chave em todos</button><button class="btn pri" data-act="novo-ponto">+ Novo ponto</button></div>
     <p class="ajuda">${total} pontos · ${contagem('publicado')} publicados (recebem carimbo) · ${contagem('pendente')} pendentes · ${contagem('arquivado')} arquivados. Arraste a alça ⠿ (ou use ↑ ↓ com ela focada) para mudar a ordem; a ordem numera os carimbos da rota.${filtrando ? ' <b>Limpe a busca e o filtro para reordenar.</b>' : ''}</p>
     ${grupos.map(({ r, itens }) => {
       const vis = itens.filter(passa);

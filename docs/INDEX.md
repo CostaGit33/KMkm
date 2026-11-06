@@ -20,6 +20,10 @@ Estado atual do projeto: [README](../README.md) · pendências: [TODO](../TODO.m
 - [comercial/](comercial/README.md): proposta, carta de interesse, termo de autorização, vistoria, kit do parceiro, playbook.
 - [avaliacao-economica-mais1km](avaliacao-economica-mais1km.md) · [plano-investimento-mais1km](plano-investimento-mais1km.md) · [roadmap-evolucoes-necessarias](roadmap-evolucoes-necessarias.md) · [proxima-etapa-implantacao](proxima-etapa-implantacao.md)
 
+## Aplicativo Android
+- [Capacitor](capacitor/README.md): estratégia Android baseada no PWA existente, fases, requisitos de paridade e ADRs.
+- [mobile/](mobile/README.md): documentação histórica da tentativa Flutter (suspensa).
+
 ## Produto e conteúdo
 - [eventos-patrocinio](eventos-patrocinio.md) · [gamificacao](gamificacao.md) · [marca](marca.md) · [criterios-selecao-pontos-eunapolis](criterios-selecao-pontos-eunapolis.md) · [eunapolis-pesquisa](eunapolis-pesquisa.md) · [public-apis-analysis](public-apis-analysis.md)
 - API: [api/](api/README.md)

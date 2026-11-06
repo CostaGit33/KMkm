@@ -4,6 +4,8 @@ import { findPointByCode } from './data.js';
 import { installInk, stampHtml } from './stamp-kit.js';
 import { cartaHtml } from './cartas.js';
 import { galeriaHtml, montarGaleria } from './galeria.js';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 // Se o app já tem conta neste aparelho, o apelido vem preenchido (um toque para carimbar).
@@ -23,13 +25,28 @@ let stampInFlight = false;
 
 // Posição do aparelho, só no momento do carimbo e só quando o ponto pede. O servidor confere a distância e
 // não guarda a coordenada.
-function obterPosicao() {
+async function obterPosicao() {
+  const opcoes = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
+  if (Capacitor.isNativePlatform()) {
+    let permissao = await Geolocation.checkPermissions();
+    if (permissao.location !== 'granted') {
+      permissao = await Geolocation.requestPermissions({ permissions: ['location'] });
+    }
+    if (permissao.location !== 'granted') {
+      const erro = new Error('localizacao_negada');
+      erro.code = 1;
+      throw erro;
+    }
+    const p = await Geolocation.getCurrentPosition(opcoes);
+    return { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+  }
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('sem_geolocalizacao'));
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
       reject,
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+      opcoes,
     );
   });
 }
