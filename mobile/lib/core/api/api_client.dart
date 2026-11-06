@@ -346,6 +346,20 @@ class ApiClient {
       throw const ApiException(
         'Não foi possível conectar. Verifique sua internet e tente novamente.',
       );
+    } on HttpException catch (error, stackTrace) {
+      // Expõe a mensagem técnica do transporte, sem corpo da requisição ou credenciais.
+      developer.log(
+        'Erro HTTP no transporte ($method $path): ${error.message}',
+        name: 'mais1km.api',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      final reason = error.message.trim();
+      throw ApiException(
+        reason.isEmpty
+            ? 'A conexão HTTP foi interrompida antes de receber uma resposta completa.'
+            : 'A conexão HTTP foi interrompida: $reason',
+      );
     } on TimeoutException {
       throw const ApiException(
         'A conexão demorou mais que o esperado. Tente novamente.',
