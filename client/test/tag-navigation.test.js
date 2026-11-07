@@ -12,7 +12,9 @@ const tag = await readFile(path.join(root, 'tag.js'), 'utf8');
 test('retorno da TAG ignora o App Link inicial antigo no Capacitor', () => {
   const retorno = main.indexOf("const retornoTag = new URLSearchParams(window.location.search).get('retorno')");
   const launchUrl = main.indexOf('App.getLaunchUrl()');
+  const listener = main.indexOf("await App.addListener('appUrlOpen'");
   assert.notEqual(retorno, -1, 'main.js deve reconhecer o parâmetro de retorno');
+  assert.ok(listener >= 0 && listener < retorno, 'o listener de novas TAGs deve continuar ativo no retorno');
   assert.ok(launchUrl > retorno, 'o retorno deve ser tratado antes de consultar o App Link inicial');
   assert.match(main, /retornoTag === 'colecao' \|\| retornoTag === 'home'/);
 });
