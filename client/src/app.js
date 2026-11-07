@@ -225,7 +225,8 @@ async function buscarPontosProximos() {
     const longitude = posicao.coords?.longitude ?? posicao.longitude;
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       throw new Error("O aparelho retornou uma localização inválida. Confira o GPS e tente novamente.");
-    }\n    const origem = { lat: latitude, lng: longitude };
+    }
+    const origem = { lat: latitude, lng: longitude };
     const proximos = pontos.map((ponto) => ({
       ponto,
       metros: distanceMeters(origem, { lat: ponto.lat, lng: ponto.lng }),
