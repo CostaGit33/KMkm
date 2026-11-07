@@ -173,15 +173,18 @@ function render({ preserveFocus = false } = {}) {
   }
 }
 
-async function obterPosicaoParaBusca() {
+async function obterPosicaoParaBusca(informarEtapa = () => {}) {
   if (Capacitor.isNativePlatform()) {
+    informarEtapa("Verificando a permissão de localização…");
     let permissao = await Geolocation.checkPermissions();
     if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
+      informarEtapa("Aguardando sua resposta ao pedido de permissão…");
       permissao = await Geolocation.requestPermissions();
     }
     if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
       throw new Error("Permita o acesso à localização para encontrar pontos próximos.");
     }
+    informarEtapa("Obtendo sua localização (até 12 segundos)…");
     return Geolocation.getCurrentPosition({
       enableHighAccuracy: false,
       timeout: 12000,
@@ -189,6 +192,7 @@ async function obterPosicaoParaBusca() {
     });
   }
   if (!navigator.geolocation) throw new Error("Este aparelho não disponibiliza localização pelo navegador.");
+  informarEtapa("Obtendo sua localização (até 12 segundos)…");
   return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
     resolve,
     reject,
@@ -203,7 +207,13 @@ async function buscarPontosProximos() {
   botao.disabled = true;
   botao.textContent = "Localizando…";
   resultados.hidden = false;
-  resultados.innerHTML = '<p class="nearby-results-message">Obtendo sua localização uma única vez…</p>';
+  // A etapa atual aparece na tela e entra na mensagem de timeout, para mostrar onde a busca parou.
+  let etapa = "Carregando os pontos publicados…";
+  const informarEtapa = (texto) => {
+    etapa = texto;
+    if (resultados.isConnected) resultados.innerHTML = `<p class="nearby-results-message">${escapeHtml(texto)}</p>`;
+  };
+  informarEtapa(etapa);
   try {
     // Atualiza o catálogo publicado antes de calcular distâncias; a lista não depende de cache prévio.
     await carregarCatalogo();
@@ -213,10 +223,10 @@ async function buscarPontosProximos() {
     // O limite externo garante que a interface sempre saia do estado de carregamento.
     let limite;
     const posicao = await Promise.race([
-      obterPosicaoParaBusca(),
+      obterPosicaoParaBusca(informarEtapa),
       new Promise((_, reject) => {
         limite = window.setTimeout(
-          () => reject(new Error("A localização não respondeu em 20 segundos. Confira se a localização está ativada e se o aplicativo tem permissão para acessá-la; depois tente novamente.")),
+          () => reject(new Error(`A localização não respondeu em 20 segundos (parou em: ${etapa.replace(/…$/, "")}). Confira se a localização está ativada e se o aplicativo tem permissão para acessá-la; depois tente novamente.`)),
           20000,
         );
       }),
