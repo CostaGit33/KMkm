@@ -17,7 +17,11 @@ import { lerTokenRedefinicao, limparTokenRedefinicao } from "./redefinir-token.j
 import { Capacitor } from "@capacitor/core";
 
 let state = loadState();
-let view = "home";
+const retornoTag = new URLSearchParams(window.location.search).get("retorno");
+let view = retornoTag === "colecao" ? "collection" : "home";
+if (retornoTag === "colecao" || retornoTag === "home") {
+  window.history.replaceState({}, "", window.location.pathname);
+}
 let pointId = "";
 let routeId = "";
 let previousView = "map";
