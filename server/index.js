@@ -689,7 +689,9 @@ app.get('/.well-known/assetlinks.json', assetLinksHandler());
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));
-  app.get(['/admin', '/admin/'], (_req, res, next) => {
+  app.get(['/admin', '/admin/'], auth, (req, res, next) => {
+    // Não expor nem mesmo o shell HTML do painel a visitantes ou contas comuns.
+    if (req.conta?.papel !== 'admin') return res.sendStatus(404);
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Cache-Control', 'no-store');
     return res.sendFile(path.join(dist, 'admin.html'), (err) => { if (err) next(err); });
