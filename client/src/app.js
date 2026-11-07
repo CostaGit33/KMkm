@@ -207,7 +207,18 @@ async function buscarPontosProximos() {
   try {
     const pontos = pontosPublicados();
     if (!pontos.length) throw new Error("Não foi possível carregar pontos publicados com coordenadas. Verifique a conexão e tente novamente.");
-    const posicao = await obterPosicaoParaBusca();
+    // O plugin nativo pode deixar a ponte de permissões/localização pendente em alguns aparelhos.
+    // O limite externo garante que a interface sempre saia do estado de carregamento.
+    let limite;
+    const posicao = await Promise.race([
+      obterPosicaoParaBusca(),
+      new Promise((_, reject) => {
+        limite = window.setTimeout(
+          () => reject(new Error("A localização não respondeu em 20 segundos. Confira se a localização está ativada e se o aplicativo tem permissão para acessá-la; depois tente novamente.")),
+          20000,
+        );
+      }),
+    ]).finally(() => window.clearTimeout(limite));
     const origem = { lat: posicao.latitude, lng: posicao.longitude };
     const proximos = pontos.map((ponto) => ({
       ponto,
