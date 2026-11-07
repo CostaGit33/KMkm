@@ -102,7 +102,7 @@ function shell(content) {
 }
 
 function form(error = '') {
-  return `<form class="card tag-card" id="tag-entry" novalidate><p class="eyebrow">Abrir caderneta</p><h1 class="page-title">Seu próximo carimbo começa aqui.</h1><p class="page-subtitle">Digite um apelido para registrar esta passagem. Se você recebeu um código de turma, pode informá-lo também.</p><label class="field"><span>Apelido</span><input name="apelido" minlength="2" maxlength="30" autocomplete="nickname" value="${escapeHtml(nomeLocal())}" required autofocus></label><label class="field"><span>Código da turma <small>(opcional)</small></span><input name="turma" maxlength="40" autocapitalize="characters" autocomplete="off"></label>${error ? `<p class="auth-error" role="alert">${escapeHtml(error)}</p>` : ''}<button class="primary-button button-full" type="submit">Abrir e carimbar</button><a class="text-link tag-back" href="/">Ir para minha caderneta →</a></form>`;
+  return `<form class="card tag-card" id="tag-entry" novalidate><p class="eyebrow">Abrir caderneta</p><h1 class="page-title">Seu próximo carimbo começa aqui.</h1><p class="page-subtitle">Digite um apelido para registrar esta passagem. Se você recebeu um código de turma, pode informá-lo também.</p><label class="field"><span>Apelido</span><input name="apelido" minlength="2" maxlength="30" autocomplete="nickname" value="${escapeHtml(nomeLocal())}" required autofocus></label><label class="field"><span>Código da turma <small>(opcional)</small></span><input name="turma" maxlength="40" autocapitalize="characters" autocomplete="off"></label>${error ? `<p class="auth-error" role="alert">${escapeHtml(error)}</p>` : ''}<button class="primary-button button-full" type="submit">Abrir e carimbar</button><a class="text-link tag-back" href="/?retorno=home">Ir para minha caderneta →</a></form>`;
 }
 
 // Segundo carimbo do mesmo toque: o card ativo (evento ou patrocínio), mostrado separado do carimbo da rota.
@@ -125,7 +125,7 @@ function cartaoCriatura(result) {
   const carta = cartaHtml(item, { size: 130, tag: 'div' });
   const progresso = `${c.capturadas} de ${c.total} cartas na sua coleção`;
   if (!c.nova) return `<article class="card tag-card tag-criatura"><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">Carta já desbloqueada. ${progresso}.</p></article>`;
-  return `<article class="card tag-card tag-criatura nova" role="status"><p class="eyebrow">Ponto descoberto!</p><h2 class="page-title">Você desbloqueou o personagem deste local.</h2><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">${progresso}.</p><a class="outline-button button-full" href="/">Ver minha coleção</a></article>`;
+  return `<article class="card tag-card tag-criatura nova" role="status"><p class="eyebrow">Ponto descoberto!</p><h2 class="page-title">Você desbloqueou o personagem deste local.</h2><div class="tag-criatura-arte">${carta}</div><p class="page-subtitle">${progresso}.</p><a class="outline-button button-full" href="/?retorno=colecao">Ver minha coleção</a></article>`;
 }
 
 async function stamp(code, pos = null) {
@@ -157,14 +157,14 @@ async function stamp(code, pos = null) {
         : carta
           ? 'Sua visita foi confirmada; esta carta já fazia parte da sua coleção.'
           : 'Sua visita foi confirmada e o carimbo foi salvo.';
-    content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}${galeriaHtml({ id: code })}`;
+    content.innerHTML = `<article class="card tag-card tag-success ${result.repetido ? 'is-repeat' : 'is-confirmed'}" role="status" aria-live="polite"><p class="eyebrow">${escapeHtml(result.rota.nome)}</p>${conquista}<h1 class="page-title">${titulo}</h1><p class="tag-result-feedback">${feedback}</p><p class="page-subtitle">${escapeHtml(point.name)} · ${result.rota.feitos} de ${result.rota.total} pontos desta rota.</p>${result.certificado ? '<div class="tag-certificate">Rota completa · certificado liberado</div>' : ''}<p class="small muted">Visitas confirmadas hoje: ${result.hoje} passagem(ns) neste ponto.</p><a class="primary-button button-full" href="/?retorno=colecao">Ver minha coleção</a></article>${result.criatura?.nova ? '' : cartaoCriatura(result)}${cartaoEvento(result, code)}${turma}${guardiao}${galeriaHtml({ id: code })}`;
     montarGaleria(content);
   } catch (error) {
     const falha = mensagemErroTag(error);
     const acao = falha.localizar
       ? '<button class="primary-button button-full" id="tag-localizar" type="button">Confirmar minha localização</button>'
       : falha.tentar ? '<button class="outline-button button-full" id="tag-retry" type="button">Tentar novamente</button>' : '';
-    content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${falha.titulo}</h1><p class="page-subtitle">${falha.texto}</p>${acao}<a class="text-link tag-back" href="/">Voltar à caderneta</a></div>`;
+    content.innerHTML = `<div class="card tag-card tag-error" role="alert"><span class="tag-error-mark" aria-hidden="true">!</span><h1 class="page-title">${falha.titulo}</h1><p class="page-subtitle">${falha.texto}</p>${acao}<a class="text-link tag-back" href="/?retorno=home">Voltar à caderneta</a></div>`;
     document.getElementById('tag-localizar')?.addEventListener('click', async (event) => {
       const button = event.currentTarget;
       if (button.disabled) return;
