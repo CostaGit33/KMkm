@@ -1,36 +1,60 @@
 # Publicação na Google Play · +1 KM
 
-Checklist do que já está pronto no código e do que só você pode fazer.
+Este checklist considera a arquitetura oficial **PWA + Android Capacitor**. O diretório `client/android` é a aplicação Android; o diretório `mobile/` contém a implementação Flutter histórica e não deve ser usado para a publicação oficial.
 
-## Já pronto no app
-- Política de privacidade pública em `/privacidade` e instruções de exclusão de conta em `/excluir-conta` (a Play exige as duas URLs).
-- Exclusão de conta dentro do app (Perfil → Excluir conta) e no servidor (`DELETE /api/eu`), que apaga carimbos, XP, ranking e sessões.
-- Links para as duas páginas na tela de login e no Perfil.
-- Tema escuro por padrão, sem conteúdo de demonstração, sem moedas, compras ou revenda (edição numerada e criaturas são gratuitas e intransferíveis).
-- Cabeçalho HSTS em HTTPS, CSP estrita para scripts (sem `unsafe-inline` nem `unsafe-eval`; estilos embutidos ainda são aceitos), cookie de sessão HttpOnly com `SameSite=Lax`.
+## Já implementado no código
+- Política de privacidade pública em `/privacidade` e instruções de exclusão em `/excluir-conta`.
+- Exclusão de conta no produto e endpoint correspondente no servidor.
+- Cliente web/PWA compartilhado entre navegador e Capacitor.
+- Package ID: `online.novaagencian8n.mais1km`.
+- Capacitor 8.6.0; compileSdk/targetSdk 36; Gradle Wrapper 8.14.3; Java 21.
+- Permissões Android para Internet, NFC e localização aproximada/precisa; NFC é recurso opcional do aparelho.
+- App Links HTTPS para `/t/` e tratamento do link inicial e links recebidos no Capacitor.
+- Workflow de validação PWA/Capacitor com APK debug para validação técnica.
 
-## Variáveis do servidor (Easypanel)
-- `CONTATO_EMAIL`: e-mail público que aparece nas páginas de privacidade e exclusão. Obrigatório antes de publicar.
-- `ANDROID_SHA256_CERT_FINGERPRINTS`: SHA-256 do(s) certificado(s) do app Android, separados por vírgula (passo 3 abaixo). Sem ela, `/.well-known/assetlinks.json` responde 404.
-- `ANDROID_PACKAGE_NAME` (opcional): pacote do app; padrão `online.novaagencian8n.mais1km`.
-- `DATABASE_URL`: mova para variável de ambiente de execução (fora dos build args) e **troque a senha do MySQL**, que apareceu em um log de build.
+**Presença no código não significa homologação em aparelho.** Login, cookies HttpOnly, GPS real, NFC, App Links verificados e paridade completa ainda precisam de testes físicos.
 
-## O que você precisa fazer
-1. **Conta de desenvolvedor Google Play** (taxa única) e, se for conta pessoal nova, o teste fechado com 12 testadores por 14 dias antes da produção.
-2. **Chave de assinatura e app bundle (Flutter)**. Gere a chave uma única vez:
-   ```bash
-   keytool -genkeypair -v -storetype JKS -keystore mais1km-release.jks -alias mais1km \
-     -keyalg RSA -keysize 2048 -validity 10000
-   base64 -w0 mais1km-release.jks   # macOS: base64 -i mais1km-release.jks
-   ```
-   Guarde o `.jks` e as senhas fora do repositório (gerenciador de senhas e uma cópia offline): perder a chave de upload complica toda atualização futura. Em GitHub → Settings → Secrets and variables → Actions crie `ANDROID_KEYSTORE_BASE64` (saída do `base64`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. Depois rode Actions → **Mobile - Release assinado** → *Run workflow*, baixe o artefato `mais1km-android-release-assinado` e envie o `.aab` à Play Console. O workflow falha de propósito se faltar algum secret e imprime o SHA-256 do certificado de upload. Build local (opcional): crie `mobile/android/key.properties` (ignorado pelo git) com `storeFile`, `storePassword`, `keyAlias` e `keyPassword` e rode `flutter build appbundle --release` na pasta `mobile/`.
-3. **Digital Asset Links** (faz o toque na tag NFC abrir o app em vez do navegador). Com a Play App Signing, a Google reassina o app, então o que vale é o SHA-256 do *certificado de assinatura do app* (Play Console → Integridade do app → Assinatura do app). Se você também distribui o APK assinado com a chave de upload (teste interno), inclua o SHA-256 dela (o workflow imprime). Defina `ANDROID_SHA256_CERT_FINGERPRINTS` no Easypanel (valores separados por vírgula), reinicie o serviço e confira que `https://SEU-DOMINIO/.well-known/assetlinks.json` devolve JSON com o pacote `online.novaagencian8n.mais1km` e não a página do app. O servidor monta o arquivo a partir da variável; **não** coloque um arquivo em `client/public/.well-known/`, porque o servidor ignora essa pasta e entregaria o HTML do app, e a verificação falharia sem aviso. Sem a variável a rota responde 404.
-4. **Ficha da loja**: ícone 512×512, imagem de destaque 1024×500, 4 a 8 capturas de tela, descrição curta e longa. Use fotos reais dos pontos, não imagens geradas por IA, para não representar mal lugares reais.
-5. **Formulários da Play Console**: Segurança dos dados (nome, e-mail, atividade no app; sem venda de dados), classificação de conteúdo, público-alvo (não direcionado a crianças), URL da política de privacidade e URL de exclusão de conta.
-6. Antes do lançamento rode `node server/scripts/teste-podio.js limpar` no servidor para apagar os participantes de teste do pódio.
+## Configurar assinatura
 
-## Testes antes de publicar
-- `npm --prefix server test` (unitários).
-- `BASE_URL=https://SEU-DOMINIO node server/scripts/smoke.mjs` (cria e apaga uma conta descartável).
-- Contrato e coleção Postman em `docs/api/`: em produção rode só a pasta somente leitura (`newman run docs/api/mais1km.postman_collection.json --env-var baseUrl=https://SEU-DOMINIO --folder "1 · Saúde e páginas (somente leitura)"`); a coleção inteira cria e apaga uma conta de teste, então use em local ou homologação.
-- Edição numerada (admin): `BASE_URL=… ADMIN_EMAIL=… ADMIN_SENHA=… node server/scripts/smoke.mjs --profundo`. Combine um horário: o card de teste ocupa 6 pontos durante a execução.
+O workflow **Capacitor - Release Google Play** gera AAB e APK assinados e exige estes GitHub Actions Secrets:
+- `ANDROID_KEYSTORE_BASE64`: arquivo JKS codificado em Base64.
+- `ANDROID_KEYSTORE_PASSWORD`: senha do keystore.
+- `ANDROID_KEY_ALIAS`: alias da chave.
+- `ANDROID_KEY_PASSWORD`: senha da chave.
+
+Gere a chave uma única vez em ambiente seguro:
+
+```bash
+keytool -genkeypair -v -storetype JKS -keystore mais1km-upload.jks -alias mais1km \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 mais1km-upload.jks
+```
+
+Guarde o JKS e as senhas em gerenciador de senhas e cópia offline. Nunca envie o JKS ao Git, bundle web, issue ou mensagem. Use Play App Signing: o secret contém a chave de upload. A impressão digital do certificado de upload é exibida no workflow. Para App Links da versão instalada pela Play, inclua também o SHA-256 do **certificado de assinatura do app** em Play Console → Integridade do app → Assinatura do app.
+
+## Gerar release
+1. Abra GitHub → Actions → **Capacitor - Release Google Play** → Run workflow.
+2. Informe `version_code` inteiro maior que o último enviado à Play Console e `version_name` (por exemplo `1.0.0`).
+3. O workflow instala dependências, executa testes do cliente, compila o bundle web Android, sincroniza o Capacitor, compila AAB/APK com assinatura obrigatória e gera checksums.
+4. Baixe o artefato `mais1km-capacitor-release-...` e envie o AAB à faixa de teste interno antes de produção.
+
+O workflow falha se algum secret estiver ausente ou se a assinatura não estiver configurada. Ele não publica automaticamente na Play Console.
+
+## Digital Asset Links
+Defina `ANDROID_SHA256_CERT_FINGERPRINTS` no backend para `/.well-known/assetlinks.json`, incluindo o certificado de assinatura do app gerenciado pela Play. Para testes de instalação direta, inclua também o certificado de upload se o APK estiver assinado por ele. Confirme o package ID exato `online.novaagencian8n.mais1km`. Não use fingerprint de debug ou de build temporário.
+
+## Homologação ainda necessária
+- Login, restauração de sessão, cookie HttpOnly, CSRF, chamadas autenticadas, logout e reinício em Android real.
+- GPS preciso/aproximado, permissão negada, serviço desligado, timeout, precisão acima de 50 m e fora do raio.
+- TAG NFC/QR e App Links após instalar build assinado; abertura no app e fallback no navegador.
+- Câmera/QR, compartilhamento e notificações somente conforme necessidade real das jornadas. Push exige FCM, credenciais, registro de token, backend e teste; não está pronto só por haver integração opcional do Google Services.
+- Ícone adaptativo, splash, barras de sistema, botão voltar, teclado, acessibilidade e diferentes densidades/tamanhos.
+- Matriz de paridade de todas as páginas e fluxos PWA × Android.
+- Conta Play Console, ficha da loja, Data Safety, classificação, público-alvo, suporte e credenciais de revisão.
+- Requisito de teste fechado, se aplicável à conta, conforme a Play Console.
+
+## Regras de lançamento
+- Não usar APK debug como entrega comercial.
+- Não commitar keystore, senhas, tokens ou certificados privados.
+- Não declarar pronto para publicação enquanto houver testes obrigatórios sem execução ou falhas críticas abertas.
+- Envio à Play Console e preenchimento de declarações são ações do titular da conta.
