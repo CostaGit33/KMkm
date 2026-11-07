@@ -17,7 +17,7 @@ import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
 import { setAnalyticsConsent, openConsentPreferences } from "./telemetry.js";
 import { lerTokenRedefinicao, limparTokenRedefinicao } from "./redefinir-token.js";
-import { Capacitor } from "@capacitor/core";
+
 
 let state = loadState();
 const retornoTag = new URLSearchParams(window.location.search).get("retorno");
