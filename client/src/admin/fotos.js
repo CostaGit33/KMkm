@@ -1,6 +1,7 @@
 // Galeria de fotos de um ponto (administração): envio, crédito, aprovação, ordem, original e exclusão.
 // A foto entra "pendente"; só aparece no app depois de aprovada. O original fica guardado e só o admin baixa.
 import { $, esc, req, mensagem, avisar, dialogo, confirmar, arrastavel, enviarArquivo } from './ui.js';
+import { apiUrl, publicAssetUrl } from '../api.js';
 
 const TIPOS = [['atual', 'Foto atual'], ['historica', 'Foto histórica'], ['restauracao', 'Restauração (derivada de outra foto)'], ['outra', 'Outra']];
 const rotuloTipo = (t) => TIPOS.find(([id]) => id === t)?.[1] || t;
@@ -69,7 +70,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
     const credito = [i.autor, i.fonte].filter(Boolean).map(esc).join(' · ');
     const origem = i.derivada_de ? imagens.find((x) => x.id === i.derivada_de) : null;
     return `<li class="linha" data-key="${i.id}"><button class="alca" type="button" aria-label="Mover foto ${i.id}">⠿</button>
-      <a href="/api/admin/imagens/${i.id}/arquivo?v=g" target="_blank" rel="noopener" title="Abrir em tamanho grande"><img class="foto-mini" src="/api/admin/imagens/${i.id}/arquivo?v=m" alt="${esc(i.titulo || 'Foto do ponto')}" loading="lazy" width="84" height="84" /></a>
+      <a href="${apiUrl(`/admin/imagens/${i.id}/arquivo?v=g`)}" target="_blank" rel="noopener" title="Abrir em tamanho grande"><img class="foto-mini" src="${apiUrl(`/admin/imagens/${i.id}/arquivo?v=m`)}" alt="${esc(i.titulo || 'Foto do ponto')}" loading="lazy" width="84" height="84" /></a>
       <div class="corpo"><div class="titulo">${esc(i.titulo || '(sem título)')}</div>
         <div class="meta"><span class="chip ${CLASSE_STATUS[i.status]}">${ROTULO_STATUS[i.status]}</span><span>${esc(rotuloTipo(i.tipo_registro))}</span>${i.periodo_historico ? `<span>${esc(i.periodo_historico)}</span>` : ''}${origem ? `<span>derivada de #${origem.id}</span>` : ''}</div>
         <div class="meta"><span class="${credito ? '' : 'alerta'}">${credito || 'sem crédito'}</span><span>${i.largura}×${i.altura}</span><span>original ${tamanho(i.bytes_original)}</span><span>#${i.id}</span></div>
@@ -80,7 +81,7 @@ export function abrirFotos(ponto, aoMudar = () => {}) {
         ${i.status === 'pendente' ? `<button class="btn mini" type="button" data-foto="arquivado" data-id="${i.id}">Arquivar</button>` : ''}
         ${i.status === 'aprovado' ? (cartaId === i.id ? `<button class="btn mini pri" type="button" data-foto="carta-tirar" data-id="${i.id}" title="Esta foto é a arte da carta. Clique para voltar à arte anterior.">✓ Na carta</button>` : `<button class="btn mini" type="button" data-foto="carta" data-id="${i.id}" title="Usar esta foto como arte da carta do ponto">Usar na carta</button>`) : ''}
         <button class="btn mini" type="button" data-foto="editar" data-id="${i.id}">Editar</button>
-        <a class="btn mini" href="${esc(i.original_url)}" download>Original ↓</a>
+        <a class="btn mini" href="${esc(publicAssetUrl(i.original_url))}" download>Original ↓</a>
         <button class="btn mini perigo" type="button" data-foto="excluir" data-id="${i.id}" ${i.status === 'aprovado' ? 'disabled title="Arquive antes de excluir"' : ''}>Excluir</button></div></li>`;
   }
 

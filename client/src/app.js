@@ -14,9 +14,14 @@ import { createRoot } from "react-dom/client";
 import { PodiumPage } from "./components/Podium.jsx";
 import { setAnalyticsConsent, openConsentPreferences } from "./telemetry.js";
 import { lerTokenRedefinicao, limparTokenRedefinicao } from "./redefinir-token.js";
+import { Capacitor } from "@capacitor/core";
 
 let state = loadState();
-let view = "home";
+const retornoTag = new URLSearchParams(window.location.search).get("retorno");
+let view = retornoTag === "colecao" ? "collection" : "home";
+if (retornoTag === "colecao" || retornoTag === "home") {
+  window.history.replaceState({}, "", window.location.pathname);
+}
 let pointId = "";
 let routeId = "";
 let previousView = "map";
@@ -67,7 +72,14 @@ function launchIntro() {
           const servidor = await criarContaServidor({ nome, email, senha });
           state = createAccount(state, { nome, email, serverId: servidor.usuario.id, criadoEm: new Date().toISOString() });
         } catch (error) {
-          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
+          authMessage = error.code === "email_ja_cadastrado" ? "Este e-mail já está cadastrado. Entre com sua senha." : mensagemErro(error, "Não foi possível criar sua conta no servidor.");
+          authDraft = { nome, email };
+          authModo = error.code === "email_ja_cadastrado" ? "entrar" : "criar";
+          // O assistente visual será fechado após onCreate. Renderizar a tela simples de autenticação
+          // antes disso evita deixar o app vazio quando a API recusar ou não responder.
+          introDone = true;
+          introHandle = null;
+          render();
           showToast(authMessage);
           return;
         }
@@ -637,7 +649,7 @@ window.addEventListener("pageshow", (event) => {
 });
 sincronizarComServidor();
 
-if ("serviceWorker" in navigator && window.isSecureContext) {
+if (!Capacitor.isNativePlatform() && "serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch((error) => {
     console.warn("O modo offline do PWA não pôde ser ativado.", error);
   }));

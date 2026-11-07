@@ -1,8 +1,32 @@
 const CHAVE = 'caderneta_token';
+
+// No PWA, a API continua same-origin. No Android, o build mode android define a origem
+// pública da API porque o bundle local roda em https://localhost dentro do WebView.
+const normalizarBase = (value) => {
+  let url = String(value || '');
+  while (url.endsWith('/')) url = url.slice(0, -1);
+  return url;
+};
+const API_BASE_URL = normalizarBase(import.meta.env.VITE_API_BASE_URL);
+
+export const apiUrl = (caminho) => {
+  const sufixo = String(caminho || '');
+  return `${API_BASE_URL}/api${sufixo.startsWith('/') ? sufixo : `/${sufixo}`}`;
+};
+
+// Arquivos de mídia são servidos pela API; arquivos estáticos (/icons e /cartas) continuam
+// empacotados localmente no app Android.
+export const publicAssetUrl = (value) => {
+  const url = String(value || '');
+  if (url.startsWith('https://') || url.startsWith('http://')) return url;
+  if (url.startsWith('/midia/') || url.startsWith('/api/')) return `${API_BASE_URL}${url}`;
+  return url;
+};
+
 export const token = () => localStorage.getItem(CHAVE);
 export const limparToken = () => localStorage.removeItem(CHAVE);
 export async function api(caminho, { method = 'GET', body } = {}) {
-  const r = await fetch('/api' + caminho, {
+  const r = await fetch(apiUrl(caminho), {
     method,
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(token() && { Authorization: 'Bearer ' + token() }) },

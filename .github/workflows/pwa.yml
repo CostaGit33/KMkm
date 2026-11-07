@@ -1,4 +1,4 @@
-name: PWA - Build
+name: PWA e Android Capacitor - Build
 
 on:
   push:
@@ -30,15 +30,72 @@ jobs:
       - name: Baixar código
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Instalar dependências
         run: npm ci --prefix client
 
-      - name: Compilar frontend
+      - name: Testar utilitários do cliente
+        run: npm test --prefix client
+
+      - name: Compilar frontend web
         run: npm run build --prefix client
+
+  capacitor-android:
+    name: Gerar e validar Android Capacitor
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci --prefix client
+
+      - name: Testar utilitários do cliente
+        run: npm test --prefix client
+
+      - name: Validar build PWA sem configuração Android
+        run: npm run build --prefix client
+
+      - name: Compilar bundle Android
+        run: npm run build:android --prefix client
+
+      - name: Sincronizar Capacitor
+        working-directory: client
+        run: npx cap sync android
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+
+      - name: Compilar APK debug
+        working-directory: client/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Publicar APK de validação
+        uses: actions/upload-artifact@v4
+        with:
+          name: mais1km-capacitor-debug
+          path: client/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

@@ -1,4 +1,5 @@
 // Utilidades da administração: escape, requisições, avisos, diálogos e lista arrastável (mouse, toque e teclado).
+import { apiUrl } from '../api.js';
 export const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
 export const $$ = (seletor, raiz = document) => [...raiz.querySelectorAll(seletor)];
 export const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -80,7 +81,7 @@ export function mensagem(erro) {
 export async function req(metodo, caminho, corpo) {
   let r;
   try {
-    r = await fetch(`/api${caminho}`, { method: metodo, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: corpo === undefined ? undefined : JSON.stringify(corpo) });
+    r = await fetch(apiUrl(caminho), { method: metodo, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: corpo === undefined ? undefined : JSON.stringify(corpo) });
   } catch { throw Object.assign(new Error('rede'), { code: 'rede' }); }
   let dados = null;
   try { dados = await r.json(); } catch { /* corpo vazio */ }
@@ -92,7 +93,7 @@ export async function req(metodo, caminho, corpo) {
 export async function enviarArquivo(caminho, arquivo) {
   let r;
   try {
-    r = await fetch(`/api${caminho}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': arquivo.type }, body: arquivo });
+    r = await fetch(apiUrl(caminho), { method: 'POST', credentials: 'include', headers: { 'Content-Type': arquivo.type }, body: arquivo });
   } catch { throw Object.assign(new Error('rede'), { code: 'rede' }); }
   let dados = null;
   try { dados = await r.json(); } catch { /* corpo vazio */ }

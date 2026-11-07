@@ -33,9 +33,9 @@ Cada ponto pode ter fotos atuais e históricas. O original fica intacto num buck
 | Servidor | Node.js (ES modules) + Express 4, MySQL via `mysql2`, migrações automáticas na subida, imagens com `sharp`, R2 via `aws4fetch` |
 | Cliente | Vite, JavaScript e CSS; telas montadas por templates de texto, com React só nos componentes de pódio e gamificação; Leaflet para o mapa de reserva; Service Worker (PWA) |
 | Compartilhado | `shared/`: regras de gamificação usadas pelo servidor e pelo cliente |
-| **Aplicativo Android** | `mobile/`: Flutter; usa a mesma API, domínio e banco da PWA; sessão em armazenamento seguro; NFC NDEF, App Links, GPS sob demanda, mapa, perfil, caderneta, cartas e pódio. Guia: [`mobile/README.md`](mobile/README.md) |
+| **Aplicativo Android oficial** | `client/android/`: Capacitor 8 sobre o bundle web local `client/dist`; mantém as telas e regras do PWA e usa plugins nativos quando necessários. Guia: [`docs/capacitor/README.md`](docs/capacitor/README.md) |
 | Integrações opcionais | Google Maps, Resend (recuperação de senha), Sentry (erros), Better Stack (monitor de `/api/saude`), GA4 (só com consentimento) |
-| Entrega | `Dockerfile` (Node 22) e GitHub Actions: build PWA, testes API e análise/testes/builds Flutter. O APK de CI é para teste; publicação Play Store exige assinatura permanente e App Links configurados. |
+| Entrega | `Dockerfile` (Node 22) e GitHub Actions: build PWA, testes API e build Android Capacitor. APK debug é apenas validação; publicação Play Store exige AAB assinado e App Links configurados. |
 
 ## Estrutura do repositório
 
@@ -43,7 +43,8 @@ Cada ponto pode ter fotos atuais e históricas. O original fica intacto num buck
 server/    API Express, administração, mídia (server/midia), migrações (server/db), testes e scripts de operação (server/scripts)
 client/    PWA (client/src), página /admin (client/src/admin) e arquivos públicos (client/public)
 shared/    Regras compartilhadas entre servidor e cliente
-mobile/    Aplicativo Android Flutter (guia em mobile/README.md)
+mobile/    Implementação Flutter histórica (suspensa; não é a base oficial Android)
+client/android/ Projeto Android Capacitor integrado ao PWA
 docs/      Documentação (índice em docs/INDEX.md): arquitetura, fluxos, segurança, operação, API e piloto
 ```
 
@@ -59,14 +60,17 @@ npm run db:init
 npm run dev:server        # em outro terminal: npm run dev:client
 ```
 
-Para validar o aplicativo Android, na pasta `mobile/`:
+Para validar PWA e Capacitor, na pasta do repositório:
 
 ```bash
-flutter pub get
-flutter analyze --fatal-infos
-flutter test --reporter expanded
-flutter build apk --debug
+npm ci --prefix client
+npm test --prefix client
+npm run build --prefix client
+npm run build:android --prefix client
+npm run cap:sync:android --prefix client
 ```
+
+O build Android requer Java 21 e Android SDK. A publicação comercial usa o workflow `Capacitor - Release Google Play`; consulte [`docs/PLAY-STORE.md`](docs/PLAY-STORE.md).
 
 O build release do CI é destinado a teste controlado. Antes de distribuir pela Google Play, configure uma chave de assinatura permanente e verifique os App Links conforme [`docs/PLAY-STORE.md`](docs/PLAY-STORE.md).
 
