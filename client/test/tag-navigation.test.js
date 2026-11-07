@@ -20,11 +20,11 @@ test('retorno da TAG ignora o App Link inicial antigo no Capacitor', () => {
 test('retorno da TAG abre a coleção dentro da aplicação', () => {
   assert.match(app, /let view = retornoTag === "colecao" \? "collection" : "home"/);
   assert.match(app, /window\.history\.replaceState\(\{\}, "", window\.location\.pathname\)/);
-  assert.match(tag, /class="primary-button button-full" href="\/?retorno=colecao">Ver minha coleção/);
-  assert.match(tag, /class="outline-button button-full" href="\/?retorno=colecao">Ver minha coleção/);
+  assert.ok(tag.includes('class="primary-button button-full" href="/?retorno=colecao">Ver minha coleção'));
+  assert.ok(tag.includes('class="outline-button button-full" href="/?retorno=colecao">Ver minha coleção'));
 });
 
 test('links de saída de erro ou entrada da TAG retornam à caderneta', () => {
-  assert.match(tag, /class="text-link tag-back" href="\/?retorno=home">Ir para minha caderneta/);
-  assert.match(tag, /class="text-link tag-back" href="\/?retorno=home">Voltar à caderneta/);
+  assert.ok(tag.includes('class="text-link tag-back" href="/?retorno=home">Ir para minha caderneta'));
+  assert.ok(tag.includes('class="text-link tag-back" href="/?retorno=home">Voltar à caderneta'));
 });
