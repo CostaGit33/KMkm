@@ -83,6 +83,9 @@ function mensagemErroTag(error) {
   if (error?.status === 401) {
     return { titulo: 'Sua sessão precisa ser renovada', texto: 'Volte à caderneta, entre na sua conta e leia a tag novamente.', tentar: false };
   }
+  if (error?.code === 'localizacao_negada' || error?.code === 1 || error?.message === 'Location permission was denied') {
+    return { titulo: 'Permissão de localização necessária', texto: 'Permita a localização precisa para o +1 KM nas configurações do Android e tente confirmar o carimbo novamente.', localizar: true };
+  }
   if (!error?.status) {
     return { titulo: 'Sem conexão com o servidor', texto: 'Sua visita não pôde ser confirmada. Verifique a internet e tente novamente; não vamos marcar a visita como concluída sem confirmação.', tentar: true };
   }
