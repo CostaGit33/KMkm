@@ -43,6 +43,17 @@ async function iniciarAplicacao() {
       });
     });
 
+    // O retorno da página de TAG é uma navegação completa para reinicializar o shell.
+    // Não reutilizar o App Link original, que pode continuar disponível em getLaunchUrl().
+    const retornoTag = new URLSearchParams(window.location.search).get('retorno');
+    if (retornoTag === 'colecao' || retornoTag === 'home') {
+      initTelemetry({ name: 'app_opened', params: { route: 'app', source: 'tag_return' } });
+      await carregarCatalogoUmaVez();
+      await import('./app.js');
+      mountConsentBanner();
+      return;
+    }
+
     try {
       const inicial = await App.getLaunchUrl();
       if (inicial?.url && await abrirTagExterna(inicial.url)) return;
