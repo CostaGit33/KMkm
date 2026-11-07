@@ -219,7 +219,7 @@ async function buscarPontosProximos() {
         <span class="nearby-point-copy"><strong>${escapeHtml(ponto.name)}</strong><small>${escapeHtml(ponto.address || ponto.note || ponto.id)}</small></span>
         <span class="nearby-point-distance">${formatDistance(metros)}</span>
       </button></li>`).join("");
-    resultados.innerHTML = `<div class="nearby-results-heading"><strong>5 pontos mais próximos</strong><span>Distância em linha reta</span></div><ol class="nearby-point-list">${itens}</ol><p class="nearby-results-message">Localização usada somente nesta consulta; não há rastreamento em segundo plano.</p>`;
+    resultados.innerHTML = `<div class="nearby-results-heading"><strong>${proximos.length} pontos mais próximos</strong><span>Distância em linha reta</span></div><ol class="nearby-point-list">${itens}</ol><p class="nearby-results-message">Localização usada somente nesta consulta; não há rastreamento em segundo plano.</p>`;
   } catch (error) {
     const mensagem = error?.code === 1
       ? "A permissão de localização foi negada. Ative-a nas configurações do aparelho e tente novamente."
