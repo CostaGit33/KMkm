@@ -10,7 +10,7 @@
 - Não alterar API, MySQL, regras de carimbo, TAGs, domínio ou produção para criar o invólucro Android.
 - Continuar entregando a PWA normalmente; a compilação Android deve ser uma etapa adicional e independente.
 
-## Baseline verificada na branch main
+## Baseline técnica verificada na branch de Capacitor
 
 - Cliente: `client/`, Vite 6, JavaScript, HTML e CSS; React é usado em componentes específicos.
 - Entrada web: `client/index.html` → `client/src/main.js`.
@@ -61,7 +61,8 @@ O Capacitor deve carregar o build local `client/dist` dentro do Android WebView.
 - [ ] F3 — Validar em aparelho navegação, rotas de TAG, autenticação/cookies, sessão, logout e links externos no WebView. A implementação inicial de `appUrlOpen` e link de inicialização está no cliente; falta validar o comportamento real do Android.
 - [ ] F4 — Implementar/validar capacidades nativas estritamente necessárias: App Links de TAG e GPS sob demanda já estão integrados em código; câmera/QR, compartilhamento e notificações ficam para as jornadas que realmente precisarem. A leitura de uma TAG NDEF que contém URL HTTPS usa App Links; leitura NFC bruta não foi adicionada.
 - [x] F5a — CI reproduzível: build PWA + build Android + APK debug de validação publicado como artefato.
-- [ ] F5b — Testes de paridade PWA × Android em aparelho, APK de release e AAB assinado para distribuição quando autorizado.
+- [x] F5b — Pipeline de release AAB/APK assinado criado, com assinatura obrigatória, versionamento externo, fingerprint e checksums. A execução depende dos GitHub Secrets de assinatura.
+- [ ] F5c — Executar release assinado, homologar em aparelho e concluir a matriz de paridade PWA × Android.
 
 ## Primeiro APK de validação (04/11/2026)
 
@@ -81,6 +82,12 @@ O código do servidor usa proteção CSRF por comparação do cabeçalho `Origin
 O WebView Android mantém o hostname local padrão `localhost` com esquema HTTPS (`https://localhost`). Não configurar o hostname local com o domínio da API: o servidor de assets do Capacitor intercepta requisições destinadas ao hostname local e isso pode desviar chamadas `/api` para dentro do WebView em vez do backend. O frontend usa `VITE_API_BASE_URL` para chamar o domínio público da API. `CapacitorHttp` está habilitado para transportar `fetch` pela pilha HTTP nativa, e `CapacitorCookies` permanece habilitado para integração de cookies. O backend permite requisições sem cabeçalho `Origin` (comportamento esperado em clientes HTTP nativos), mas continua aplicando a verificação CSRF a requisições de navegador. O cookie HttpOnly não é copiado para localStorage nem exposto ao JavaScript. A sessão ainda precisa de validação com login, chamadas POST, reinício do app e logout em aparelho Android.
 
 O Service Worker continua ativo no PWA de navegador. No Android Capacitor, a aplicação usa assets embarcados e não registra um segundo Service Worker, evitando uma camada de cache adicional na origem compartilhada.
+
+## Release e assinatura
+
+O workflow manual `.github/workflows/capacitor-release.yml` gera AAB e APK de release com assinatura obrigatória. Exige os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`, além de `version_code` e `version_name` informados no disparo. O workflow imprime o SHA-256 do certificado de upload e gera checksums. Não publica automaticamente na Play Console. Consulte `docs/PLAY-STORE.md`.
+
+O Gradle permite builds locais sem assinatura por padrão, mas o workflow comercial define `REQUIRE_ANDROID_RELEASE_SIGNING=true` e falha se faltar qualquer variável de assinatura. O manifesto desativa backup automático e tráfego cleartext.
 
 ## Critério de conclusão
 
