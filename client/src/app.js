@@ -205,7 +205,9 @@ async function buscarPontosProximos() {
   resultados.hidden = false;
   resultados.innerHTML = '<p class="nearby-results-message">Obtendo sua localização uma única vez…</p>';
   try {
-    // Atualiza o catálogo publicado antes de calcular distâncias; a lista não depende de cache prévio.\n    await carregarCatalogo();\n    const pontos = pontosPublicados();
+    // Atualiza o catálogo publicado antes de calcular distâncias; a lista não depende de cache prévio.
+    await carregarCatalogo();
+    const pontos = pontosPublicados();
     if (!pontos.length) throw new Error("Não foi possível carregar pontos publicados com coordenadas. Verifique a conexão e tente novamente.");
     // O plugin nativo pode deixar a ponte de permissões/localização pendente em alguns aparelhos.
     // O limite externo garante que a interface sempre saia do estado de carregamento.
@@ -219,7 +221,11 @@ async function buscarPontosProximos() {
         );
       }),
     ]).finally(() => window.clearTimeout(limite));
-    const latitude = posicao.coords?.latitude ?? posicao.latitude;\n    const longitude = posicao.coords?.longitude ?? posicao.longitude;\n    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {\n      throw new Error("O aparelho retornou uma localização inválida. Confira o GPS e tente novamente.");\n    }\n    const origem = { lat: latitude, lng: longitude };
+    const latitude = posicao.coords?.latitude ?? posicao.latitude;
+    const longitude = posicao.coords?.longitude ?? posicao.longitude;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      throw new Error("O aparelho retornou uma localização inválida. Confira o GPS e tente novamente.");
+    }\n    const origem = { lat: latitude, lng: longitude };
     const proximos = pontos.map((ponto) => ({
       ponto,
       metros: distanceMeters(origem, { lat: ponto.lat, lng: ponto.lng }),
