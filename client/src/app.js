@@ -2,10 +2,7 @@ import { CITY, POINTS, ROUTES, getPoint } from "./data.js";
 import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, purgeLegacyPassword, signIn, signOut, updateAccount, syncServerCollection } from "./store.js";
 import { renderAuth, validarNome, validarEmail, validarSenha, senhaLegadaConfere } from "./auth.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
-import { applyFieldMarks, distanceMeters, formatDistance } from "./geo.js";
-import { Geolocation } from "@capacitor/geolocation";
-import { Capacitor } from "@capacitor/core";
-import { carregarCatalogo, pontosPublicados } from "./catalog.js";
+import { applyFieldMarks } from "./geo.js";
 import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
 import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
@@ -173,96 +170,6 @@ function render({ preserveFocus = false } = {}) {
   }
 }
 
-async function obterPosicaoParaBusca(informarEtapa = () => {}) {
-  if (Capacitor.isNativePlatform()) {
-    informarEtapa("Verificando a permissão de localização…");
-    let permissao = await Geolocation.checkPermissions();
-    if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
-      informarEtapa("Aguardando sua resposta ao pedido de permissão…");
-      permissao = await Geolocation.requestPermissions();
-    }
-    if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
-      throw new Error("Permita o acesso à localização para encontrar pontos próximos.");
-    }
-    informarEtapa("Obtendo sua localização (até 12 segundos)…");
-    return Geolocation.getCurrentPosition({
-      enableHighAccuracy: false,
-      timeout: 12000,
-      maximumAge: 60000,
-    });
-  }
-  if (!navigator.geolocation) throw new Error("Este aparelho não disponibiliza localização pelo navegador.");
-  informarEtapa("Obtendo sua localização (até 12 segundos)…");
-  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
-    resolve,
-    reject,
-    { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
-  ));
-}
-
-async function buscarPontosProximos() {
-  const botao = app.querySelector('[data-action="find-nearby"]');
-  const resultados = app.querySelector("#nearby-results");
-  if (!botao || !resultados) return;
-  botao.disabled = true;
-  botao.textContent = "Localizando…";
-  resultados.hidden = false;
-  // A etapa atual aparece na tela e entra na mensagem de timeout, para mostrar onde a busca parou.
-  let etapa = "Carregando os pontos publicados…";
-  const informarEtapa = (texto) => {
-    etapa = texto;
-    if (resultados.isConnected) resultados.innerHTML = `<p class="nearby-results-message">${escapeHtml(texto)}</p>`;
-  };
-  informarEtapa(etapa);
-  try {
-    // Atualiza o catálogo publicado antes de calcular distâncias; a lista não depende de cache prévio.
-    await carregarCatalogo();
-    const pontos = pontosPublicados();
-    if (!pontos.length) throw new Error("Não foi possível carregar pontos publicados com coordenadas. Verifique a conexão e tente novamente.");
-    // O plugin nativo pode deixar a ponte de permissões/localização pendente em alguns aparelhos.
-    // O limite externo garante que a interface sempre saia do estado de carregamento.
-    let limite;
-    const posicao = await Promise.race([
-      obterPosicaoParaBusca(informarEtapa),
-      new Promise((_, reject) => {
-        limite = window.setTimeout(
-          () => reject(new Error(`A localização não respondeu em 20 segundos (parou em: ${etapa.replace(/…$/, "")}). Confira se a localização está ativada e se o aplicativo tem permissão para acessá-la; depois tente novamente.`)),
-          20000,
-        );
-      }),
-    ]).finally(() => window.clearTimeout(limite));
-    const latitude = posicao.coords?.latitude ?? posicao.latitude;
-    const longitude = posicao.coords?.longitude ?? posicao.longitude;
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      throw new Error("O aparelho retornou uma localização inválida. Confira o GPS e tente novamente.");
-    }
-    const origem = { lat: latitude, lng: longitude };
-    const proximos = pontos.map((ponto) => ({
-      ponto,
-      metros: distanceMeters(origem, { lat: ponto.lat, lng: ponto.lng }),
-    })).sort((a, b) => a.metros - b.metros).slice(0, 5);
-    const itens = proximos.map(({ ponto, metros }) => `
-      <li><button class="nearby-point" type="button" data-action="open-point" data-id="${escapeHtml(ponto.id)}">
-        <span aria-hidden="true">⌖</span>
-        <span class="nearby-point-copy"><strong>${escapeHtml(ponto.name)}</strong><small>${escapeHtml(ponto.address || ponto.note || ponto.id)}</small></span>
-        <span class="nearby-point-distance">${formatDistance(metros)}</span>
-      </button></li>`).join("");
-    resultados.innerHTML = `<div class="nearby-results-heading"><strong>${proximos.length} pontos mais próximos</strong><span>Distância em linha reta</span></div><ol class="nearby-point-list">${itens}</ol><p class="nearby-results-message">Localização usada somente nesta consulta; não há rastreamento em segundo plano.</p>`;
-  } catch (error) {
-    const mensagem = error?.code === 1
-      ? "A permissão de localização foi negada. Ative-a nas configurações do aparelho e tente novamente."
-      : error?.code === 2
-        ? "Não foi possível determinar sua localização. Verifique o GPS e tente novamente."
-        : error?.code === 3
-          ? "A localização demorou demais. Tente novamente em um local com melhor sinal."
-          : error?.message || "Não foi possível localizar pontos próximos agora.";
-    resultados.innerHTML = `<p class="nearby-results-message">${escapeHtml(mensagem)}</p>`;
-  } finally {
-    botao.disabled = false;
-    botao.textContent = "Atualizar distância";
-  }
-}
-
 function showToast(message) {
   toastNode.textContent = message;
   toastNode.classList.add("is-visible");
@@ -319,9 +226,6 @@ function handleClick(event) {
       menuOpen = false;
       render();
       focusMais();
-      break;
-    case "find-nearby":
-      void buscarPontosProximos();
       break;
     case "switch-view": {
       const closedFromMenu = menuOpen;
