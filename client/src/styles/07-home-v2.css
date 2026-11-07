@@ -44,9 +44,9 @@
 .home-nfc-guide small { color:var(--muted); font:500 10px/1.5 "Montserrat",sans-serif; }
 .home-nfc-guide>span:last-child { color:var(--ochre); font-size:22px; }
 .home-details-section { margin-top:20px; }
-.home-welcome button:focus-visible,.home-next-card:focus-visible,.home-shortcut:focus-visible:focus-visible { outline:3px solid var(--ochre); outline-offset:3px; }
+.home-welcome button:focus-visible,.home-next-card:focus-visible,.home-shortcut:focus-visible,.home-nearby-action:focus-visible,.nearby-point:focus-visible { outline:3px solid var(--ochre); outline-offset:3px; }
 @media(max-width:480px) { .home-welcome { padding:18px 15px; gap:10px; border-radius:15px; } .home-welcome h2 { font-size:27px; } .home-welcome-mark { width:58px; height:58px; } .home-welcome-mark span { font-size:18px; } .home-welcome-mark small { font-size:7px; } .home-discover-button { min-height:52px; font-size:13px; } .home-progress-panel { padding:14px; } .home-shortcuts { gap:6px; } .home-shortcut { min-height:91px; padding:8px 3px; } .home-shortcut strong { font-size:10px; } .home-shortcut small { font-size:8px; } }
-@media(prefers-reduced-motion:no-preference) { .home-discover-button,.home-next-card,.home-shortcut { transition:transform .14s ease,box-shadow .14s ease; } .home-discover-button:active,.home-next-card:active,.home-shortcut:active:active { transform:translateY(1px); } }
+@media(prefers-reduced-motion:no-preference) { .home-discover-button,.home-next-card,.home-shortcut { transition:transform .14s ease,box-shadow .14s ease; } .home-discover-button:active,.home-next-card:active,.home-shortcut:active,.nearby-point:active { transform:translateY(1px); } }
 
 .home-nearby { margin:0 0 22px; padding:15px; border:1px solid color-mix(in srgb,var(--green) 65%,var(--rule)); border-radius:15px; background:var(--card); }
 .home-nearby-heading { display:flex; align-items:center; gap:11px; }
