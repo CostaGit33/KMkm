@@ -110,7 +110,14 @@ export function renderHome(state) {
       <button class="home-shortcut" type="button" data-action="switch-view" data-view="collection"><span aria-hidden="true">✳</span><strong>Coleção</strong><small>Veja suas cartas</small></button>
       <button class="home-shortcut" type="button" data-action="switch-view" data-view="podium"><span aria-hidden="true">✦</span><strong>Pódio</strong><small>Acompanhe o ranking</small></button>
     </section>
-    <button class="home-nfc-guide" type="button" data-action="switch-view" data-view="map"><span class="home-nfc-icon" aria-hidden="true">)))</span><span><strong>${city.count === 0 ? "Quer sua primeira carta?" : "Pronto para o próximo carimbo?"}</strong><small>Visite um ponto publicado e aproxime o celular da tag NFC. O carimbo só é confirmado após a validação.</small></span><span aria-hidden="true">→</span></button>
+    <section class="home-nearby" aria-labelledby="home-nearby-title">
+      <div class="home-nearby-heading">
+        <span class="home-nearby-icon" aria-hidden="true">⌖</span>
+        <div><p class="eyebrow">Exploração ao redor</p><h2 id="home-nearby-title">Descobertas próximas</h2><p>Encontre pontos publicados perto de você.</p></div>
+        <button class="home-nearby-action" type="button" data-action="find-nearby">Localizar</button>
+      </div>
+      <div id="nearby-results" class="nearby-results" role="status" aria-live="polite" hidden></div>
+    </section>
     ${collectionSpotlight(state, city)}
     <section class="home-details-section"><div class="section-heading"><div><h2>Descubra mais da cidade</h2><p>Explore pontos por tema e acompanhe seu progresso.</p></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>

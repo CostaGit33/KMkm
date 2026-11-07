@@ -4,6 +4,14 @@ import { POINTS, ROUTES, COLLECTIONS, CITY, CATEGORIES } from "./data.js";
 import { apiUrl } from "./api.js";
 
 const CHAVE = "mais1km:catalogo:v1";
+let catalogoPublicoDisponivel = false;
+
+// O endpoint /catalogo entrega exclusivamente tags e rotas publicadas no servidor.
+export function pontosPublicados() {
+  return catalogoPublicoDisponivel
+    ? POINTS.filter((point) => !point.hidden && Number.isFinite(point.lat) && Number.isFinite(point.lng))
+    : [];
+}
 const IDS_ORIGINAIS = new Set(POINTS.map((p) => p.id));
 const CATEGORIAS_CONHECIDAS = new Set(CATEGORIES.map((c) => c.id));
 const CORES = new Set(["green", "ochre", "blue", "red"]);
@@ -17,11 +25,18 @@ export async function carregarCatalogo({ tempoMs = 2500 } = {}) {
   const limite = setTimeout(() => controle.abort(), tempoMs);
   try {
     const r = await fetch(apiUrl("/catalogo"), { signal: controle.signal, cache: "no-store" });
-    if (r.ok) { catalogo = await r.json(); gravarCache(catalogo); }
-  } catch { /* offline ou lento: segue com a cópia local */ }
+    if (r.ok) {
+      catalogo = await r.json();
+      catalogoPublicoDisponivel = Array.isArray(catalogo?.pontos);
+      if (catalogoPublicoDisponivel) gravarCache(catalogo);
+    }
+  } catch { /* offline ou lento: segue com a cópia pública em cache */ }
   clearTimeout(limite);
-  catalogo = catalogo || lerCache();
-  if (catalogo && Array.isArray(catalogo.pontos) && catalogo.pontos.length) aplicar(catalogo);
+  if (!catalogo) {
+    catalogo = lerCache();
+    catalogoPublicoDisponivel = Array.isArray(catalogo?.pontos);
+  }
+  if (catalogoPublicoDisponivel) aplicar(catalogo);
 }
 
 function aplicar(catalogo) {

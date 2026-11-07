@@ -30,16 +30,16 @@ function drawerLink(label, description, icon, { action = "switch-view", view = "
   </button>`;
 }
 
-function renderSideDrawer(state, activeView, activeRouteId, open) {
+function renderSideDrawer(state, activeView, activeRouteId, open, isAdmin = false) {
   const destinationLink = drawerLink("Guia de Eunápolis", "Dados e referências", "⌖", {
     view: EUNAPOLIS_DESTINATION.id, active: activeView === EUNAPOLIS_DESTINATION.id,
   });
   const personal = [
     drawerLink("Certificados", `${certificateRoutes(state).length} rotas concluídas`, "🎖", { action: "open-certificates", active: activeView === "certificates" }),
     drawerLink("Perfil", "Dados, progresso e conta", "◉", { view: "profile", active: activeView === "profile" }),
-  ].join("") + `<a class="drawer-link" href="https://mais1km.novaagencian8n.online/admin" target="_blank" rel="noopener">
+  ].join("") + (isAdmin ? `<a class="drawer-link" href="https://mais1km.novaagencian8n.online/admin" target="_blank" rel="noopener">
         <span class="drawer-icon" aria-hidden="true">⚙</span><span class="drawer-link-copy"><strong>Administração</strong><small>Gerenciar pontos, rotas, eventos e pessoas</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span>
-      </a><a class="drawer-link" href="/como-funciona"><span class="drawer-icon" aria-hidden="true">?</span><span class="drawer-link-copy"><strong>Como funciona</strong><small>Passo a passo e dúvidas comuns</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>
+      </a>` : "") + `<a class="drawer-link" href="/como-funciona"><span class="drawer-icon" aria-hidden="true">?</span><span class="drawer-link-copy"><strong>Como funciona</strong><small>Passo a passo e dúvidas comuns</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>
       <a class="drawer-link" href="/parceiros"><span class="drawer-icon" aria-hidden="true">↗</span><span class="drawer-link-copy"><strong>Seja parceiro</strong><small>Prefeitura, empresas e eventos</small></span><span class="drawer-link-arrow" aria-hidden="true">›</span></a>`;
   const openClass = open ? "is-open" : "";
   return `<div class="drawer-backdrop ${openClass}" data-action="close-menu" aria-hidden="true"></div>
@@ -59,7 +59,7 @@ const appInstalado = () => {
   try { return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || document.referrer.startsWith("android-app://"); } catch { return false; }
 };
 
-export function renderChrome(state, activeView, activeRouteId = "", menuOpen = false) {
+export function renderChrome(state, activeView, activeRouteId = "", menuOpen = false, isAdmin = false) {
   document.documentElement.dataset.theme = state.theme;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#0b1a14" : "#f3ead7");
   const logo = `<img class="brand-mark" src="/icons/stamp.svg" alt="" width="42" height="42" />`;
@@ -67,7 +67,7 @@ export function renderChrome(state, activeView, activeRouteId = "", menuOpen = f
     <a class="brand" href="#" data-action="switch-view" data-view="home" aria-label="+1 KM, início">
       ${logo}<span class="brand-copy"><span class="brand-name">+1 KM</span><span class="brand-city">${CITY.name}</span></span>
     </a>`;
-  document.getElementById("drawer-root").innerHTML = renderSideDrawer(state, activeView, activeRouteId, menuOpen);
+  document.getElementById("drawer-root").innerHTML = renderSideDrawer(state, activeView, activeRouteId, menuOpen, isAdmin);
   document.getElementById("side-rail").innerHTML = navLinks(activeView, menuOpen);
   document.getElementById("bottom-nav").innerHTML = navLinks(activeView, menuOpen);
 }

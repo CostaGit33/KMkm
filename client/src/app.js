@@ -2,7 +2,10 @@ import { CITY, POINTS, ROUTES, getPoint } from "./data.js";
 import { loadState, revealPoint, setTheme, resetLocalState, isSignedIn, createAccount, purgeLegacyPassword, signIn, signOut, updateAccount, syncServerCollection } from "./store.js";
 import { renderAuth, validarNome, validarEmail, validarSenha, senhaLegadaConfere } from "./auth.js";
 import { lerCaderneta, apagarContaNoServidor } from "./sync.js";
-import { applyFieldMarks } from "./geo.js";
+import { applyFieldMarks, distanceMeters, formatDistance } from "./geo.js";
+import { Geolocation } from "@capacitor/geolocation";
+import { Capacitor } from "@capacitor/core";
+import { pontosPublicados } from "./catalog.js";
 import { setEventos, setColecao, certificateRoutes, getFilteredPoints, renderChrome, renderView, renderProfile } from "./views.js";
 import { installInk, playStampMoment } from "./stamp-kit.js";
 import { mountRealMap } from "./real-map.js";
@@ -35,6 +38,7 @@ let authModo = lerTokenRedefinicao() ? "redefinir" : "";
 let authSucesso = false;
 let profileMessage = null;
 let menuOpen = false;
+let isAdmin = false;
 // Botão "Mais" do rodapé (ou da lateral no desktop): o que estiver visível recebe o foco ao fechar a folha.
 const focusMais = () => [...document.querySelectorAll('[data-action="toggle-menu"]')].find((el) => el.offsetParent !== null)?.focus({ preventScroll: true });
 let activeMap = null;
@@ -142,7 +146,7 @@ function render({ preserveFocus = false } = {}) {
     focusTarget = active.dataset.input ? `[data-input="${active.dataset.input}"]` : active.dataset.select ? `[data-select="${active.dataset.select}"]` : null;
     if (typeof active.selectionStart === "number") selection = [active.selectionStart, active.selectionEnd];
   }
-  renderChrome(state, view, routeId, menuOpen);
+  renderChrome(state, view, routeId, menuOpen, isAdmin);
   document.body.classList.toggle("view-map", view === "map");
   if (view === "map") document.documentElement.style.setProperty("--topbar-bottom", `${Math.ceil(document.getElementById("topbar").getBoundingClientRect().bottom)}px`);
   document.querySelector(".app-shell").inert = menuOpen;
@@ -166,6 +170,68 @@ function render({ preserveFocus = false } = {}) {
     const next = document.querySelector(focusTarget);
     next?.focus({ preventScroll: true });
     if (selection && next instanceof HTMLInputElement) next.setSelectionRange(...selection);
+  }
+}
+
+async function obterPosicaoParaBusca() {
+  if (Capacitor.isNativePlatform()) {
+    let permissao = await Geolocation.checkPermissions();
+    if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
+      permissao = await Geolocation.requestPermissions();
+    }
+    if (permissao.location !== "granted" && permissao.coarseLocation !== "granted") {
+      throw new Error("Permita o acesso à localização para encontrar pontos próximos.");
+    }
+    return Geolocation.getCurrentPosition({
+      enableHighAccuracy: false,
+      timeout: 12000,
+      maximumAge: 60000,
+    });
+  }
+  if (!navigator.geolocation) throw new Error("Este aparelho não disponibiliza localização pelo navegador.");
+  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+    resolve,
+    reject,
+    { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
+  ));
+}
+
+async function buscarPontosProximos() {
+  const botao = app.querySelector('[data-action="find-nearby"]');
+  const resultados = app.querySelector("#nearby-results");
+  if (!botao || !resultados) return;
+  botao.disabled = true;
+  botao.textContent = "Localizando…";
+  resultados.hidden = false;
+  resultados.innerHTML = '<p class="nearby-results-message">Obtendo sua localização uma única vez…</p>';
+  try {
+    const pontos = pontosPublicados();
+    if (!pontos.length) throw new Error("Não foi possível carregar pontos publicados com coordenadas. Verifique a conexão e tente novamente.");
+    const posicao = await obterPosicaoParaBusca();
+    const origem = { lat: posicao.latitude, lng: posicao.longitude };
+    const proximos = pontos.map((ponto) => ({
+      ponto,
+      metros: distanceMeters(origem, { lat: ponto.lat, lng: ponto.lng }),
+    })).sort((a, b) => a.metros - b.metros).slice(0, 5);
+    const itens = proximos.map(({ ponto, metros }) => `
+      <li><button class="nearby-point" type="button" data-action="open-point" data-id="${escapeHtml(ponto.id)}">
+        <span aria-hidden="true">⌖</span>
+        <span class="nearby-point-copy"><strong>${escapeHtml(ponto.name)}</strong><small>${escapeHtml(ponto.address || ponto.note || ponto.id)}</small></span>
+        <span class="nearby-point-distance">${formatDistance(metros)}</span>
+      </button></li>`).join("");
+    resultados.innerHTML = `<div class="nearby-results-heading"><strong>5 pontos mais próximos</strong><span>Distância em linha reta</span></div><ol class="nearby-point-list">${itens}</ol><p class="nearby-results-message">Localização usada somente nesta consulta; não há rastreamento em segundo plano.</p>`;
+  } catch (error) {
+    const mensagem = error?.code === 1
+      ? "A permissão de localização foi negada. Ative-a nas configurações do aparelho e tente novamente."
+      : error?.code === 2
+        ? "Não foi possível determinar sua localização. Verifique o GPS e tente novamente."
+        : error?.code === 3
+          ? "A localização demorou demais. Tente novamente em um local com melhor sinal."
+          : error?.message || "Não foi possível localizar pontos próximos agora.";
+    resultados.innerHTML = `<p class="nearby-results-message">${escapeHtml(mensagem)}</p>`;
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Atualizar distância";
   }
 }
 
@@ -226,6 +292,9 @@ function handleClick(event) {
       render();
       focusMais();
       break;
+    case "find-nearby":
+      void buscarPontosProximos();
+      break;
     case "switch-view": {
       const closedFromMenu = menuOpen;
       if (isMainView(view)) previousView = view;
@@ -255,6 +324,7 @@ function handleClick(event) {
     case "logout":
       sairContaServidor().catch(() => {});
       state = signOut(state);
+      isAdmin = false;
       cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
       view = "home";
       authMessage = "";
@@ -277,6 +347,7 @@ function handleClick(event) {
           // Sem internet não dá para limpar o servidor: a pessoa decide se apaga só o aparelho, sabendo disso.
           if (!servidorLimpo && !window.confirm("Sem conexão com o servidor. Apagar só os dados deste aparelho? Os carimbos de tags guardados no servidor continuam lá até você apagar a conta com internet.")) return;
           state = resetLocalState();
+          isAdmin = false;
           cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
           view = "home";
           introDone = false;
@@ -605,10 +676,16 @@ async function sincronizarComServidor({ forcar = false } = {}) {
   sincronizando = true;
   try {
     try {
-      await sessaoContaServidor();
+      const sessao = await sessaoContaServidor();
+      const adminServidor = sessao?.usuario?.admin === true;
+      if (adminServidor !== isAdmin) {
+        isAdmin = adminServidor;
+        render();
+      }
     } catch (error) {
       if (error.status === 401) {
         state = signOut(state);
+        isAdmin = false;
       cartoesAtuais = []; setEventos([]); colecaoAtual = null; setColecao(null);
         authMessage = "Sua sessão expirou. Entre novamente.";
         render();
