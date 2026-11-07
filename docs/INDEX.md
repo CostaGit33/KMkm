@@ -22,6 +22,7 @@ Estado atual do projeto: [README](../README.md) · pendências: [TODO](../TODO.m
 
 ## Aplicativo Android
 - [Capacitor](capacitor/README.md): estratégia Android baseada no PWA existente, fases, requisitos de paridade e ADRs.
+- [Auditoria de paridade e Play Store](capacitor/AUDITORIA-PARIDADE-PLAY-STORE.md): evidências, alterações aplicadas e homologações pendentes.
 - [mobile/](mobile/README.md): documentação histórica da tentativa Flutter (suspensa).
 
 ## Produto e conteúdo
