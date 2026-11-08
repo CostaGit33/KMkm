@@ -357,7 +357,7 @@ function handleClick(event) {
 async function shareCertificate(id) {
   const route = ROUTES.find((item) => item.id === id) || certificateRoutes(state)[0];
   if (!route) return;
-  const text = `${state.user.name} completou a ${route.name} no +1 KM, em ${CITY.name}. Cada ponto, uma história guardada.`;
+  const text = `${state.user.name} completou a ${route.name} no +1 KM, em ${CITY.name}. Uma rota concluída em Eunápolis.`;
   try {
     if (navigator.share) {
       await navigator.share({ title: `Certificado · ${route.name}`, text, url: window.location.href });

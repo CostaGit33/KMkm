@@ -56,14 +56,14 @@ export function cartaHtml(i, { size = 96, tag = 'button' } = {}) {
 
 export function detalheHtml(i) {
   const dica = !i.capturada
-    ? 'Encoste na tag deste ponto para desbloquear esta carta única.'
-    : 'Carta conquistada. Esta edição não evolui com o tempo nem exige retorno em outros dias.';
-  return `<div class="carta-pagina-cabecalho"><p class="eyebrow">ARQUIVO DE EUNÁPOLIS · CARTA ${num(i.carta)}</p><h2>${esc(i.capturada ? i.criatura : 'Carta ainda bloqueada')}</h2><p>Uma lembrança colecionável da cidade.</p></div><div class="carta-detalhe">${cartaHtml(i, { size: 300, tag: 'div' })}<div class="carta-info">`
+    ? 'Aproxime o celular da tag para desbloquear.'
+    : '';
+  return `<div class="carta-pagina-cabecalho"><p class="eyebrow">ARQUIVO DE EUNÁPOLIS · CARTA ${num(i.carta)}</p><h2>${esc(i.capturada ? i.criatura : 'Carta ainda bloqueada')}</h2></div><div class="carta-detalhe">${cartaHtml(i, { size: 300, tag: 'div' })}<div class="carta-info">`
     + `<dl><dt>Número</dt><dd>${num(i.carta)}</dd><dt>Personagem</dt><dd>${i.capturada ? esc(i.criatura) : '???'}</dd><dt>Local</dt><dd>${esc(i.ponto)}</dd>`
     + `<dt>Categoria</dt><dd>${esc(rotuloCategoria(i.categoria))}</dd><dt>Raridade</dt><dd>${estrelas(i.raridade)} ${esc(rotuloRaridade(i.raridade))}</dd></dl>`
     + (i.capturada && i.historia ? `<p class="carta-historia">${esc(i.historia)}</p>` : '')
     + (i.capturada && i.frase ? `<blockquote class="carta-frase">“${esc(i.frase)}”</blockquote>` : '')
-    + `</div><p class="carta-dica">${esc(dica)}</p></div>`
+    + `</div>${dica ? `<p class="carta-dica">${esc(dica)}</p>` : ''}</div>`
     + (i.capturada ? galeriaHtml({ id: i.codigo }) : '');
 }
 
@@ -75,7 +75,7 @@ export function secaoColecao(colecao) {
   const pct = total ? Math.round((capturadas / total) * 100) : 0;
   const chips = [`<button type="button" class="carta-chip ativo" aria-pressed="true" data-cat="todas">Todas <small>${capturadas}/${total}</small></button>`]
     .concat(CATEGORIAS.filter((c) => (pc[c.id]?.total || 0) > 0).map((c) => `<button type="button" class="carta-chip" aria-pressed="false" data-cat="${c.id}">${c.nome} <small>${pc[c.id].capturadas}/${pc[c.id].total}</small></button>`)).join('');
-  return `<section class="colecao-cartas" aria-labelledby="colecao-title"><div class="section-heading"><div><h2 id="colecao-title">${total} ${total === 1 ? 'ponto' : 'pontos'}. Uma só cidade.</h2><p>Cada ponto é uma carta com um personagem de Eunápolis. Encoste na tag para desbloquear.</p></div><strong class="route-count">${capturadas}/${total}</strong></div>`
+  return `<section class="colecao-cartas" aria-labelledby="colecao-title"><div class="section-heading"><div><h2 id="colecao-title">${total} ${total === 1 ? 'ponto' : 'pontos'}</h2></div><strong class="route-count">${capturadas}/${total}</strong></div>`
     + `<div class="colecao-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${capturadas}" aria-label="Cartas desbloqueadas"><span style="width:${pct}%"></span></div>`
     + `<div class="carta-chips" role="group" aria-label="Filtrar por categoria">${chips}</div>`
     + `<ul class="carta-grid">${itensAtuais.map((i) => `<li data-cat="${esc(i.categoria)}">${cartaHtml(i)}</li>`).join('')}</ul></section>`;

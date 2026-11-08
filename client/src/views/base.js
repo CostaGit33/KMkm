@@ -87,7 +87,7 @@ export function historyRows(state, count = 4) {
   return rows.map((entry) => {
     const point = getPoint(entry.pointId);
     if (!point) return "";
-    return `<div class="history-row"><span class="history-stamp" aria-hidden="true">${point.id.slice(-2)}</span><span class="history-copy"><strong>${escapeHtml(point.name)}</strong><small>Carta conquistada em ${formatDate(entry.at)}</small></span><span class="status-pill conquered">Na coleção</span></div>`;
+    return `<div class="history-row"><span class="history-stamp" aria-hidden="true">${point.id.slice(-2)}</span><span class="history-copy"><strong>${escapeHtml(point.name)}</strong><small>Conquistada em ${formatDate(entry.at)}</small></span><span class="status-pill conquered">Na coleção</span></div>`;
   }).join("");
 }
 

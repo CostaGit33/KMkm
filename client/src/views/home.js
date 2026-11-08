@@ -38,7 +38,7 @@ function homeCards(state) {
       return dateB - dateA;
     })
     : POINTS.filter((point) => state.conquered.includes(point.id)).map((point) => ({ codigo: point.id, ponto: point.name, carta: POINTS.indexOf(point) + 1, categoria: "cultura", raridade: "comum", capturada: true, criatura: point.name }));
-  if (!cards.length) return `<div class="home-empty-state"><p class="home-empty">Sua coleção está começando. Visite um ponto publicado e encoste na tag NFC para desbloquear sua primeira carta.</p><button class="outline-button" type="button" data-action="switch-view" data-view="map">Encontrar um ponto →</button></div>`;
+  if (!cards.length) return `<div class="home-empty-state"><p class="home-empty">Nenhuma carta ainda.</p><button class="outline-button" type="button" data-action="switch-view" data-view="map">Encontrar um ponto →</button></div>`;
   const recentes = cards.slice(0, 3);
   return `<div class="home-stamps home-cards" role="list" aria-label="Últimas três cartas conquistadas">${recentes.map((item) => { const point = getPoint(item.codigo); return `<button class="home-stamp home-card" role="listitem" type="button" data-action="open-point" data-id="${point?.id || item.codigo}" aria-label="Abrir carta de ${escapeHtml(item.ponto)}" title="${escapeHtml(item.ponto)}">${cartaHtml(item, { size: 96, tag: "div" })}</button>`; }).join("")}</div><div class="home-collection-link"><span>Mostrando ${recentes.length} de ${cards.length} cartas conquistadas</span><button class="route-card-button" type="button" data-action="switch-view" data-view="collection">Ver coleção completa →</button></div>`;
 }
@@ -46,7 +46,7 @@ function homeCards(state) {
 function collectionSpotlight(state, city) {
   if (!(state.account && state.session)) return "";
   const restante = Math.max(0, city.total - city.count);
-  return `<section class="collection-spotlight" aria-labelledby="collection-spotlight-title"><div><p class="eyebrow">Coleção em andamento</p><h2 id="collection-spotlight-title">${city.count === 0 ? "Sua primeira carta começa na rua" : restante ? `Faltam ${restante} cartas para completar a cidade` : "Coleção de Eunápolis completa"}</h2><p>${city.count === 0 ? "Aproxime-se de uma tag publicada para desbloquear uma carta única." : "Cada visita confirmada revela uma carta; não há uma segunda coleção de carimbos."}</p></div><button class="spotlight-action" type="button" data-action="switch-view" data-view="collection">Ver coleção <span aria-hidden="true">→</span></button></section>`;
+  return `<section class="collection-spotlight" aria-labelledby="collection-spotlight-title"><div><p class="eyebrow">Coleção</p><h2 id="collection-spotlight-title">${city.count === 0 ? "Comece sua coleção" : restante ? `Faltam ${restante} cartas` : "Coleção completa"}</h2></div><button class="spotlight-action" type="button" data-action="switch-view" data-view="collection">Ver coleção <span aria-hidden="true">→</span></button></section>`;
 }
 
 function miniMap(state) {
@@ -88,12 +88,12 @@ export function renderHome(state) {
   const next = POINTS.find((point) => pointStatus(state, point) === "available");
   const categoryTotals = CATEGORIES.map((category) => categoryCard(state, category)).join("");
   const complete = city.total > 0 && city.count >= city.total;
-  return `${pageHead("Sua jornada", CITY.name, "Descubra a cidade, visite pontos e colecione histórias.")}
+  return `${pageHead("Sua jornada", CITY.name)}
     <section class="home-welcome" aria-labelledby="home-welcome-title">
       <div class="home-welcome-copy">
         <p class="home-welcome-kicker">+1 KM · ${escapeHtml(CITY.name)}</p>
         <h2 id="home-welcome-title">${complete ? "Você descobriu cada caminho." : city.count === 0 ? "Sua próxima descoberta começa aqui." : `Continue descobrindo ${escapeHtml(CITY.name)}.`}</h2>
-        <p>${complete ? "Sua coleção desta edição está completa. Continue explorando os circuitos." : "Encontre um ponto participante, aproxime o celular da tag NFC e conquiste cartas da cidade."}</p>
+        <p>${complete ? "Coleção completa." : "Encontre um ponto e aproxime o celular da tag NFC."}</p>
       </div>
       <div class="home-welcome-mark" aria-hidden="true"><span>+1</span><small>KM</small></div>
       <button class="home-discover-button" type="button" data-action="switch-view" data-view="map"><span class="home-discover-icon" aria-hidden="true">⌖</span><span>${complete ? "Explorar o mapa" : "Encontrar um ponto"}</span><span aria-hidden="true">→</span></button>
@@ -112,7 +112,7 @@ export function renderHome(state) {
     </section>
     <button class="home-nfc-guide" type="button" data-action="switch-view" data-view="map"><span class="home-nfc-icon" aria-hidden="true">)))</span><span><strong>${city.count === 0 ? "Quer sua primeira carta?" : "Pronto para o próximo carimbo?"}</strong><small>Visite um ponto publicado e aproxime o celular da tag NFC. O carimbo só é confirmado após a validação.</small></span><span aria-hidden="true">→</span></button>
     ${collectionSpotlight(state, city)}
-    <section class="home-details-section"><div class="section-heading"><div><h2>Descubra mais da cidade</h2><p>Explore pontos por tema e acompanhe seu progresso.</p></div></div>
+    <section class="home-details-section"><div class="section-heading"><div><h2>Descubra mais da cidade</h2></div></div>
       <article class="card home-city-card"><h3 class="home-sub">Cartas conquistadas <span>${city.count}</span></h3>${homeCards(state)}<h3 class="home-sub">Mapa rápido</h3>${miniMap(state)}</article>
       <div class="category-grid">${categoryTotals}</div>
       <article class="card home-progress-card"><div class="progress-meta"><span>Progresso de ${escapeHtml(CITY.name)}</span><strong>${city.percent}%</strong></div>${progressBar(city, "green", `Pontos conquistados em ${CITY.name}`)}<p class="progress-guidance" role="status">${city.percent === 100 ? `Você conquistou todos os ${city.total} pontos desta edição.` : city.count === 0 ? `Sua primeira conquista começa em um ponto publicado. ${city.total} pontos disponíveis nesta edição.` : `Você já conquistou ${city.count} de ${city.total} pontos. Faltam ${city.total - city.count} para completar a cidade.`}</p><button class="route-card-button" type="button" data-action="switch-view" data-view="map">Continuar explorando →</button></article>

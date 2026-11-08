@@ -77,9 +77,7 @@ export function Podium({ scope, onScope, season, loading }) {
           <p className="gc-eyebrow">{geral ? "Ranking permanente" : "Temporada mensal"}</p>
           <h2 id="gc-podium-title">{geral ? "Ranking geral" : `Pódio · ${season?.period?.label || "mês atual"}`}</h2>
           <p className="gc-muted">
-            {geral
-              ? "XP de todos os tempos: 10 por ponto diferente carimbado e 20 por circuito concluído."
-              : "10 XP por ponto diferente carimbado neste mês. Em caso de empate, vence quem chegou primeiro."}
+            {geral ? "10 XP por ponto · 20 XP por circuito." : "10 XP por ponto neste mês."}
           </p>
         </div>
         <span className="gc-podium__count">{plural(participantes, "explorador", "exploradores")}</span>

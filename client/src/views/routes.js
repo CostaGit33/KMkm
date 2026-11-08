@@ -43,7 +43,7 @@ export function renderRoutes(state) {
     const percent = routeProgress(state, route).percent;
     return percent > 0 && percent < 100;
   }).length;
-  return `${pageHead("Rotas", CITY.name, inProgress ? `${inProgress} ${inProgress === 1 ? "rota em andamento" : "rotas em andamento"} · suas rotas ativas aparecem primeiro.` : "Escolha uma rota e acompanhe os pontos que faltam até a conquista.")}
+  return `${pageHead("Rotas", CITY.name, inProgress ? `${inProgress} ${inProgress === 1 ? "rota em andamento" : "rotas em andamento"}` : "Escolha uma rota.")}
     <div class="route-list">${routes.map((route) => routeCard(state, route)).join("")}</div>
     `;
 }

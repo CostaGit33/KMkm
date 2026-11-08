@@ -22,7 +22,7 @@ export function renderProfile(state, mensagem = null) {
   const rotas = certificateRoutes(state).length;
   const desde = conta.criadoEm ? formatDate(conta.criadoEm, { day: "2-digit", month: "long", year: "numeric" }) : "";
   const aviso = mensagem?.texto ? `<p class="auth-error${mensagem.ok ? " ok" : ""}" role="status">${escapeHtml(mensagem.texto)}</p>` : "";
-  return `${pageHead("Sua conta", "Meu perfil", "Seus dados de acesso e preferências.")}
+  return `${pageHead("Sua conta", "Meu perfil")}
     <article class="card profile-card">
       <div class="profile-avatar" aria-hidden="true">${escapeHtml(iniciais(conta.nome))}</div>
       <div>
