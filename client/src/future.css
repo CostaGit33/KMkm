@@ -917,3 +917,132 @@ body.view-map .mk.is-next { box-shadow: 0 0 0 2px #e9c36b, 0 1px 4px rgb(0 0 0 /
 .home-collection-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .home-collection-link > span { color: var(--muted); font-size: 12px; }
 .home-collection-link .route-card-button { min-height: 44px; }
+
+/* MAP LAYOUT HARDENING: keep every interactive panel in normal flow.
+   Only the map action HUD floats over the map; point details never cover controls. */
+body.view-map .map-stage {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+body.view-map .map-stage > .real-map {
+  position: relative !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  height: clamp(320px, 52dvh, 520px) !important;
+  min-height: 320px !important;
+  max-height: 520px !important;
+  width: 100% !important;
+}
+body.view-map .map-stage > .map-hud {
+  position: absolute !important;
+  z-index: 700 !important;
+  inset: 8px 8px auto !important;
+  display: flex !important;
+  flex-flow: row wrap !important;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+}
+body.view-map .map-stage > .map-ui {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 2 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px !important;
+  width: 100% !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 10px !important;
+  pointer-events: auto !important;
+}
+body.view-map .map-stage > .map-ui > .map-chips {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 2px 1px 6px !important;
+}
+body.view-map .map-stage > .map-ui > .map-msg,
+body.view-map .map-stage > .map-ui > .map-sheet,
+body.view-map .map-stage > .map-ui > .map-arrived,
+body.view-map .map-stage > .map-ui > .map-hint,
+body.view-map .map-stage > .map-ui > .map-pending,
+body.view-map .map-stage > .map-ui > .map-foot {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+body.view-map .map-stage > .map-ui > .map-sheet,
+body.view-map .map-stage > .map-ui > .map-arrived {
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+body.view-map .map-stage > .map-ui > .map-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+body.view-map .map-stage > .map-ui > .map-sheet-actions > .map-btn {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+body.view-map .map-stage > .real-map .leaflet-control-zoom {
+  margin: 0 8px 8px 0 !important;
+}
+body.view-map .map-stage > .real-map .leaflet-control-attribution {
+  margin: 0 0 4px 4px !important;
+}
+body.view-map .map-stage > .map-ui .map-hint,
+body.view-map .map-stage > .map-ui .map-pending,
+body.view-map .map-stage > .map-ui .map-foot {
+  display: block;
+}
+@media (max-width: 640px) {
+  body.view-map .map-stage > .real-map {
+    height: clamp(300px, 48dvh, 430px) !important;
+    min-height: 300px !important;
+    max-height: 430px !important;
+  }
+  body.view-map .map-stage > .map-hud {
+    inset: 6px 6px auto !important;
+    gap: 4px;
+  }
+  body.view-map .map-stage > .map-hud .map-fab {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  body.view-map .map-stage > .map-ui {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+  body.view-map .map-stage > .map-ui > .map-sheet-actions > .map-btn {
+    flex: 1 1 calc(50% - 7px);
+  }
+}
+@media (max-width: 360px) {
+  body.view-map .map-stage > .real-map {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+  body.view-map .map-stage > .map-hud .map-fab {
+    min-height: 34px;
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+}
