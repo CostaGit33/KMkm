@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+def releaseSigningConfigured = [
+    System.getenv('ANDROID_KEYSTORE_PATH'),
+    System.getenv('ANDROID_KEYSTORE_PASSWORD'),
+    System.getenv('ANDROID_KEY_ALIAS'),
+    System.getenv('ANDROID_KEY_PASSWORD'),
+].every { it != null && !it.trim().isEmpty() }
+
 android {
     namespace = "online.novaagencian8n.mais1km"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +23,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (releaseSigningConfigured) {
+        signingConfigs {
+            release {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
