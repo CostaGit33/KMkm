@@ -9,11 +9,11 @@ html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--texto); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 80px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--azul); }
-.topo { position: sticky; top: 0; z-index: 20; background: rgba(17, 17, 18,.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--linha); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.topo { position: relative; z-index: 20; background: rgba(17, 17, 18,.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--linha); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 .topo h1 { font-size: 17px; margin: 0; letter-spacing: .02em; }
 .topo h1 small { color: var(--suave); font-weight: 400; margin-left: 6px; }
 .topo .quem { display: flex; gap: 8px; align-items: center; color: var(--suave); font-size: 13px; flex-wrap: wrap; }
-.abas { display: flex; gap: 4px; overflow-x: auto; padding: 8px 16px 0; border-bottom: 1px solid var(--linha); background: var(--bg); position: sticky; top: 55px; z-index: 19; }
+.abas { display: flex; gap: 4px; overflow-x: auto; padding: 8px 16px 0; border-bottom: 1px solid var(--linha); background: var(--bg); position: sticky; top: 0; z-index: 19; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 .abas button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; color: var(--suave); cursor: pointer; white-space: nowrap; font-weight: 600; }
 .abas button[aria-selected="true"] { color: var(--ouro); border-bottom-color: var(--ouro); }
 main { max-width: 1040px; margin: 0 auto; padding: 16px; }
