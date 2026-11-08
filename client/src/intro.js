@@ -348,10 +348,14 @@ export function startIntro({ mode = "full", onCreate, onEnter, onFinish } = {}) 
   let step = 0, pointerTilt = null;
   function startWizard(from) {
     wz.hidden = false; el.classList.add("in-wizard");
-    wz.innerHTML = `<header class="wz-top"><button class="wz-back" type="button" aria-label="Voltar">‹</button><div class="wz-steps" role="progressbar" aria-valuemin="1" aria-valuemax="4">${STEPS.map(() => "<i></i>").join("")}</div><span class="wz-count">01/04</span></header>
+    wz.innerHTML = `<header class="wz-top"><button class="wz-back" type="button" aria-label="Voltar uma etapa">‹</button><div class="wz-steps" role="progressbar" aria-valuemin="1" aria-valuemax="4">${STEPS.map(() => "<i></i>").join("")}</div><span class="wz-count">01/04</span><button class="wz-login" type="button">Entrar</button></header>
       ${passportHtml()}<form class="wz-form" novalidate></form>`;
     wz.addEventListener("pointermove", (ev) => { const c = wz.querySelector(".wz-card"); if (!c) return; const r = c.getBoundingClientRect(); c.style.setProperty("--rx", `${((ev.clientY - r.top) / r.height - 0.5) * -10}deg`); c.style.setProperty("--ry", `${((ev.clientX - r.left) / r.width - 0.5) * 14}deg`); });
     wz.querySelector(".wz-back").addEventListener("click", () => { if (step === 0) return; sfx.tap(); go(step - 1, -1); });
+    wz.querySelector(".wz-login").addEventListener("click", () => {
+      audio();
+      leave(() => onEnter?.({ entrar: true }), { quick: true });
+    });
     wz.querySelector(".wz-form").addEventListener("submit", onSubmit);
     wz.querySelector(".wz-form").addEventListener("input", onInput);
     wz.querySelector(".wz-form").addEventListener("click", (ev) => {
