@@ -913,6 +913,119 @@ body.view-map .mk.is-next { box-shadow: 0 0 0 2px #e9c36b, 0 1px 4px rgb(0 0 0 /
   body.view-map .map-fab { min-height: 28px; padding: 4px 7px; font-size: 9px; }
 }
 
+/* ---------- Auditoria responsiva: espaço seguro e controles sem sobreposição ---------- */
+/* O mapa é rolável como uma página normal; a navegação fixa nunca pode cobrir sua ficha. */
+@media (max-width: 759px) {
+  body.view-map .app-shell {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.view-map .main-content {
+    padding-bottom: calc(28px + 104px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.view-map .map-stage {
+    margin-bottom: 0;
+  }
+
+  body.view-map .real-map {
+    height: clamp(300px, 54dvh, 520px) !important;
+    min-height: 300px !important;
+    max-height: 520px !important;
+  }
+
+  body.view-map .map-ui {
+    position: relative !important;
+    z-index: 2;
+    margin-bottom: 0;
+  }
+
+  body.view-map .map-sheet-top {
+    flex-wrap: wrap;
+  }
+
+  body.view-map .map-sheet-top > div {
+    min-width: 0;
+  }
+
+  body.view-map .map-dist {
+    margin-left: auto;
+  }
+
+  body.view-map .map-sheet-actions .map-btn {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .page-head,
+  .section-heading,
+  .route-card-top,
+  .card-heading {
+    min-width: 0;
+  }
+
+  .page-head > *,
+  .section-heading > div,
+  .route-info,
+  .card-heading > * {
+    min-width: 0;
+  }
+
+  .route-card-top {
+    flex-wrap: wrap;
+  }
+
+  .route-card-top .status-pill,
+  .route-card-top .route-count {
+    margin-left: auto;
+  }
+
+  .point-row {
+    min-width: 0;
+  }
+
+  .point-main,
+  .point-main > * {
+    min-width: 0;
+  }
+
+  .point-meta,
+  .history-copy small,
+  .event-card,
+  .destination-card,
+  .destination-event-card,
+  .destination-park-card {
+    overflow-wrap: anywhere;
+  }
+
+  .certificate-counter,
+  .collection-banner,
+  .achievement,
+  .map-arrived {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  body.view-map .map-ui {
+    padding: 8px !important;
+  }
+
+  body.view-map .map-fab {
+    min-height: 36px;
+    padding-inline: 8px;
+  }
+
+  body.view-map .map-sheet-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.view-map .map-sheet-actions .map-btn {
+    width: 100%;
+  }
+}
+
 /* Página inicial: apenas três cartas recentes e acesso explícito à coleção completa. */
 .home-collection-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .home-collection-link > span { color: var(--muted); font-size: 12px; }
