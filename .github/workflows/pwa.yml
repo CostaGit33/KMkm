@@ -46,6 +46,14 @@ jobs:
       - name: Compilar frontend web
         run: npm run build --prefix client
 
+      - name: Instalar Playwright para auditoria visual
+        run: |
+          npm install --no-save --package-lock=false --prefix client @playwright/test
+          npx --prefix client playwright install --with-deps chromium
+
+      - name: Testar responsividade, overflow e sobreposição
+        run: npm run test:responsive --prefix client
+
   capacitor-android:
     name: Gerar e validar Android Capacitor
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
